@@ -1,0 +1,23 @@
+<div class="view-header">
+    <h2>Messages</h2>
+    <p class="view-subtitle">Direct messages and collaboration discussions.</p>
+</div>
+
+<!-- Inbox List -->
+<div class="inbox-list">
+    <div 
+        *ngFor="let thread of threadsList" 
+        class="chat-thread" 
+        [class.unread]="thread.unread"
+        (click)="openThread(thread.id)">
+        <div class="creator-avatar" [ngClass]="thread.bgClass">{{ thread.avatar }}</div>
+        <div class="thread-info">
+            <div class="thread-top">
+                <h4>{{ thread.name }}</h4>
+                <span class="thread-time">{{ thread.time }}</span>
+            </div>
+            <p class="thread-snippet">{{ thread.snippet }}</p>
+        </div>
+        <span class="unread-dot" *ngIf="thread.unread"></span>
+    </div>
+</div>

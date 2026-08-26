@@ -1,0 +1,166 @@
+<div class="view-header">
+    <div class="badge-ai">✦ Conexus Intelligence</div>
+    <h2>Growth & Strategy Hub</h2>
+    <p class="view-subtitle">Personalized next steps, future strategy roadmap, and brand matching.</p>
+</div>
+
+<!-- NEXT STEPS CHECKLIST -->
+<section class="strategy-block">
+    <div class="strategy-block-header">
+        <h3>⚡ Recommended Next Steps</h3>
+        <span class="status-pill">4 Pending</span>
+    </div>
+    <p class="strategy-desc">Prioritized actions tailored to your channel velocity and reach goals.</p>
+
+    <div class="next-steps-list">
+        <!-- Step 1 -->
+        <div class="step-card" [class.completed]="stepsCompleted[1]">
+            <label class="step-checkbox-container">
+                <input type="checkbox" class="step-checkbox" [checked]="stepsCompleted[1]" (change)="toggleStep(1)">
+                <span class="checkmark"></span>
+            </label>
+            <div class="step-content">
+                <div class="step-top">
+                    <h4>Cross-Promote Gaming Content with Alex Popescu</h4>
+                    <span class="step-tag tag-high">High Impact</span>
+                </div>
+                <p>You share 87% audience overlap in gaming & tech. A joint YouTube Short could gain ~15K new impressions.</p>
+                <button class="btn-step-action" (click)="openOutreach('Alex Popescu')">Draft Collab Pitch</button>
+            </div>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="step-card" [class.completed]="stepsCompleted[2]">
+            <label class="step-checkbox-container">
+                <input type="checkbox" class="step-checkbox" [checked]="stepsCompleted[2]" (change)="toggleStep(2)">
+                <span class="checkmark"></span>
+            </label>
+            <div class="step-content">
+                <div class="step-top">
+                    <h4>Shift TikTok Uploads to 18:00 - 20:00 EEST</h4>
+                    <span class="step-tag tag-med">Medium Impact</span>
+                </div>
+                <p>Your followers are most active on weeknights. Changing timing can boost first-hour engagement by 28%.</p>
+            </div>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="step-card" [class.completed]="stepsCompleted[3]">
+            <label class="step-checkbox-container">
+                <input type="checkbox" class="step-checkbox" [checked]="stepsCompleted[3]" (change)="toggleStep(3)">
+                <span class="checkmark"></span>
+            </label>
+            <div class="step-content">
+                <div class="step-top">
+                    <h4>Link Your Twitch & Substack Accounts</h4>
+                    <span class="step-tag tag-high">Profile Boost</span>
+                </div>
+                <p>Unify your creator footprint in your Profile so brands can view total cross-platform metrics.</p>
+                <button class="btn-step-action" (click)="goToProfile()">Go to Profile →</button>
+            </div>
+        </div>
+
+        <!-- Step 4 -->
+        <div class="step-card" [class.completed]="stepsCompleted[4]">
+            <label class="step-checkbox-container">
+                <input type="checkbox" class="step-checkbox" [checked]="stepsCompleted[4]" (change)="toggleStep(4)">
+                <span class="checkmark"></span>
+            </label>
+            <div class="step-content">
+                <div class="step-top">
+                    <h4>Apply for TechGear Pro Q4 Hardware Campaign</h4>
+                    <span class="step-tag tag-monetize">Monetization</span>
+                </div>
+                <p>Est. deal value $800 - $1,500. Matches your tech setup & video creation niche.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- STRATEGY ROADMAP -->
+<section class="strategy-block">
+    <div class="strategy-block-header">
+        <h3>🗺️ Future Strategy Roadmap</h3>
+        <span class="status-pill blue">Q3 - Q4 Plan</span>
+    </div>
+
+    <div class="roadmap-timeline">
+        <div class="roadmap-phase">
+            <div class="phase-number">01</div>
+            <div class="phase-body">
+                <span class="phase-timeline">Months 1 - 2</span>
+                <h4>Audience Spike & Short-Form Synergy</h4>
+                <p>Repurpose tech reviews into 45s Shorts & TikToks. Partner with 2 regional creators for dual-stream events.</p>
+                <div class="phase-metrics">
+                    <span>Target: +15K Subs</span>
+                    <span>KPI: 5.2% Engagement</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="roadmap-phase">
+            <div class="phase-number">02</div>
+            <div class="phase-body">
+                <span class="phase-timeline">Months 3 - 5</span>
+                <h4>Community & Multi-Channel Expansion</h4>
+                <p>Launch exclusive Discord channel for core supporters and kick off weekly live podcast Q&As.</p>
+                <div class="phase-metrics">
+                    <span>Target: 2.5K Discord Members</span>
+                    <span>KPI: Substack Launch</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="roadmap-phase">
+            <div class="phase-number">03</div>
+            <div class="phase-body">
+                <span class="phase-timeline">Months 6+</span>
+                <h4>Direct Brand Partnerships & Merch</h4>
+                <p>Leverage total 250K+ reach across platforms to secure quarterly retainer brand sponsorships.</p>
+                <div class="phase-metrics">
+                    <span>Target: 3 Retainer Brands</span>
+                    <span>Est. Revenue: $4K/mo</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- MATCHED BRAND CAMPAIGNS -->
+<section class="strategy-block">
+    <div class="strategy-block-header">
+        <h3>💎 Recommended Brand Matches</h3>
+    </div>
+
+    <div class="brand-deals-grid">
+        <div class="brand-card">
+            <div class="brand-header">
+                <div class="brand-logo logo-tech">TG</div>
+                <div>
+                    <h4>TechGear Pro</h4>
+                    <span>Consumer Tech & Audio</span>
+                </div>
+            </div>
+            <p class="brand-desc">Looking for tech creators for hands-on reviews of wireless studio headsets.</p>
+            <div class="brand-footer">
+                <span class="brand-pay">$800 - $1,500</span>
+                <button class="btn-apply-brand">Apply Now</button>
+            </div>
+        </div>
+
+        <div class="brand-card">
+            <div class="brand-header">
+                <div class="brand-logo logo-travel">WL</div>
+                <div>
+                    <h4>Wanderlust Escapes</h4>
+                    <span>Travel & Digital Nomad</span>
+                </div>
+            </div>
+            <p class="brand-desc">Sponsoring travel creators testing portable power setups on remote trips.</p>
+            <div class="brand-footer">
+                <span class="brand-pay">$1,200 + Stay</span>
+                <button class="btn-apply-brand">Apply Now</button>
+            </div>
+        </div>
+    </div>
+</section>

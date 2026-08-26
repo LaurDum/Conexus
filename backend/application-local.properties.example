@@ -1,0 +1,3 @@
+# Copy this file to application-local.properties and fill in your own value.
+# application-local.properties is git-ignored so the password never leaves your machine.
+spring.datasource.password=your-postgres-password

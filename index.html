@@ -1,0 +1,1118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Conexus - Creator Intelligence & Collaboration Platform</title>
+    <meta name="description" content="Conexus helps content creators network, analyze growth strategies, manage social channels, and discover brand collaborations.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+    <!-- ==========================================
+         1. SPLASH SCREEN
+    =========================================== -->
+    <div id="splash-screen" class="splash-screen">
+        <div class="splash-content">
+            <div class="splash-icon">✦</div>
+            <h1 class="splash-logo">conexus</h1>
+            <p class="splash-tagline">Creator Intelligence Platform</p>
+            <div class="splash-spinner"></div>
+        </div>
+    </div>
+
+    <!-- ==========================================
+         2. AUTH SCREEN (SIGN IN / REGISTER)
+    =========================================== -->
+    <div id="auth-screen" class="auth-screen hidden">
+        <div class="auth-card" id="auth-card">
+            <button class="auth-card-close" id="btn-close-auth" aria-label="Close sign in box">&times;</button>
+
+            <div class="auth-brand">
+                <div class="auth-logo-icon">✦</div>
+                <h1 class="auth-logo">conexus</h1>
+                <p class="auth-subtitle">Creator Intelligence & Collaboration Platform</p>
+            </div>
+
+            <!-- Auth Tabs -->
+            <div class="auth-tabs">
+                <button class="auth-tab active" id="tab-login" data-tab="form-login">Sign In</button>
+                <button class="auth-tab" id="tab-register" data-tab="form-register">Create Account</button>
+            </div>
+
+            <div id="auth-error-box" class="auth-error-box hidden"></div>
+
+            <!-- Login Form -->
+            <form id="form-login" class="auth-form">
+                <div class="form-group">
+                    <label>Username or Email</label>
+                    <input type="text" id="login-identifier" placeholder="alex_creates or alex@test.com" required>
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="login-password" placeholder="••••••••" required>
+                </div>
+                <button type="submit" class="btn-primary auth-submit-btn">Sign In to Conexus</button>
+
+                <!-- Quick Trial Login Buttons -->
+                <div class="trial-login-section">
+                    <span class="trial-label">Or Sign In with Demo Account:</span>
+                    <div class="trial-buttons">
+                        <button type="button" class="btn-trial" id="btn-trial-creator">
+                            <span>🎮</span>
+                            <div>
+                                <strong>Alex Popescu</strong>
+                                <small>Creator Account</small>
+                            </div>
+                        </button>
+                        <button type="button" class="btn-trial" id="btn-trial-brand">
+                            <span>🏷️</span>
+                            <div>
+                                <strong>TechGear Pro</strong>
+                                <small>Business Account</small>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+            </form>
+
+            <!-- Register Form -->
+            <form id="form-register" class="auth-form hidden">
+                <div class="form-group">
+                    <label>Username</label>
+                    <input type="text" id="reg-username" placeholder="e.g. sarah_creates" required>
+                </div>
+                <div class="form-group">
+                    <label>Email Address</label>
+                    <input type="email" id="reg-email" placeholder="sarah@example.com" required>
+                </div>
+                <div class="form-group">
+                    <label>Display Name</label>
+                    <input type="text" id="reg-display-name" placeholder="Sarah Miller" required>
+                </div>
+                <div class="form-group">
+                    <label>Primary Content Niche</label>
+                    <select id="reg-niche">
+                        <option value="Tech & AI Creator">Tech & AI</option>
+                        <option value="Gaming Creator">Gaming</option>
+                        <option value="Travel Creator">Travel</option>
+                        <option value="Music Creator">Music</option>
+                        <option value="Fashion & Beauty">Fashion & Beauty</option>
+                        <option value="Food & Lifestyle">Food & Lifestyle</option>
+                        <option value="Brand / Business">Brand / Business Partner</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="reg-password" placeholder="Minimum 6 characters" required>
+                </div>
+                <button type="submit" class="btn-primary auth-submit-btn">Create Account & Continue →</button>
+            </form>
+        </div>
+
+        <!-- Landing Hero (Visible if user closes sign-in box with X) -->
+        <div id="auth-landing-hero" class="auth-landing-hero hidden">
+            <div class="auth-brand">
+                <div class="auth-logo-icon">✦</div>
+                <h1 class="auth-logo">conexus</h1>
+                <p class="auth-subtitle">Creator Intelligence & Collaboration Platform</p>
+                <p class="auth-landing-desc">Connect with top creators, analyze growth strategies, manage social channels, and discover brand sponsorships.</p>
+                <button type="button" class="btn-primary auth-launch-btn" id="btn-reopen-auth">Sign In / Get Started →</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==========================================
+         3. ONBOARDING SCREEN (4 STEPS)
+    =========================================== -->
+    <div id="onboarding-screen" class="onboarding-screen hidden">
+        <div class="onboarding-card">
+
+            <!-- Onboarding Header & Progress -->
+            <div class="onboarding-header">
+                <div class="onboarding-progress-bar">
+                    <div class="onboarding-progress-fill" id="onboarding-progress-fill" style="width: 25%;"></div>
+                </div>
+                <div class="onboarding-step-indicator" id="onboarding-step-indicator">Step 1 of 4</div>
+            </div>
+
+            <!-- STEP 1: Account Type -->
+            <div class="onboarding-step" id="onboard-step-1">
+                <h2>Welcome to Conexus! 👋</h2>
+                <p class="onboarding-desc">How do you plan to use the platform?</p>
+
+                <div class="account-type-grid">
+                    <div class="account-type-card selected" data-type="creator" id="card-type-creator">
+                        <div class="account-type-icon">🎬</div>
+                        <h3>Content Creator</h3>
+                        <p>I build content, grow my audience, network with other creators, and discover brand sponsorships.</p>
+                        <span class="type-check">✓</span>
+                    </div>
+
+                    <div class="account-type-card" data-type="business" id="card-type-business">
+                        <div class="account-type-icon">🏢</div>
+                        <h3>Business / Brand</h3>
+                        <p>I represent a brand, company or agency looking to discover creators and run collab campaigns.</p>
+                        <span class="type-check">✓</span>
+                    </div>
+                </div>
+
+                <div class="onboarding-actions">
+                    <div></div>
+                    <button type="button" class="btn-primary" id="btn-onboard-next-1">Next: Choose Goals →</button>
+                </div>
+            </div>
+
+            <!-- STEP 2: Goals -->
+            <div class="onboarding-step hidden" id="onboard-step-2">
+                <h2>What are your primary goals?</h2>
+                <p class="onboarding-desc">Select all that apply so Conexus AI can personalize your strategy feed.</p>
+
+                <div class="goals-grid" id="goals-grid">
+                    <button type="button" class="goal-chip selected" data-goal="Grow my audience">📈 Grow my audience</button>
+                    <button type="button" class="goal-chip selected" data-goal="Find collaborations">🤝 Find collaborations</button>
+                    <button type="button" class="goal-chip" data-goal="Get brand sponsorships">💰 Get brand sponsorships</button>
+                    <button type="button" class="goal-chip" data-goal="Improve content strategy">💡 Improve content strategy</button>
+                    <button type="button" class="goal-chip" data-goal="Promote my brand/product">🏷️ Promote my brand/product</button>
+                    <button type="button" class="goal-chip" data-goal="Discover talented creators">🔍 Discover talented creators</button>
+                </div>
+
+                <div class="onboarding-actions">
+                    <button type="button" class="btn-secondary" id="btn-onboard-back-2">← Back</button>
+                    <button type="button" class="btn-primary" id="btn-onboard-next-2">Next: Connect Socials →</button>
+                </div>
+            </div>
+
+            <!-- STEP 3: Social Accounts & Numbers -->
+            <div class="onboarding-step hidden" id="onboard-step-3">
+                <h2>Connect Your Social Channels</h2>
+                <p class="onboarding-desc">Write down your main platforms and estimated follower counts.</p>
+
+                <div id="onboarding-socials-list" class="onboarding-socials-list">
+                    <div class="onboarding-social-row">
+                        <select class="onboard-platform">
+                            <option value="youtube">YouTube</option>
+                            <option value="tiktok">TikTok</option>
+                            <option value="instagram">Instagram</option>
+                            <option value="twitch">Twitch</option>
+                            <option value="twitter">X (Twitter)</option>
+                            <option value="website">Website</option>
+                        </select>
+                        <input type="text" class="onboard-handle" placeholder="@handle or Channel">
+                        <input type="text" class="onboard-followers" placeholder="Followers (e.g. 15K)">
+                    </div>
+                </div>
+
+                <button type="button" class="btn-secondary-sm" id="btn-add-onboard-social" style="margin-top: 12px;">+ Add Another Platform</button>
+
+                <div class="onboarding-actions">
+                    <button type="button" class="btn-secondary" id="btn-onboard-back-3">← Back</button>
+                    <button type="button" class="btn-primary" id="btn-onboard-next-3">Next: Bio & Location →</button>
+                </div>
+            </div>
+
+            <!-- STEP 4: Bio & Details -->
+            <div class="onboarding-step hidden" id="onboard-step-4">
+                <h2>Complete Your Profile</h2>
+                <p class="onboarding-desc">Add a short bio and location so others in the community can find you.</p>
+
+                <div class="form-group">
+                    <label>Location / City</label>
+                    <input type="text" id="onboard-location" placeholder="e.g. Bucharest, Romania or London, UK">
+                </div>
+
+                <div class="form-group">
+                    <label>Bio & Intro</label>
+                    <textarea id="onboard-bio" rows="4" placeholder="Tell the community what kind of content you make or what your brand does..."></textarea>
+                </div>
+
+                <div class="onboarding-actions">
+                    <button type="button" class="btn-secondary" id="btn-onboard-back-4">← Back</button>
+                    <button type="button" class="btn-primary" id="btn-onboard-submit">Finish & Launch App 🚀</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+<div class="app hidden">
+
+    <!-- Header -->
+    <header class="header">
+        <div class="header-branding">
+            <div class="logo">conexus</div>
+            <p class="greeting" id="header-greeting">Good evening, Laur 👋</p>
+        </div>
+
+        <div class="header-actions">
+            <button class="notification header-nav-icon" data-target="view-messages" id="nav-messages-header" aria-label="Messages">
+                💬
+            </button>
+            <button class="notification header-nav-icon" id="btn-notifications" aria-label="Notifications">
+                <span class="notification-badge" id="notification-count">3</span>
+                ♡
+            </button>
+        </div>
+    </header>
+
+    <!-- Notification Drawer -->
+    <div class="notification-popover hidden" id="drawer-notifications">
+        <div class="popover-header">
+            <h3>Notifications</h3>
+            <button class="icon-btn-close" id="btn-close-notifications">&times;</button>
+        </div>
+        <div class="notification-list">
+            <div class="notification-item unread">
+                <div class="noti-icon">🤝</div>
+                <div class="noti-content">
+                    <p><strong>Alex Popescu</strong> accepted your connection request.</p>
+                    <span>10m ago</span>
+                </div>
+            </div>
+            <div class="notification-item unread">
+                <div class="noti-icon">✦</div>
+                <div class="noti-content">
+                    <p><strong>Conexus AI</strong> generated 3 new strategy recommendations for your YouTube channel.</p>
+                    <span>45m ago</span>
+                </div>
+            </div>
+            <div class="notification-item unread">
+                <div class="noti-icon">🏷️</div>
+                <div class="noti-content">
+                    <p><strong>TechGear Pro</strong> matched with your profile for an upcoming campaign.</p>
+                    <span>2h ago</span>
+                </div>
+            </div>
+            <div class="notification-item">
+                <div class="noti-icon">💬</div>
+                <div class="noti-content">
+                    <p><strong>Ioana R.</strong> replied to your comment on Inspo.</p>
+                    <span>5h ago</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ==========================================
+         VIEWS CONTAINER
+    =========================================== -->
+    <main class="main-content">
+
+        <!-- =========================
+             1. HOME VIEW
+        ========================== -->
+        <section id="view-home" class="view active-view">
+
+            <!-- AI RECOMMENDATIONS BANNER -->
+            <section class="section ai-section">
+                <div class="section-heading">
+                    <div>
+                        <span class="section-eyebrow">✦ Conexus AI</span>
+                        <h2>Recommendations</h2>
+                    </div>
+                    <button class="see-all nav-switch-trigger" data-target="view-recommendations">
+                        See all →
+                    </button>
+                </div>
+
+                <div class="ai-card">
+                    <div class="ai-card-glow"></div>
+                    <div class="ai-content">
+                        <div class="ai-icon">✦</div>
+                        <div class="ai-text">
+                            <h3>4 creators you should meet & 3 growth actions</h3>
+                            <p>Based on your tech & gaming content, audience overlap, and channel velocity.</p>
+                        </div>
+                    </div>
+                    <button class="primary-button nav-switch-trigger" data-target="view-recommendations">
+                        <span>View Strategy & Recommendations</span>
+                        <span>→</span>
+                    </button>
+                </div>
+            </section>
+
+
+            <!-- MINGLE / NETWORKING CAROUSEL -->
+            <section class="section">
+                <div class="section-heading">
+                    <div>
+                        <span class="section-eyebrow">🤝 Networking</span>
+                        <h2>Mingle</h2>
+                    </div>
+                    <button class="see-all nav-switch-trigger" data-target="view-discover">
+                        See all
+                    </button>
+                </div>
+
+                <p class="section-description">Creators you might click with for your next collaboration.</p>
+
+                <div class="creator-scroll">
+
+                    <!-- Creator 1 -->
+                    <article class="creator-card" data-creator-id="alex">
+                        <div class="creator-avatar avatar-purple">AP</div>
+                        <button class="creator-more" aria-label="More options">•••</button>
+                        <h3>Alex Popescu</h3>
+                        <p class="creator-type">Gaming Creator</p>
+                        <div class="creator-info">🇷🇴 Romania</div>
+                        <div class="creator-followers">24K followers</div>
+                        <div class="match">
+                            <span>87%</span> match
+                        </div>
+                        <button class="connect-button" data-name="Alex Popescu">Connect</button>
+                    </article>
+
+                    <!-- Creator 2 -->
+                    <article class="creator-card" data-creator-id="maria">
+                        <div class="creator-avatar avatar-blue">MS</div>
+                        <button class="creator-more" aria-label="More options">•••</button>
+                        <h3>Maria Stoica</h3>
+                        <p class="creator-type">Travel Creator</p>
+                        <div class="creator-info">🇷🇴 Romania</div>
+                        <div class="creator-followers">58K followers</div>
+                        <div class="match">
+                            <span>81%</span> match
+                        </div>
+                        <button class="connect-button" data-name="Maria Stoica">Connect</button>
+                    </article>
+
+                    <!-- Creator 3 -->
+                    <article class="creator-card" data-creator-id="david">
+                        <div class="creator-avatar avatar-orange">DV</div>
+                        <button class="creator-more" aria-label="More options">•••</button>
+                        <h3>David V.</h3>
+                        <p class="creator-type">Music Creator</p>
+                        <div class="creator-info">🇬🇧 United Kingdom</div>
+                        <div class="creator-followers">41K followers</div>
+                        <div class="match">
+                            <span>76%</span> match
+                        </div>
+                        <button class="connect-button" data-name="David V.">Connect</button>
+                    </article>
+
+                    <!-- Creator 4 -->
+                    <article class="creator-card" data-creator-id="elena">
+                        <div class="creator-avatar avatar-green">EM</div>
+                        <button class="creator-more" aria-label="More options">•••</button>
+                        <h3>Elena M.</h3>
+                        <p class="creator-type">Tech & AI Creator</p>
+                        <div class="creator-info">🇩🇪 Germany</div>
+                        <div class="creator-followers">92K followers</div>
+                        <div class="match">
+                            <span>94%</span> match
+                        </div>
+                        <button class="connect-button" data-name="Elena M.">Connect</button>
+                    </article>
+
+                </div>
+            </section>
+
+
+            <!-- CREATOR INSPO FEED -->
+            <section class="section inspo-section">
+                <div class="section-heading">
+                    <div>
+                        <span class="section-eyebrow">💡 From creators</span>
+                        <h2>Inspo</h2>
+                    </div>
+                    <button class="see-all btn-open-create">
+                        + New Post
+                    </button>
+                </div>
+
+                <p class="section-description">Ideas, conversations and inspiration from your network.</p>
+
+                <div id="inspo-feed">
+                    <!-- Populated from the database by renderFeed() in js/app.js -->
+                </div>
+            </section>
+
+        </section>
+
+
+        <!-- =========================
+             2. DISCOVER VIEW
+        ========================== -->
+        <section id="view-discover" class="view">
+
+            <div class="view-header">
+                <h2>Discover Creators</h2>
+                <p class="view-subtitle">Search and connect with creators across niches worldwide.</p>
+            </div>
+
+            <!-- Search & Filters -->
+            <div class="search-container">
+                <div class="search-box">
+                    <span class="search-icon">⌕</span>
+                    <input type="text" id="discover-search-input" placeholder="Search by name, niche, city or topic...">
+                    <button class="search-clear hidden" id="discover-search-clear">&times;</button>
+                </div>
+
+                <div class="filter-chips" id="discover-filter-chips">
+                    <button class="chip active" data-category="all">All Niches</button>
+                    <button class="chip" data-category="Tech">Tech</button>
+                    <button class="chip" data-category="Gaming">Gaming</button>
+                    <button class="chip" data-category="Travel">Travel</button>
+                    <button class="chip" data-category="Music">Music</button>
+                    <button class="chip" data-category="Fashion">Fashion</button>
+                    <button class="chip" data-category="Food">Food</button>
+                </div>
+            </div>
+
+            <!-- Trending Topics -->
+            <div class="trending-bar">
+                <span class="trending-label">🔥 Trending:</span>
+                <button class="trending-tag" data-tag="TokyoVlog">#TokyoVlog</button>
+                <button class="trending-tag" data-tag="SetupTour">#SetupTour</button>
+                <button class="trending-tag" data-tag="AIWorkflows">#AIWorkflows</button>
+                <button class="trending-tag" data-tag="PodcastCollab">#PodcastCollab</button>
+            </div>
+
+            <!-- Creator Grid -->
+            <div class="discover-grid" id="discover-creators-grid">
+                <!-- Creators dynamically rendered by JS -->
+            </div>
+
+        </section>
+
+
+        <!-- =========================
+             3. RECOMMENDATIONS & STRATEGY VIEW
+        ========================== -->
+        <section id="view-recommendations" class="view">
+
+            <div class="view-header">
+                <div class="badge-ai">✦ Conexus Intelligence</div>
+                <h2>Growth & Strategy Hub</h2>
+                <p class="view-subtitle">Personalized next steps, future strategy roadmap, and brand matching.</p>
+            </div>
+
+            <!-- NEXT STEPS CHECKLIST -->
+            <section class="strategy-block">
+                <div class="strategy-block-header">
+                    <h3>⚡ Recommended Next Steps</h3>
+                    <span class="status-pill">4 Pending</span>
+                </div>
+                <p class="strategy-desc">Prioritized actions tailored to your channel velocity and reach goals.</p>
+
+                <div class="next-steps-list">
+                    <div class="step-card">
+                        <label class="step-checkbox-container">
+                            <input type="checkbox" class="step-checkbox">
+                            <span class="checkmark"></span>
+                        </label>
+                        <div class="step-content">
+                            <div class="step-top">
+                                <h4>Cross-Promote Gaming Content with Alex Popescu</h4>
+                                <span class="step-tag tag-high">High Impact</span>
+                            </div>
+                            <p>You share 87% audience overlap in gaming & tech. A joint YouTube Short could gain ~15K new impressions.</p>
+                            <button class="btn-step-action btn-open-outreach" data-creator="Alex Popescu">Draft Collab Pitch</button>
+                        </div>
+                    </div>
+
+                    <div class="step-card">
+                        <label class="step-checkbox-container">
+                            <input type="checkbox" class="step-checkbox">
+                            <span class="checkmark"></span>
+                        </label>
+                        <div class="step-content">
+                            <div class="step-top">
+                                <h4>Shift TikTok Uploads to 18:00 - 20:00 EEST</h4>
+                                <span class="step-tag tag-med">Medium Impact</span>
+                            </div>
+                            <p>Your followers are most active on weeknights. Changing timing can boost first-hour engagement by 28%.</p>
+                        </div>
+                    </div>
+
+                    <div class="step-card">
+                        <label class="step-checkbox-container">
+                            <input type="checkbox" class="step-checkbox">
+                            <span class="checkmark"></span>
+                        </label>
+                        <div class="step-content">
+                            <div class="step-top">
+                                <h4>Link Your Twitch & Substack Accounts</h4>
+                                <span class="step-tag tag-high">Profile Boost</span>
+                            </div>
+                            <p>Unify your creator footprint in your Profile so brands can view total cross-platform metrics.</p>
+                            <button class="btn-step-action nav-switch-trigger" data-target="view-profile">Go to Profile →</button>
+                        </div>
+                    </div>
+
+                    <div class="step-card">
+                        <label class="step-checkbox-container">
+                            <input type="checkbox" class="step-checkbox">
+                            <span class="checkmark"></span>
+                        </label>
+                        <div class="step-content">
+                            <div class="step-top">
+                                <h4>Apply for TechGear Pro Q4 Hardware Campaign</h4>
+                                <span class="step-tag tag-monetize">Monetization</span>
+                            </div>
+                            <p>Est. deal value $800 - $1,500. Matches your tech setup & video creation niche.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- STRATEGY ROADMAP -->
+            <section class="strategy-block">
+                <div class="strategy-block-header">
+                    <h3>🗺️ Future Strategy Roadmap</h3>
+                    <span class="status-pill blue">Q3 - Q4 Plan</span>
+                </div>
+
+                <div class="roadmap-timeline">
+                    <!-- Phase 1 -->
+                    <div class="roadmap-phase">
+                        <div class="phase-number">01</div>
+                        <div class="phase-body">
+                            <span class="phase-timeline">Months 1 - 2</span>
+                            <h4>Audience Spike & Short-Form Synergy</h4>
+                            <p>Repurpose tech reviews into 45s Shorts & TikToks. Partner with 2 regional creators for dual-stream events.</p>
+                            <div class="phase-metrics">
+                                <span>Target: +15K Subs</span>
+                                <span>KPI: 5.2% Engagement</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Phase 2 -->
+                    <div class="roadmap-phase">
+                        <div class="phase-number">02</div>
+                        <div class="phase-body">
+                            <span class="phase-timeline">Months 3 - 5</span>
+                            <h4>Community & Multi-Channel Expansion</h4>
+                            <p>Launch exclusive Discord channel for core supporters and kick off weekly live podcast Q&As.</p>
+                            <div class="phase-metrics">
+                                <span>Target: 2.5K Discord Members</span>
+                                <span>KPI: Substack Launch</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Phase 3 -->
+                    <div class="roadmap-phase">
+                        <div class="phase-number">03</div>
+                        <div class="phase-body">
+                            <span class="phase-timeline">Months 6+</span>
+                            <h4>Direct Brand Partnerships & Merch</h4>
+                            <p>Leverage total 250K+ reach across platforms to secure quarterly retainer brand sponsorships.</p>
+                            <div class="phase-metrics">
+                                <span>Target: 3 Retainer Brands</span>
+                                <span>Est. Revenue: $4K/mo</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- MATCHED BRAND CAMPAIGNS -->
+            <section class="strategy-block">
+                <div class="strategy-block-header">
+                    <h3>💎 Recommended Brand Matches</h3>
+                </div>
+
+                <div class="brand-deals-grid">
+                    <div class="brand-card">
+                        <div class="brand-header">
+                            <div class="brand-logo logo-tech">TG</div>
+                            <div>
+                                <h4>TechGear Pro</h4>
+                                <span>Consumer Tech & Audio</span>
+                            </div>
+                        </div>
+                        <p class="brand-desc">Looking for tech creators for hands-on reviews of wireless studio headsets.</p>
+                        <div class="brand-footer">
+                            <span class="brand-pay">$800 - $1,500</span>
+                            <button class="btn-apply-brand">Apply Now</button>
+                        </div>
+                    </div>
+
+                    <div class="brand-card">
+                        <div class="brand-header">
+                            <div class="brand-logo logo-travel">WL</div>
+                            <div>
+                                <h4>Wanderlust Escapes</h4>
+                                <span>Travel & Digital Nomad</span>
+                            </div>
+                        </div>
+                        <p class="brand-desc">Sponsoring travel creators testing portable power setups on remote trips.</p>
+                        <div class="brand-footer">
+                            <span class="brand-pay">$1,200 + Stay</span>
+                            <button class="btn-apply-brand">Apply Now</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </section>
+
+
+        <!-- =========================
+             4. MESSAGES VIEW
+        ========================== -->
+        <section id="view-messages" class="view">
+
+            <div class="view-header">
+                <h2>Messages</h2>
+                <p class="view-subtitle">Direct messages and collaboration discussions.</p>
+            </div>
+
+            <!-- Inbox List -->
+            <div class="inbox-list" id="inbox-list">
+
+                <!-- Thread 1 -->
+                <div class="chat-thread unread" data-thread-id="alex">
+                    <div class="creator-avatar avatar-purple">AP</div>
+                    <div class="thread-info">
+                        <div class="thread-top">
+                            <h4>Alex Popescu</h4>
+                            <span class="thread-time">12m ago</span>
+                        </div>
+                        <p class="thread-snippet">Hey Laur! Saw your recent tech setup video. Would love to collab on a stream!</p>
+                    </div>
+                    <span class="unread-dot"></span>
+                </div>
+
+                <!-- Thread 2 -->
+                <div class="chat-thread" data-thread-id="elena">
+                    <div class="creator-avatar avatar-green">EM</div>
+                    <div class="thread-info">
+                        <div class="thread-top">
+                            <h4>Elena M.</h4>
+                            <span class="thread-time">2h ago</span>
+                        </div>
+                        <p class="thread-snippet">That AI tool breakdown was super clean. Let me know when you're free for a chat.</p>
+                    </div>
+                </div>
+
+                <!-- Thread 3 -->
+                <div class="chat-thread" data-thread-id="ioana">
+                    <div class="creator-avatar avatar-blue">IR</div>
+                    <div class="thread-info">
+                        <div class="thread-top">
+                            <h4>Ioana R.</h4>
+                            <span class="thread-time">Yesterday</span>
+                        </div>
+                        <p class="thread-snippet">Thanks for sharing the Tokyo spot recommendations! Super helpful.</p>
+                    </div>
+                </div>
+
+                <!-- Thread 4 -->
+                <div class="chat-thread" data-thread-id="techgear">
+                    <div class="creator-avatar avatar-orange">TG</div>
+                    <div class="thread-info">
+                        <div class="thread-top">
+                            <h4>TechGear Pro (Brand)</h4>
+                            <span class="thread-time">3 days ago</span>
+                        </div>
+                        <p class="thread-snippet">Hi Laur, we loved your channel metrics and would like to propose a sponsorship!</p>
+                    </div>
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- =========================
+             5. PROFILE VIEW
+        ========================== -->
+        <section id="view-profile" class="view">
+
+            <!-- Profile Banner & Header -->
+            <div class="profile-header-card">
+                <div class="profile-banner">
+                    <button class="btn-edit-profile" id="btn-open-edit-profile">✏️ Edit Profile</button>
+                    <button class="btn-signout" id="btn-signout" title="Sign Out">🚪 Sign Out</button>
+                </div>
+
+                <div class="profile-main-info">
+                    <div class="profile-avatar-wrapper">
+                        <div class="creator-avatar avatar-purple profile-avatar-lg">L</div>
+                        <span class="status-indicator online"></span>
+                    </div>
+
+                    <div class="profile-identity">
+                        <div class="profile-name-row">
+                            <h2 id="profile-display-name">Laur</h2>
+                            <span class="verified-badge" title="Verified Creator">✓</span>
+                        </div>
+                        <p class="profile-handle" id="profile-handle">@laur_creates</p>
+                        <p class="profile-bio" id="profile-bio">Digital Creator & Tech Enthusiast | Building the future of content 🚀 Tech reviews, gaming streams & creator tips.</p>
+                        <div class="profile-meta">
+                            <span>📍 <span id="profile-location">Bucharest, Romania</span></span>
+                            <span>📅 Joined Conexus 2026</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stats summary -->
+                <div class="profile-stats-grid">
+                    <div class="stat-box">
+                        <span class="stat-value" id="stat-total-reach">237.5K</span>
+                        <span class="stat-label">Total Reach</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-value">4.8%</span>
+                        <span class="stat-label">Avg. Engagement</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-value" id="stat-platforms-count">5</span>
+                        <span class="stat-label">Platforms</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-value">12</span>
+                        <span class="stat-label">Collabs Done</span>
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- SOCIAL MEDIA ACCOUNTS HUB (KEY FEATURE) -->
+            <section class="section socials-section">
+                <div class="section-heading">
+                    <div>
+                        <span class="section-eyebrow">🌐 Creator Channels</span>
+                        <h2>Social Accounts</h2>
+                    </div>
+                    <button class="primary-button-sm" id="btn-open-add-social">
+                        + Add Social Link
+                    </button>
+                </div>
+
+                <p class="section-description">Manage and display all your active social platforms and follower counts.</p>
+
+                <!-- Socials Cards Container -->
+                <div class="socials-grid" id="socials-container">
+                    <!-- Dynamic rendering via JS -->
+                </div>
+            </section>
+
+
+            <!-- PROFILE CONTENT SHOWCASE TAB -->
+            <section class="section">
+                <div class="section-heading">
+                    <div>
+                        <span class="section-eyebrow">📂 Portfolio & Activity</span>
+                        <h2>Recent Posts</h2>
+                    </div>
+                </div>
+
+                <div class="user-posts-list" id="user-posts-container">
+                    <!-- Populated from the database by renderUserPosts() in js/app.js -->
+                </div>
+            </section>
+
+        </section>
+
+    </main>
+
+
+
+    <!-- ==========================================
+         SLIDING CHAT DRAWER
+    =========================================== -->
+    <div class="chat-drawer hidden" id="drawer-chat">
+        <div class="chat-header">
+            <button class="icon-btn-back" id="btn-close-chat">←</button>
+            <div class="chat-user-info">
+                <div class="small-avatar avatar-purple" id="chat-header-avatar">AP</div>
+                <div>
+                    <h3 id="chat-header-name">Alex Popescu</h3>
+                    <span class="chat-status" id="chat-header-status">Online · Gaming Creator</span>
+                </div>
+            </div>
+            <button class="icon-btn-more">•••</button>
+        </div>
+
+        <div class="chat-messages" id="chat-messages-container">
+            <!-- Messages rendered dynamically -->
+        </div>
+
+        <form class="chat-input-bar" id="form-chat-send">
+            <button type="button" class="btn-chat-attach">+</button>
+            <input type="text" id="chat-input-text" placeholder="Write a message..." autocomplete="off" required>
+            <button type="submit" class="btn-chat-send">Send</button>
+        </form>
+    </div>
+
+
+
+    <!-- ==========================================
+         MODALS
+    =========================================== -->
+
+    <!-- 1. CREATE POST MODAL -->
+    <div class="modal-overlay hidden" id="modal-create">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>New Inspo Post</h3>
+                <button class="modal-close" id="btn-close-create">&times;</button>
+            </div>
+            <form id="form-create-post">
+                <div class="form-group">
+                    <label>Post Content</label>
+                    <textarea id="create-post-text" rows="4" placeholder="Share an idea, question, project update, or collab callout..." required></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Category / Niche Tag</label>
+                    <select id="create-post-niche">
+                        <option value="Tech Creator">Tech</option>
+                        <option value="Gaming Creator">Gaming</option>
+                        <option value="Travel Creator">Travel</option>
+                        <option value="Music Creator">Music</option>
+                        <option value="Lifestyle Creator">Lifestyle</option>
+                    </select>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" id="btn-cancel-create">Cancel</button>
+                    <button type="submit" class="btn-primary">Post to Network</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <!-- 2. ADD / EDIT SOCIAL LINK MODAL -->
+    <div class="modal-overlay hidden" id="modal-add-social">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 id="social-modal-title">Add Social Account</h3>
+                <button class="modal-close" id="btn-close-social-modal">&times;</button>
+            </div>
+            <form id="form-add-social">
+                <input type="hidden" id="social-edit-id" value="">
+
+                <div class="form-group">
+                    <label>Platform</label>
+                    <select id="social-platform-select" required>
+                        <option value="youtube">YouTube</option>
+                        <option value="tiktok">TikTok</option>
+                        <option value="instagram">Instagram</option>
+                        <option value="twitch">Twitch</option>
+                        <option value="twitter">X (Twitter)</option>
+                        <option value="discord">Discord</option>
+                        <option value="spotify">Spotify</option>
+                        <option value="substack">Substack</option>
+                        <option value="linkedin">LinkedIn</option>
+                        <option value="website">Personal Website</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Username / Channel Handle</label>
+                    <input type="text" id="social-handle-input" placeholder="@yourhandle or Channel Name" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Profile / Channel URL</label>
+                    <input type="url" id="social-url-input" placeholder="https://youtube.com/@yourhandle" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Followers / Subscribers Count</label>
+                    <input type="text" id="social-followers-input" placeholder="e.g. 45.2K or 120K" required>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" id="btn-cancel-social">Cancel</button>
+                    <button type="submit" class="btn-primary" id="btn-save-social">Save Social Account</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <!-- 3. EDIT PROFILE MODAL -->
+    <div class="modal-overlay hidden" id="modal-edit-profile">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>Edit Profile Details</h3>
+                <button class="modal-close" id="btn-close-edit-profile">&times;</button>
+            </div>
+            <form id="form-edit-profile">
+                <div class="form-group">
+                    <label>Display Name</label>
+                    <input type="text" id="edit-display-name" value="Laur" required>
+                </div>
+                <div class="form-group">
+                    <label>Handle</label>
+                    <input type="text" id="edit-handle" value="@laur_creates" required>
+                </div>
+                <div class="form-group">
+                    <label>Location</label>
+                    <input type="text" id="edit-location" value="Bucharest, Romania" required>
+                </div>
+                <div class="form-group">
+                    <label>Bio</label>
+                    <textarea id="edit-bio" rows="3" required>Digital Creator & Tech Enthusiast | Building the future of content 🚀 Tech reviews, gaming streams & creator tips.</textarea>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" id="btn-cancel-edit-profile">Cancel</button>
+                    <button type="submit" class="btn-primary">Save Profile</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <!-- 4. OUTREACH TEMPLATE GENERATOR MODAL -->
+    <div class="modal-overlay hidden" id="modal-outreach">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>✦ AI Pitch Generator</h3>
+                <button class="modal-close" id="btn-close-outreach">&times;</button>
+            </div>
+            <div class="outreach-body">
+                <p>Personalized pitch message for <strong id="outreach-target-creator">Alex Popescu</strong>:</p>
+                <div class="outreach-preview-box" id="outreach-text-box">
+                    "Hey Alex! Loved your recent video. Based on our audience overlap in gaming & tech, I think a joint dual stream or short-form collab would perform amazingly for both our channels. Let me know if you'd be down to chat!"
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn-secondary" id="btn-copy-outreach">Copy Text</button>
+                <button type="button" class="btn-primary" id="btn-send-outreach-chat">Send via Messages →</button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- 5. CREATOR PROFILE VIEW MODAL -->
+    <div class="modal-overlay hidden" id="modal-creator-view">
+        <div class="modal-card creator-profile-modal">
+            <div class="modal-header">
+                <h3>Creator Profile</h3>
+                <button class="modal-close" id="btn-close-creator-view">&times;</button>
+            </div>
+            <div class="creator-profile-body">
+                <div class="creator-profile-header">
+                    <div class="creator-avatar avatar-purple profile-avatar-lg" id="view-creator-avatar">AP</div>
+                    <div class="creator-profile-title-block">
+                        <div class="profile-name-row">
+                            <h2 id="view-creator-name">Alex Popescu</h2>
+                            <span class="verified-badge" title="Verified Creator">✓</span>
+                        </div>
+                        <p class="profile-handle" id="view-creator-handle">@alex_popescu</p>
+                        <span class="creator-type-pill" id="view-creator-niche">Gaming Creator</span>
+                    </div>
+                </div>
+
+                <div class="creator-profile-meta">
+                    <span>📍 <span id="view-creator-location">Romania</span></span>
+                    <span>👥 <span id="view-creator-followers">24K followers</span></span>
+                    <span>⚡ <span id="view-creator-match">87%</span> match</span>
+                </div>
+
+                <div class="creator-bio-box">
+                    <h4>About</h4>
+                    <p id="view-creator-bio">Gaming creator & reviewer from Bucharest! Loving strategy & action titles 🎮</p>
+                </div>
+
+                <div class="creator-socials-box">
+                    <h4>Connected Channels</h4>
+                    <div class="creator-social-badges" id="view-creator-socials">
+                        <span class="social-badge youtube">▶ YouTube (18K)</span>
+                        <span class="social-badge twitch">👾 Twitch (6.3K)</span>
+                    </div>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="connect-button" id="btn-creator-connect">Connect</button>
+                    <button type="button" class="btn-primary" id="btn-creator-message">💬 Direct Message</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- 6. POST COMMENTS & DETAILS MODAL -->
+    <div class="modal-overlay hidden" id="modal-post-comments">
+        <div class="modal-card post-comments-modal">
+            <div class="modal-header">
+                <h3>Inspo Post & Comments</h3>
+                <button class="modal-close" id="btn-close-post-comments">&times;</button>
+            </div>
+            <div class="post-comments-body">
+                <!-- Post Card Detail -->
+                <div class="inspo-card-detail" id="post-detail-card">
+                    <div class="post-author">
+                        <div class="small-avatar avatar-purple" id="post-detail-avatar">AP</div>
+                        <div>
+                            <strong id="post-detail-author">Alex Popescu</strong>
+                            <span id="post-detail-niche">Gaming Creator · 2h ago</span>
+                        </div>
+                    </div>
+                    <p class="post-content" id="post-detail-content">Post content here...</p>
+                    <div class="post-footer">
+                        <button class="btn-like" id="post-detail-like">♡ <span id="post-detail-like-count">14</span></button>
+                        <span>💬 <span id="post-detail-comment-count">2</span> comments</span>
+                    </div>
+                </div>
+
+                <!-- Comments Section -->
+                <div class="comments-section">
+                    <h4>Comments</h4>
+                    <div class="comments-list" id="post-comments-list">
+                        <!-- Dynamic comment items -->
+                    </div>
+                </div>
+
+                <!-- Add Comment Form -->
+                <form class="comment-input-form" id="form-add-comment">
+                    <input type="text" id="input-comment-text" placeholder="Write a thoughtful comment..." required autocomplete="off">
+                    <button type="submit" class="btn-primary-sm">Post</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+
+
+    <!-- ==========================================
+         BOTTOM NAVIGATION
+    =========================================== -->
+    <nav class="bottom-nav">
+
+        <button class="nav-item active" data-target="view-home" id="nav-home">
+            <span>⌂</span>
+            <small>Home</small>
+        </button>
+
+        <button class="nav-item" data-target="view-discover" id="nav-discover">
+            <span>⌕</span>
+            <small>Discover</small>
+        </button>
+
+        <button class="create-button" id="btn-create-floating" aria-label="Create new post">
+            +
+        </button>
+
+        <button class="nav-item" data-target="view-recommendations" id="nav-recommendations">
+            <span>✦</span>
+            <small>Strategy</small>
+        </button>
+
+        <button class="nav-item" data-target="view-profile" id="nav-profile">
+            <span>○</span>
+            <small>Profile</small>
+        </button>
+
+    </nav>
+
+</div>
+
+<script src="js/app.js"></script>
+
+</body>
+</html>

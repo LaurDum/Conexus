@@ -1,0 +1,28 @@
+# ── Secrets ────────────────────────────────────────────────────────────────
+# Real database password lives here. Never commit it.
+backend/application-local.properties
+*.env
+.env
+
+# ── Dependencies ───────────────────────────────────────────────────────────
+node_modules/
+
+# ── Build output ───────────────────────────────────────────────────────────
+dist/
+backend/target/
+.angular/
+
+# ── Editor / OS noise ──────────────────────────────────────────────────────
+.vscode/*
+!.vscode/settings.json
+.idea/
+Thumbs.db
+Desktop.ini
+*.iml
+
+# ── Logs ───────────────────────────────────────────────────────────────────
+*.log
+npm-debug.log*
+
+# ── Local backups (git is the backup now) ──────────────────────────────────
+*.bak

@@ -1,0 +1,122 @@
+<!-- Profile Banner & Header -->
+<div class="profile-header-card">
+    <div class="profile-banner">
+        <div class="profile-banner-actions">
+            <!-- Dark / Light Mode Toggle -->
+            <button class="theme-toggle-pill" (click)="toggleTheme()" [attr.aria-label]="isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'" [title]="isDarkMode ? 'Light Mode' : 'Dark Mode'">
+                <span class="theme-toggle-icon" [class.spinning]="false">{{ isDarkMode ? '🌙' : '☀️' }}</span>
+                <span class="theme-toggle-label">{{ isDarkMode ? 'Dark' : 'Light' }}</span>
+            </button>
+            <button class="btn-edit-profile" (click)="openEditProfileModal()">✏️ Edit Profile</button>
+        </div>
+    </div>
+
+    <div class="profile-main-info">
+        <div class="profile-avatar-wrapper">
+            <div class="creator-avatar profile-avatar-lg" [ngClass]="authService.currentUser?.bgClass || 'avatar-purple'">
+              {{ authService.currentUser?.avatar || (profile.displayName ? profile.displayName.substring(0, 2).toUpperCase() : 'U') }}
+            </div>
+            <span class="status-indicator online"></span>
+        </div>
+
+        <div class="profile-identity">
+            <div class="profile-name-row">
+                <h2>{{ profile.displayName }}</h2>
+                <span class="verified-badge" title="Verified Creator">✓</span>
+            </div>
+            <p class="profile-handle">{{ profile.handle }}</p>
+            <p class="profile-bio">{{ profile.bio }}</p>
+            <div class="profile-meta">
+                <span>📍 <span>{{ profile.location }}</span></span>
+                <span>📅 Joined Conexus 2026</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats summary -->
+    <div class="profile-stats-grid">
+        <div class="stat-box">
+            <span class="stat-value">{{ profile.totalReach }}</span>
+            <span class="stat-label">Total Reach</span>
+        </div>
+        <div class="stat-box">
+            <span class="stat-value">{{ profile.engagement }}</span>
+            <span class="stat-label">Avg. Engagement</span>
+        </div>
+        <div class="stat-box">
+            <span class="stat-value">{{ socials.length }}</span>
+            <span class="stat-label">Platforms</span>
+        </div>
+        <div class="stat-box">
+            <span class="stat-value">12</span>
+            <span class="stat-label">Collabs Done</span>
+        </div>
+    </div>
+</div>
+
+<!-- SOCIAL MEDIA ACCOUNTS HUB (KEY FEATURE) -->
+<section class="section socials-section">
+    <div class="section-heading">
+        <div>
+            <span class="section-eyebrow">🌐 Creator Channels</span>
+            <h2>Social Accounts</h2>
+        </div>
+        <button class="primary-button-sm" (click)="openAddSocialModal()">
+            + Add Social Link
+        </button>
+    </div>
+
+    <p class="section-description">Manage and display all your active social platforms and follower counts.</p>
+
+    <!-- Socials Cards Container -->
+    <div class="socials-grid">
+        <div *ngIf="socials.length === 0" style="grid-column: 1 / -1; text-align: center; padding: 24px; background: var(--card); border: 1px dashed var(--border); border-radius: var(--radius-sm); color: var(--muted); font-size: 0.76rem;">
+            No social accounts added yet. Click "+ Add Social Link" above to display your channels!
+        </div>
+
+        <div class="social-card" *ngFor="let soc of socials">
+            <div class="social-left">
+                <div class="social-icon-badge" [ngClass]="soc.class">
+                    {{ soc.icon }}
+                </div>
+                <div class="social-info">
+                    <div class="social-platform-name">{{ soc.name }}</div>
+                    <div class="social-handle-text">{{ soc.handle }}</div>
+                    <div class="social-count-badge">{{ soc.followers }}</div>
+                </div>
+            </div>
+            <div class="social-actions">
+                <a [href]="soc.url" target="_blank" rel="noopener" class="btn-social-link" title="Open Link">↗</a>
+                <button class="btn-social-delete" (click)="deleteSocial(soc.id)" title="Remove Account">&times;</button>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- PROFILE CONTENT SHOWCASE TAB -->
+<section class="section">
+    <div class="section-heading">
+        <div>
+            <span class="section-eyebrow">📂 Portfolio & Activity</span>
+            <h2>Recent Posts</h2>
+        </div>
+    </div>
+
+    <div class="user-posts-list">
+        <div class="inspo-card" *ngFor="let post of userPosts">
+            <div class="post-author">
+                <div class="small-avatar avatar-purple">L</div>
+                <div>
+                    <strong>{{ post.authorName }}</strong>
+                    <span>{{ post.niche }} · {{ post.timeAgo }}</span>
+                </div>
+            </div>
+            <p class="post-content">{{ post.content }}</p>
+            <div class="post-footer">
+                <button>♡ {{ post.likesCount }}</button>
+                <button>💬 {{ post.commentsCount }}</button>
+                <button>↗ Share</button>
+            </div>
+        </div>
+    </div>
+</section>

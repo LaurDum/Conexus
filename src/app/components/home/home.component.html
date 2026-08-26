@@ -1,0 +1,97 @@
+<!-- AI RECOMMENDATIONS BANNER -->
+<section class="section ai-section">
+    <div class="section-heading">
+        <div>
+            <span class="section-eyebrow">✦ Conexus AI</span>
+            <h2>Recommendations</h2>
+        </div>
+        <button class="see-all" (click)="goTo('view-recommendations')">
+            See all →
+        </button>
+    </div>
+
+    <div class="ai-card">
+        <div class="ai-card-glow"></div>
+        <div class="ai-content">
+            <div class="ai-icon">✦</div>
+            <div class="ai-text">
+                <h3>4 creators you should meet & 3 growth actions</h3>
+                <p>Based on your tech & gaming content, audience overlap, and channel velocity.</p>
+            </div>
+        </div>
+        <button class="primary-button" (click)="goTo('view-recommendations')">
+            <span>View Strategy & Recommendations</span>
+            <span>→</span>
+        </button>
+    </div>
+</section>
+
+<!-- MINGLE / NETWORKING CAROUSEL -->
+<section class="section">
+    <div class="section-heading">
+        <div>
+            <span class="section-eyebrow">🤝 Networking</span>
+            <h2>Mingle</h2>
+        </div>
+        <button class="see-all" (click)="goTo('view-discover')">
+            See all
+        </button>
+    </div>
+
+    <p class="section-description">Creators you might click with for your next collaboration.</p>
+
+    <div class="creator-scroll">
+        <article class="creator-card" *ngFor="let c of creators">
+            <div class="creator-avatar" [ngClass]="c.bgClass">{{ c.avatar }}</div>
+            <button class="creator-more" aria-label="More options">•••</button>
+            <h3>{{ c.name }}</h3>
+            <p class="creator-type">{{ c.niche }}</p>
+            <div class="creator-info">{{ c.location }}</div>
+            <div class="creator-followers">{{ c.followers }} followers</div>
+            <div class="match">
+                <span>{{ c.match }}%</span> match
+            </div>
+            <button 
+                class="connect-button" 
+                [class.connected]="connectedState[c.id]"
+                (click)="toggleConnect(c.id)">
+                {{ connectedState[c.id] ? 'Requested' : 'Connect' }}
+            </button>
+        </article>
+    </div>
+</section>
+
+<!-- CREATOR INSPO FEED -->
+<section class="section inspo-section">
+    <div class="section-heading">
+        <div>
+            <span class="section-eyebrow">💡 From creators</span>
+            <h2>Inspo</h2>
+        </div>
+        <button class="see-all" (click)="openCreateModal()">
+            + New Post
+        </button>
+    </div>
+
+    <p class="section-description">Ideas, conversations and inspiration from your network.</p>
+
+    <div id="inspo-feed">
+        <article class="inspo-card" *ngFor="let post of posts">
+            <div class="post-author">
+                <div class="small-avatar" [ngClass]="post.avatarClass">{{ post.authorName.substring(0,2).toUpperCase() }}</div>
+                <div>
+                    <strong>{{ post.authorName }}</strong>
+                    <span>{{ post.niche }} · {{ post.timeAgo }}</span>
+                </div>
+            </div>
+            <p class="post-content">{{ post.content }}</p>
+            <div class="post-footer">
+                <button [class.liked]="post.isLiked" (click)="toggleLike(post.id)">
+                    {{ post.isLiked ? '❤️' : '♡' }} {{ post.likesCount }}
+                </button>
+                <button>💬 {{ post.commentsCount }}</button>
+                <button>↗ Share</button>
+            </div>
+        </article>
+    </div>
+</section>

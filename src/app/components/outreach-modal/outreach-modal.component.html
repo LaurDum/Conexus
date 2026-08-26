@@ -1,0 +1,20 @@
+<div class="modal-overlay" *ngIf="stateService.outreachModalOpenSubject | async">
+    <div class="modal-card">
+        <div class="modal-header">
+            <h3>✦ AI Pitch Generator</h3>
+            <button class="modal-close" (click)="close()">&times;</button>
+        </div>
+        <div class="outreach-body">
+            <p>Personalized pitch message for <strong>{{ stateService.outreachTargetCreatorSubject | async }}</strong>:</p>
+            <div class="outreach-preview-box">
+                {{ pitchText }}
+            </div>
+        </div>
+        <div class="modal-actions">
+            <button type="button" class="btn-secondary" (click)="copyText()">
+                {{ copied ? 'Copied! ✓' : 'Copy Text' }}
+            </button>
+            <button type="button" class="btn-primary" (click)="sendViaMessages()">Send via Messages →</button>
+        </div>
+    </div>
+</div>
