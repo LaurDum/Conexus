@@ -5,12 +5,15 @@ backend/application-local.properties
 .env
 
 # ── Dependencies ───────────────────────────────────────────────────────────
+# The frontend has none; this only matters if tooling is ever added.
 node_modules/
 
 # ── Build output ───────────────────────────────────────────────────────────
-dist/
 backend/target/
+# Kept even though the Angular project is gone: a stale `ng serve` left running
+# from before the removal will recreate these.
 .angular/
+dist/
 
 # ── Editor / OS noise ──────────────────────────────────────────────────────
 .vscode/*

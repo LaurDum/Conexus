@@ -1,6 +1,6 @@
 # 🚀 Conexus Platform — Services & Developer Guide
 
-This document contains step-by-step instructions on how to start, manage, and troubleshoot all services for the **Conexus Creator Platform** (Angular Frontend + Spring Boot Backend + PostgreSQL Database).
+This document contains step-by-step instructions on how to start, manage, and troubleshoot all services for the **Conexus Creator Platform** (Vanilla JS Frontend + Spring Boot Backend + PostgreSQL Database).
 
 ---
 
@@ -11,13 +11,13 @@ This document contains step-by-step instructions on how to start, manage, and tr
 4. [Step-by-Step Manual Startup](#4-step-by-step-manual-startup)
    - [Step 1: PostgreSQL Database](#step-1-postgresql-database)
    - [Step 2: Spring Boot Backend](#step-2-spring-boot-backend)
-   - [Step 3: Angular Frontend](#step-3-angular-frontend)
+   - [Step 3: Frontend](#step-3-frontend)
 5. [Useful Daily Commands & Scripts](#5-useful-daily-commands--scripts)
 6. [Database Management & Resetting Data](#6-database-management--resetting-data)
 7. [Troubleshooting & Common Fixes](#7-troubleshooting--common-fixes)
-   - [Port Already in Use (8080, 4200, 5432)](#issue-port-already-in-use-8080-or-4200)
+   - [Port Already in Use (8080, 5500, 5432)](#issue-port-already-in-use-8080-or-5500)
    - [PostgreSQL Connection Refused / Auth Failed](#issue-postgresql-connection-error)
-   - [Node / Angular compilation issues](#issue-node-or-angular-issues)
+   - [Frontend not updating](#issue-frontend-not-updating)
 8. [API Endpoints Reference](#8-api-endpoints-reference)
 
 ---
@@ -26,7 +26,7 @@ This document contains step-by-step instructions on how to start, manage, and tr
 
 | Component | Technology | Default URL / Port | Config File |
 |---|---|---|---|
-| **Frontend** | Angular 17 + TypeScript | [http://localhost:4200](http://localhost:4200) | `angular.json`, `package.json` |
+| **Frontend** | HTML + CSS + vanilla JS (no build step) | [http://localhost:5500](http://localhost:5500) | `index.html`, `js/app.js`, `css/style.css` |
 | **Backend API** | Spring Boot 3 + Java 11+ | [http://localhost:8080](http://localhost:8080) | `backend/src/main/resources/application.properties` |
 | **Database** | PostgreSQL 12+ | `localhost:5432` (`conexus_db`) | `backend/src/main/resources/application.properties` |
 
@@ -58,7 +58,7 @@ cd "c:\Users\Laur\Desktop\Website project"
 npm start
 ```
 
-👉 Then open **[http://localhost:4200](http://localhost:4200)** in your browser.
+👉 Then open **[http://localhost:5500](http://localhost:5500)** in your browser.
 
 ---
 
@@ -115,26 +115,23 @@ npm start
 
 ---
 
-### Step 3: Angular Frontend
+### Step 3: Frontend
 
 1. Open a new PowerShell terminal and navigate to the project root:
    ```powershell
    cd "c:\Users\Laur\Desktop\Website project"
    ```
 
-2. Install dependencies (only needed on initial setup or after pulling new packages):
-   ```powershell
-   npm install
-   ```
-
-3. Launch development server:
+2. Launch the static dev server:
    ```powershell
    npm start
    ```
-   *(or `npx ng serve`)*
+   There is nothing to `npm install` — the frontend has no dependencies and no
+   build step. This runs `tools/dev-server.js`, a small Node static server.
+   The VS Code "Go Live" extension serves the same files if you prefer it.
 
-4. **Access the application**:
-   - Open **[http://localhost:4200](http://localhost:4200)**
+3. **Access the application**:
+   - Open **[http://localhost:5500](http://localhost:5500)**
    - The UI should load with the Discover, Inspo Feed, Messages, and Profile features fully functional and connected to the backend.
 
 ---
@@ -200,16 +197,16 @@ If you want to clear and re-populate the initial mock data:
 
 ## 7. Troubleshooting & Common Fixes
 
-### Issue: Port Already in Use (8080 or 4200)
-If you get `Web server failed to start. Port 8080 was already in use` or `Port 4200 is already in use`:
+### Issue: Port Already in Use (8080 or 5500)
+If you get `Web server failed to start. Port 8080 was already in use` or the frontend port is taken:
 
 1. Find the Process ID (PID) occupying the port:
    ```powershell
    # For port 8080:
    netstat -ano | findstr :8080
    
-   # For port 4200:
-   netstat -ano | findstr :4200
+   # For port 5500:
+   netstat -ano | findstr :5500
    ```
 2. Terminate the process (replace `12345` with the PID from the last column):
    ```powershell
@@ -227,19 +224,20 @@ If you get `Web server failed to start. Port 8080 was already in use` or `Port 4
 - **Error**: `Connection to localhost:5432 refused`
   - **Fix**: PostgreSQL service is not started. Start it via `services.msc` or `Start-Service postgresql*`.
 - **Error**: `password authentication failed for user "postgres"`
-  - **Fix**: Check `spring.datasource.password` in `backend/src/main/resources/application.properties`. Ensure it matches your PostgreSQL superuser password.
+  - **Fix**: Check `spring.datasource.password` in `backend/application-local.properties` (create it from the `.example` file if missing). Ensure it matches your PostgreSQL superuser password.
 - **Error**: `database "conexus_db" does not exist`
   - **Fix**: Run `psql -U postgres -c "CREATE DATABASE conexus_db;"`
 
 ---
 
-### Issue: Node or Angular Issues
-- If Angular fails with caching or module errors:
-  ```powershell
-  Remove-Item -Recurse -Force .angular, node_modules
-  npm install
-  npm start
-  ```
+### Issue: Frontend not updating
+- The frontend has no build step, so a change to `index.html`, `js/app.js` or
+  `css/style.css` shows up on refresh. If it does not:
+  - Hard-refresh the page (`Ctrl+F5`) to bypass the browser cache.
+  - Make sure you are on **http://localhost:5500** and not a stale tab pointing
+    at an old port.
+  - Check the browser console (F12) — a JavaScript syntax error stops the whole
+    script from running.
 
 ---
 
@@ -305,6 +303,6 @@ The backend exposes the following REST endpoints on `http://localhost:8080`:
 ---
 
 ## 💡 Pro Tips
-- **Live Reloading**: The Angular frontend updates automatically when you modify frontend files.
-- **CORS Config**: The backend allows any `localhost`, `127.0.0.1`, `192.168.x.x` and `10.x.x.x` origin on any port, so both the Live Server frontend (`:5500`) and Angular (`:4200`) work without cross-origin blocks.
+- **No build step**: the files you edit are the files the browser loads — just refresh. The dev server sends `Cache-Control: no-store` so edits are never served stale.
+- **CORS Config**: The backend allows any `localhost`, `127.0.0.1`, `192.168.x.x` and `10.x.x.x` origin on any port, so the frontend reaches the API from `:5500` (or any port you serve it on) without cross-origin blocks.
 - **Postman / REST Testing**: You can test any backend endpoint directly using browser, curl, or Postman against `http://localhost:8080/api/...`.
