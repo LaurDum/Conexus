@@ -20,14 +20,31 @@ files the browser loads. Refresh to see changes.
 
 ## First-time setup
 
-The database password is **not** in version control. Create your local copy:
+Database credentials are **not** in version control. Create your local copy:
 
 ```bash
 cp backend/application-local.properties.example backend/application-local.properties
 ```
 
-Then edit that file and set your own PostgreSQL password. Spring Boot imports it
-automatically at startup.
+Then edit that file. For a local PostgreSQL you only need the password:
+
+```properties
+DB_PASSWORD=your-postgres-password
+```
+
+To use a **hosted** database instead (so nothing has to run on your machine),
+set all three — no code change required:
+
+```properties
+DB_URL=jdbc:postgresql://YOUR-HOST/YOUR-DB?sslmode=require
+DB_USER=your-db-user
+DB_PASSWORD=your-db-password
+```
+
+Spring Boot imports this file at startup; the values fill the `${DB_URL}`,
+`${DB_USER}` and `${DB_PASSWORD}` placeholders in `application.properties`,
+which otherwise default to `localhost:5432`. Real environment variables of the
+same names work too, which is what you would use when deploying.
 
 ---
 

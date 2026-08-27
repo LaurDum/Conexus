@@ -1,3 +1,11 @@
-# Copy this file to application-local.properties and fill in your own value.
-# application-local.properties is git-ignored so the password never leaves your machine.
-spring.datasource.password=your-postgres-password
+# Copy this file to application-local.properties and fill in your own values.
+# That file is git-ignored, so credentials never leave your machine.
+
+# ── Option A: local PostgreSQL ─────────────────────────────────────────────
+# Only the password is needed; host/user default to localhost/postgres.
+DB_PASSWORD=your-postgres-password
+
+# ── Option B: hosted PostgreSQL (Neon, Supabase, etc.) ─────────────────────
+# DB_URL=jdbc:postgresql://YOUR-HOST/YOUR-DB?sslmode=require
+# DB_USER=your-db-user
+# DB_PASSWORD=your-db-password
