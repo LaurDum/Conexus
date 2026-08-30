@@ -1158,17 +1158,22 @@ button:active {
     padding: 12px;
     display: flex;
     justify-content: flex-end;
+    /* Without this the buttons stretch to the full 90px banner height. */
+    align-items: flex-start;
+    gap: 8px;
 }
 
 .btn-edit-profile {
-    padding: 6px 12px;
-    border-radius: 20px;
+    height: 30px;
+    padding: 0 14px;
+    border-radius: 999px;
     background: rgba(0,0,0,0.4);
     backdrop-filter: blur(8px);
     color: white;
     font-size: 0.68rem;
     font-weight: 600;
     border: 1px solid rgba(255,255,255,0.2);
+    cursor: pointer;
 }
 
 .profile-main-info {
@@ -3260,17 +3265,10 @@ body.light-theme .btn-back-profile {
 /* ==========================================================
    PROFILE BANNER BUTTONS
    ========================================================== */
-.btn-edit-profile {
-    padding: 6px 12px;
-    font-size: 0.7rem;
-}
-
 .btn-profile-settings {
-    position: absolute;
-    top: 14px;
-    right: 14px;
-    width: 32px;
-    height: 32px;
+    width: 30px;
+    height: 30px;
+    flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: center;
