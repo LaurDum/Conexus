@@ -3457,3 +3457,117 @@ body.light-theme .match {
 body.light-theme .match span {
     color: #15803d;
 }
+
+/* ==========================================================
+   DISCOVER TABS
+   ========================================================== */
+.discover-tabs {
+    position: relative;
+    display: flex;
+    gap: 4px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 16px;
+}
+
+.discover-tab {
+    flex: 1;
+    padding: 12px 8px;
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 0.82rem;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: color 0.18s ease;
+}
+
+.discover-tab:hover {
+    color: var(--secondary);
+}
+
+.discover-tab.active {
+    color: var(--text);
+}
+
+/* Slides to the active tab; positioned from JS by measuring it. */
+.discover-tab-underline {
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    height: 2px;
+    width: 0;
+    border-radius: 2px;
+    background: var(--primary);
+    transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+                width 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.pane-intro {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+}
+
+.pane-count {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 1px 8px;
+    border-radius: 999px;
+    background: var(--primary-soft);
+    border: 1px solid var(--primary-glow);
+    color: var(--primary);
+    font-size: 0.68rem;
+    font-weight: 700;
+}
+
+/* A request posted by a creator rather than a company */
+.job-creator-tag {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: rgba(113, 128, 255, 0.15);
+    color: var(--primary);
+    font-size: 0.62rem;
+    font-weight: 700;
+}
+
+.btn-remove-job {
+    padding: 5px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    font-size: 0.66rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.btn-remove-job:hover {
+    color: #ff9b9b;
+    border-color: rgba(255, 99, 99, 0.5);
+}
+
+.label-optional {
+    color: var(--muted);
+    font-weight: 400;
+}
+
+.checkbox-row {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    margin: 4px 0 16px;
+    font-size: 0.78rem;
+    color: var(--secondary);
+    cursor: pointer;
+}
+
+.checkbox-row input {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--primary);
+}

@@ -792,6 +792,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
         moveNavBubble();
+        if (targetViewId === "view-discover") requestAnimationFrame(moveDiscoverUnderline);
         window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
@@ -2232,6 +2233,62 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     // =========================================================================
+    // DISCOVER TABS — creators, jobs, brand deals
+    // =========================================================================
+
+    let discoverPane = "creators";
+    const paneLoaded = { creators: false, jobs: false, deals: false };
+
+    /**
+     * Shows one pane of Discover. Each pane fetches on first view rather than
+     * all three up front, so opening Discover costs one request.
+     */
+    function showDiscoverPane(pane) {
+        discoverPane = pane;
+
+        document.querySelectorAll(".discover-pane").forEach(p => {
+            p.classList.toggle("hidden", p.id !== `pane-${pane}`);
+        });
+        document.querySelectorAll(".discover-tab").forEach(t => {
+            const on = t.getAttribute("data-pane") === pane;
+            t.classList.toggle("active", on);
+            t.setAttribute("aria-selected", String(on));
+        });
+
+        moveDiscoverUnderline();
+
+        if (pane === "jobs" && !paneLoaded.jobs) { paneLoaded.jobs = true; loadAllJobs(); }
+        if (pane === "deals" && !paneLoaded.deals) { paneLoaded.deals = true; loadAllDeals(); }
+    }
+
+    /** Slides the underline to the active tab, measured from the tab itself. */
+    function moveDiscoverUnderline() {
+        const bar = document.getElementById("discover-tabs");
+        const line = document.getElementById("discover-tab-underline");
+        const active = bar?.querySelector(".discover-tab.active");
+        if (!bar || !line || !active) return;
+
+        const barRect = bar.getBoundingClientRect();
+        const tabRect = active.getBoundingClientRect();
+        if (tabRect.width === 0) return;   // laid out but not visible yet
+
+        line.style.width = `${tabRect.width}px`;
+        line.style.transform = `translateX(${tabRect.left - barRect.left}px)`;
+    }
+
+    document.querySelectorAll(".discover-tab").forEach(tab => {
+        tab.addEventListener("click", () => showDiscoverPane(tab.getAttribute("data-pane")));
+    });
+
+    window.addEventListener("resize", moveDiscoverUnderline);
+
+    /** Opens Discover on a particular pane — used by the home "See all" links. */
+    function openDiscover(pane) {
+        switchView("view-discover");
+        showDiscoverPane(pane || "creators");
+    }
+
+    // =========================================================================
     // JOBS
     // =========================================================================
 
@@ -2248,11 +2305,14 @@ document.addEventListener("DOMContentLoaded", () => {
                 <div class="job-tags">
                     <span class="deal-type-tag">${escapeHtml(j.jobType)}</span>
                     ${j.remote ? `<span class="job-remote-tag">Remote</span>` : ""}
+                    ${j.postedByUserId ? `<span class="job-creator-tag">Creator request</span>` : ""}
                 </div>
                 <p class="brand-desc">${escapeHtml(j.description || "")}</p>
                 <div class="brand-footer">
                     <span class="brand-pay">${escapeHtml(j.pay || "")}</span>
-                    <span class="job-meta">${escapeHtml(j.location || "")} · ${escapeHtml(j.postedAgo || "")}</span>
+                    ${String(j.postedByUserId || "") === String(state.currentUser?.id || "-")
+                        ? `<button class="btn-remove-job" data-job-id="${escapeHtml(j.id)}" data-confirming="false">Remove</button>`
+                        : `<span class="job-meta">${escapeHtml(j.location || "")} · ${escapeHtml(j.postedAgo || "")}</span>`}
                 </div>
             </div>
         `;
@@ -2328,18 +2388,88 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    document.getElementById("btn-see-all-jobs")?.addEventListener("click", () => {
-        switchView("view-jobs");
-        loadAllJobs();
-    });
-
-    document.getElementById("btn-back-from-jobs")?.addEventListener("click", () => {
-        switchView("view-home");
-    });
+    document.getElementById("btn-see-all-jobs")?.addEventListener("click", () => openDiscover("jobs"));
 
     document.getElementById("jobs-search-input")?.addEventListener("input", () => {
         clearTimeout(jobsSearchTimer);
         jobsSearchTimer = setTimeout(loadAllJobs, 250);
+    });
+
+
+    // ── A creator posting what they are looking for ────────────────────────
+
+    const modalPostJob = document.getElementById("modal-post-job");
+
+    document.getElementById("btn-post-job")?.addEventListener("click", () => {
+        if (!state.currentUser) { showAuthScreen(); return; }
+        document.getElementById("form-post-job")?.reset();
+        modalPostJob?.classList.remove("hidden");
+    });
+
+    document.getElementById("btn-close-post-job")?.addEventListener("click", () => modalPostJob?.classList.add("hidden"));
+    document.getElementById("btn-cancel-post-job")?.addEventListener("click", () => modalPostJob?.classList.add("hidden"));
+
+    document.getElementById("form-post-job")?.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        if (!state.currentUser) { showAuthScreen(); return; }
+
+        const title = document.getElementById("job-title-input").value.trim();
+        if (!title) return;
+
+        try {
+            await api("/api/jobs", {
+                method: "POST",
+                body: {
+                    title: title,
+                    jobType: document.getElementById("job-type-select").value,
+                    description: document.getElementById("job-desc-input").value.trim(),
+                    pay: document.getElementById("job-pay-input").value.trim(),
+                    remote: document.getElementById("job-remote-input").checked
+                }
+            });
+
+            modalPostJob?.classList.add("hidden");
+            showToast("Request posted");
+
+            // Show it straight away rather than making them go looking.
+            openDiscover("jobs");
+            await loadAllJobs();
+            loadHomeJobs();
+        } catch (err) {
+            showToast(describeApiError(err, "Could not post your request."), "error");
+        }
+    });
+
+    // Removing your own listing, from the card itself.
+    document.addEventListener("click", async (e) => {
+        const btn = e.target.closest(".btn-remove-job");
+        if (!btn) return;
+        e.stopPropagation();
+
+        if (btn.getAttribute("data-confirming") !== "true") {
+            btn.setAttribute("data-confirming", "true");
+            btn.textContent = "Remove?";
+            clearTimeout(btn._revert);
+            btn._revert = setTimeout(() => {
+                btn.setAttribute("data-confirming", "false");
+                btn.textContent = "Remove";
+            }, 4000);
+            return;
+        }
+
+        clearTimeout(btn._revert);
+        btn.disabled = true;
+        try {
+            await api(`/api/jobs/${btn.getAttribute("data-job-id")}`, { method: "DELETE" });
+            await loadAllJobs();
+            loadHomeJobs();
+            showToast("Listing removed");
+        } catch (err) {
+            btn.disabled = false;
+            btn.setAttribute("data-confirming", "false");
+            btn.textContent = "Remove";
+            showToast(describeApiError(err, "Could not remove that listing."), "error");
+        }
     });
 
 
@@ -2606,14 +2736,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    document.getElementById("btn-see-all-deals")?.addEventListener("click", () => {
-        switchView("view-brand-deals");
-        loadAllDeals();
-    });
-
-    document.getElementById("btn-back-from-deals")?.addEventListener("click", () => {
-        switchView("view-recommendations");
-    });
+    document.getElementById("btn-see-all-deals")?.addEventListener("click", () => openDiscover("deals"));
 
     document.getElementById("deals-search-input")?.addEventListener("input", () => {
         clearTimeout(dealsSearchTimer);

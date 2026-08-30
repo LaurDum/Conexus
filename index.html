@@ -354,7 +354,7 @@
                         <span class="section-eyebrow">💎 Partnerships</span>
                         <h2>Brand Deals</h2>
                     </div>
-                    <button class="see-all nav-switch-trigger" data-target="view-brand-deals">See all →</button>
+                    <button class="see-all" id="btn-see-all-deals">See all →</button>
                 </div>
                 <p class="section-description">Open campaigns matched to your niche.</p>
                 <div class="brand-deals-grid" id="home-deals-grid"></div>
@@ -387,9 +387,19 @@
         <section id="view-discover" class="view">
 
             <div class="view-header">
-                <h2>Discover Creators</h2>
-                <p class="view-subtitle">Search and connect with creators across niches worldwide.</p>
+                <h2>Discover</h2>
+                <p class="view-subtitle">Creators, roles, and campaigns across Conexus.</p>
             </div>
+
+            <!-- Top tabs, like a feed switcher -->
+            <div class="discover-tabs" id="discover-tabs" role="tablist">
+                <button class="discover-tab active" data-pane="creators" role="tab" aria-selected="true">Creators</button>
+                <button class="discover-tab" data-pane="jobs" role="tab" aria-selected="false">Jobs</button>
+                <button class="discover-tab" data-pane="deals" role="tab" aria-selected="false">Brand Deals</button>
+                <span class="discover-tab-underline" id="discover-tab-underline" aria-hidden="true"></span>
+            </div>
+
+            <div class="discover-pane" id="pane-creators">
 
             <!-- Search & Filters -->
             <div class="search-container">
@@ -422,6 +432,43 @@
             <!-- Creator Grid -->
             <div class="discover-grid" id="discover-creators-grid">
                 <!-- Creators dynamically rendered by JS -->
+            </div>
+            </div>
+
+            <div class="discover-pane hidden" id="pane-jobs">
+
+                <div class="pane-intro">
+                    <p class="view-subtitle">Paid roles, and requests from other creators. <span class="pane-count" id="jobs-count">0</span></p>
+                    <button class="btn-primary-sm" id="btn-post-job">+ Post a request</button>
+                </div>
+
+
+            <div class="search-bar">
+                <span class="search-icon">⌕</span>
+                <input type="text" id="jobs-search-input" placeholder="Search roles, companies, or skills...">
+            </div>
+
+            <div class="filter-chips" id="jobs-filter-chips"></div>
+
+            <div class="jobs-grid" id="all-jobs-grid"></div>
+            </div>
+
+            <div class="discover-pane hidden" id="pane-deals">
+
+                <div class="pane-intro">
+                    <p class="view-subtitle">Open campaigns from brands looking for creators. <span class="pane-count" id="deals-count">0</span></p>
+                </div>
+
+            <div class="search-bar">
+                <span class="search-icon">⌕</span>
+                <input type="text" id="deals-search-input" placeholder="Search brands, industries, or campaigns...">
+            </div>
+
+            <div class="filter-chips" id="deals-filter-chips">
+                <button class="chip active" data-type="all">All Deals</button>
+            </div>
+
+            <div class="brand-deals-grid" id="all-deals-grid"></div>
             </div>
 
         </section>
@@ -745,27 +792,6 @@
         <!-- ==========================================
              JOBS — every open role
         =========================================== -->
-        <section id="view-jobs" class="view">
-
-            <div class="simple-page-header">
-                <button class="btn-back-page" id="btn-back-from-jobs">← Back</button>
-                <div>
-                    <h2>Jobs</h2>
-                    <p class="view-subtitle">Paid roles from companies hiring creators.</p>
-                </div>
-                <span class="connections-count" id="jobs-count">0</span>
-            </div>
-
-            <div class="search-bar">
-                <span class="search-icon">⌕</span>
-                <input type="text" id="jobs-search-input" placeholder="Search roles, companies, or skills...">
-            </div>
-
-            <div class="filter-chips" id="jobs-filter-chips"></div>
-
-            <div class="jobs-grid" id="all-jobs-grid"></div>
-
-        </section>
 
         <!-- ==========================================
              SETTINGS
@@ -822,29 +848,6 @@
         <!-- ==========================================
              BRAND DEALS — every open campaign
         =========================================== -->
-        <section id="view-brand-deals" class="view">
-
-            <div class="simple-page-header">
-                <button class="btn-back-page" id="btn-back-from-deals">← Back</button>
-                <div>
-                    <h2>Brand Deals</h2>
-                    <p class="view-subtitle">Open campaigns from brands looking for creators.</p>
-                </div>
-                <span class="connections-count" id="deals-count">0</span>
-            </div>
-
-            <div class="search-bar">
-                <span class="search-icon">⌕</span>
-                <input type="text" id="deals-search-input" placeholder="Search brands, industries, or campaigns...">
-            </div>
-
-            <div class="filter-chips" id="deals-filter-chips">
-                <button class="chip active" data-type="all">All Deals</button>
-            </div>
-
-            <div class="brand-deals-grid" id="all-deals-grid"></div>
-
-        </section>
 
         <!-- ==========================================
              CONNECTIONS — a page of its own
@@ -1009,6 +1012,48 @@
                 <button type="button" class="btn-secondary" id="btn-native-share">Share via…</button>
                 <button type="button" class="btn-secondary" id="btn-open-share-link">Open in new tab</button>
             </div>
+        </div>
+    </div>
+
+    <!-- POST A JOB REQUEST -->
+    <div class="modal-overlay hidden" id="modal-post-job">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>Post a request</h3>
+                <button class="modal-close" id="btn-close-post-job">&times;</button>
+            </div>
+            <form id="form-post-job">
+                <div class="form-group">
+                    <label>What are you looking for?</label>
+                    <input type="text" id="job-title-input" placeholder="e.g. Video editor for weekly uploads" required>
+                </div>
+                <div class="form-group">
+                    <label>Type of work</label>
+                    <select id="job-type-select">
+                        <option value="Freelance">Freelance</option>
+                        <option value="Contract">Contract</option>
+                        <option value="Part-time">Part-time</option>
+                        <option value="Full-time">Full-time</option>
+                        <option value="Internship">Internship</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Details</label>
+                    <textarea id="job-desc-input" rows="3" placeholder="What the work involves, how often, anything they should know..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Budget <span class="label-optional">(optional)</span></label>
+                    <input type="text" id="job-pay-input" placeholder="e.g. $30 / hr or $200 per video">
+                </div>
+                <label class="checkbox-row">
+                    <input type="checkbox" id="job-remote-input" checked>
+                    <span>This can be done remotely</span>
+                </label>
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" id="btn-cancel-post-job">Cancel</button>
+                    <button type="submit" class="btn-primary">Post request</button>
+                </div>
+            </form>
         </div>
     </div>
 

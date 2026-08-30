@@ -47,4 +47,14 @@ public class Job {
     private String pay;
 
     private String postedAgo;
+
+    /**
+     * Set when a creator posted this themselves ("looking for a video editor").
+     * Null for the seeded company listings.
+     */
+    private Long postedByUserId;
+
+    @org.hibernate.annotations.CreationTimestamp
+    @Column(updatable = false)
+    private java.time.Instant createdAt;
 }
