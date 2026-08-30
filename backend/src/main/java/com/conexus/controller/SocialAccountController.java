@@ -24,16 +24,29 @@ public class SocialAccountController {
         return socialAccountService.getByUserId(userId);
     }
 
-    /** POST /api/socials — link an account to the signed-in user. */
+    /**
+     * POST /api/socials — add a link, or update one by passing its existing id.
+     *
+     * Saving with an id that already exists overwrites that row, so a request
+     * naming someone else's id would otherwise hand it to the caller.
+     */
     @PostMapping
-    public SocialAccount create(@CurrentUser Long userId, @RequestBody SocialAccount account) {
+    public ResponseEntity<?> create(@CurrentUser Long userId, @RequestBody SocialAccount account) {
+        boolean isUpdate = account.getId() != null && !account.getId().isBlank();
+
+        if (isUpdate && socialAccountService.exists(account.getId())
+                && !socialAccountService.isOwnedBy(account.getId(), userId)) {
+            return ResponseEntity.status(403)
+                    .body(Collections.singletonMap("message", "That account is not yours to edit"));
+        }
+
         // Ownership always comes from the token, never from the request body.
         account.setUserId(userId);
 
-        if (account.getId() == null || account.getId().isBlank()) {
+        if (!isUpdate) {
             account.setId("soc_" + UUID.randomUUID().toString().substring(0, 8));
         }
-        return socialAccountService.save(account);
+        return ResponseEntity.ok(socialAccountService.save(account));
     }
 
     /** DELETE /api/socials/{id} — only the owner may remove it. */

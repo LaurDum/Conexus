@@ -60,8 +60,11 @@ public class AuthService {
                 .avatar(initials)
                 .bgClass("avatar-purple")
                 .bio("Welcome to my Conexus profile!")
-                .totalReach("1K")
-                .engagement("5.0%")
+                // A brand new account has no audience. These used to be seeded
+                // with "1K" and "5.0%", presenting invented numbers as real
+                // metrics on the user's own profile.
+                .totalReach("0")
+                .engagement("0%")
                 .accountType("creator")
                 .build();
 

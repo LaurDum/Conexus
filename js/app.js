@@ -296,6 +296,8 @@ document.addEventListener("DOMContentLoaded", () => {
             failed.push("messages");
         }
         renderInbox();
+        renderNotifications();
+        renderPendingSteps();
 
         try {
             const fetchedCreators = await api(`/api/creators`);
@@ -321,6 +323,7 @@ document.addEventListener("DOMContentLoaded", () => {
             failed.push("connections");
         }
         renderDiscoverCreators();
+        renderHomeCreators();
 
         try {
             state.posts = await api(`/api/posts`);
@@ -329,6 +332,9 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         renderFeed();
         renderUserPosts();
+
+        // A shared link carries #post-<id>; open it now the feed exists.
+        openPostFromHash();
 
         if (failed.length) {
             showToast(`Could not load your ${failed.join(", ")} from the server.`, "error");
@@ -351,6 +357,9 @@ document.addEventListener("DOMContentLoaded", () => {
         if (document.getElementById("profile-bio")) document.getElementById("profile-bio").textContent = bio;
         if (document.getElementById("profile-location")) document.getElementById("profile-location").textContent = location;
         if (document.getElementById("stat-total-reach")) document.getElementById("stat-total-reach").textContent = reach;
+        if (document.getElementById("stat-engagement")) {
+            document.getElementById("stat-engagement").textContent = p.engagement || u.engagement || "0%";
+        }
 
         // Avatar initials
         const avatarEl = document.querySelector(".profile-avatar-lg");
@@ -747,6 +756,41 @@ document.addEventListener("DOMContentLoaded", () => {
 
     let currentCategory = "all";
 
+    /** One creator card, used by both Discover and the Home "Mingle" strip. */
+    function creatorCardHtml(c) {
+        const connected = state.connectedCreatorIds.has(c.id);
+        return `
+            <article class="creator-card discover-card" data-creator-id="${escapeHtml(c.id)}">
+                <div class="creator-avatar ${escapeHtml(c.bgClass)}">${escapeHtml(c.avatar)}</div>
+                <button class="creator-more" aria-label="More options">•••</button>
+                <h3>${escapeHtml(c.name)}</h3>
+                <p class="creator-type">${escapeHtml(c.niche)}</p>
+                <div class="creator-info">${escapeHtml(c.location)}</div>
+                <div class="creator-followers">${escapeHtml(c.followers)} followers</div>
+                <div class="match"><span>${escapeHtml(c.match)}%</span> match</div>
+                <button class="connect-button ${connected ? "connected" : ""}" data-name="${escapeHtml(c.name)}">${connected ? "Requested" : "Connect"}</button>
+            </article>
+        `;
+    }
+
+    /**
+     * The Home "Mingle" strip — the best matches, from the database.
+     * These were four hardcoded cards, so their Connect buttons never showed
+     * the saved state and their stats never matched Discover.
+     */
+    function renderHomeCreators() {
+        const strip = document.getElementById("home-creator-scroll");
+        if (!strip) return;
+
+        const top = [...state.creators].sort((a, b) => (b.match || 0) - (a.match || 0)).slice(0, 4);
+
+        strip.innerHTML = top.length
+            ? top.map(creatorCardHtml).join("")
+            : `<div style="padding: 20px; color: var(--muted); font-size: 0.78rem;">No creators to show yet.</div>`;
+
+        bindConnectButtons();
+    }
+
     function renderDiscoverCreators() {
         if (!discoverGrid) return;
 
@@ -767,20 +811,7 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        discoverGrid.innerHTML = filtered.map(c => {
-            const connected = state.connectedCreatorIds.has(c.id);
-            return `
-            <article class="creator-card discover-card" data-creator-id="${escapeHtml(c.id)}">
-                <div class="creator-avatar ${escapeHtml(c.bgClass)}">${escapeHtml(c.avatar)}</div>
-                <h3>${escapeHtml(c.name)}</h3>
-                <p class="creator-type">${escapeHtml(c.niche)}</p>
-                <div class="creator-info">${escapeHtml(c.location)}</div>
-                <div class="creator-followers">${escapeHtml(c.followers)} followers</div>
-                <div class="match"><span>${escapeHtml(c.match)}%</span> match</div>
-                <button class="connect-button ${connected ? "connected" : ""}" data-name="${escapeHtml(c.name)}">${connected ? "Requested" : "Connect"}</button>
-            </article>
-            `;
-        }).join("");
+        discoverGrid.innerHTML = filtered.map(creatorCardHtml).join("");
 
         bindConnectButtons();
     }
@@ -853,13 +884,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
                     if (data.status === "connected") {
                         state.connectedCreatorIds.add(targetId);
-                        button.classList.add("connected");
-                        button.textContent = "Requested";
                     } else {
                         state.connectedCreatorIds.delete(targetId);
-                        button.classList.remove("connected");
-                        button.textContent = "Connect";
                     }
+                    // Re-render both lists so the same creator cannot show
+                    // "Requested" in one place and "Connect" in the other.
+                    renderDiscoverCreators();
+                    renderHomeCreators();
                 } catch (err) {
                     // Toggling the button locally on failure made an unsaved
                     // connection look saved until the next reload.
@@ -876,6 +907,91 @@ document.addEventListener("DOMContentLoaded", () => {
     // =========================================================================
     // LIKE & COMMENT BUTTON INTERACTION
     // =========================================================================
+
+    /**
+     * Shares a post. The link carries #post-<id>, which openPostFromHash() picks
+     * up on load, so what the recipient opens is the actual post.
+     */
+    async function sharePost(postCard) {
+        const postId = postCard.getAttribute("data-post-id");
+        if (!postId) return;
+
+        const post = state.posts.find(p => String(p.id) === String(postId));
+        const url = `${location.origin}${location.pathname}#post-${postId}`;
+        const text = post ? `${post.authorName} on Conexus: ${post.content}` : "A post on Conexus";
+
+        // navigator.share only exists on mobile and some desktop browsers, and
+        // only on a secure origin, so the clipboard is the fallback everywhere else.
+        if (navigator.share) {
+            try {
+                await navigator.share({ title: "Conexus", text, url });
+                return;
+            } catch (err) {
+                if (err && err.name === "AbortError") return;  // user dismissed the sheet
+            }
+        }
+
+        if (await copyToClipboard(url)) {
+            showToast("Link copied to clipboard");
+        } else {
+            // Never leave the user with nothing: show the link so it can be
+            // selected by hand.
+            showToast(`Copy this link: ${url}`);
+        }
+    }
+
+    /**
+     * navigator.clipboard needs a secure origin and a real user gesture, and is
+     * unavailable in some browsers, so fall back to the legacy approach before
+     * giving up.
+     */
+    async function copyToClipboard(text) {
+        if (navigator.clipboard && window.isSecureContext) {
+            try {
+                await navigator.clipboard.writeText(text);
+                return true;
+            } catch (err) {
+                // fall through
+            }
+        }
+
+        try {
+            const scratch = document.createElement("textarea");
+            scratch.value = text;
+            scratch.setAttribute("readonly", "");
+            scratch.style.position = "fixed";
+            scratch.style.opacity = "0";
+            document.body.appendChild(scratch);
+            scratch.select();
+            const ok = document.execCommand("copy");
+            document.body.removeChild(scratch);
+            return ok;
+        } catch (err) {
+            return false;
+        }
+    }
+
+    window.addEventListener("hashchange", openPostFromHash);
+
+    document.addEventListener("click", (e) => {
+        const shareBtn = e.target.closest(".btn-share");
+        if (!shareBtn) return;
+        e.stopPropagation();
+        const card = shareBtn.closest(".inspo-card");
+        if (card) sharePost(card);
+    });
+
+    /** Opens the post named in the URL hash, so a shared link lands on it. */
+    function openPostFromHash() {
+        const match = /^#post-(\w+)$/.exec(location.hash || "");
+        if (!match) return;
+
+        const card = document.querySelector(`.inspo-card[data-post-id="${match[1]}"]`);
+        if (!card) return;
+
+        card.scrollIntoView({ behavior: "smooth", block: "center" });
+        openPostCommentsModal(card);
+    }
 
     document.addEventListener("click", async (e) => {
         const likeBtn = e.target.closest(".btn-like");
@@ -925,6 +1041,73 @@ document.addEventListener("DOMContentLoaded", () => {
     const chatHeaderName = document.getElementById("chat-header-name");
     const chatHeaderStatus = document.getElementById("chat-header-status");
 
+    /**
+     * Notifications, derived from real unread conversations.
+     *
+     * The drawer used to contain four hardcoded entries and the badge was a
+     * literal "3" in the HTML — it never reflected anything. There is no
+     * notifications table yet, so this shows the activity the app does track.
+     */
+    /**
+     * The "N Pending" pill counted a number nobody maintained. Count the steps
+     * actually rendered underneath it instead.
+     */
+    function renderPendingSteps() {
+        const pill = document.querySelector("#view-recommendations .status-pill");
+        if (!pill) return;
+
+        // Only steps still unticked count as pending.
+        const cards = document.querySelectorAll("#view-recommendations .step-card");
+        const pending = [...cards].filter(card => {
+            const box = card.querySelector(".step-checkbox");
+            return !(box && (box.checked || box.classList.contains("checked")));
+        }).length;
+
+        pill.textContent = `${pending} Pending`;
+    }
+
+    function renderNotifications() {
+        const list = document.getElementById("notification-list");
+        const badge = document.getElementById("notification-count");
+
+        const unread = Object.values(state.chats).filter(t => t.unread);
+
+        if (badge) {
+            badge.textContent = unread.length;
+            badge.classList.toggle("hidden", unread.length === 0);
+        }
+
+        if (!list) return;
+
+        if (!unread.length) {
+            list.innerHTML = `
+                <div style="text-align: center; padding: 28px 20px; color: var(--muted); font-size: 0.8rem;">
+                    You're all caught up.
+                </div>
+            `;
+            return;
+        }
+
+        list.innerHTML = unread.map(t => `
+            <div class="notification-item unread" data-thread-id="${escapeHtml(t.id)}">
+                <div class="noti-icon">💬</div>
+                <div class="noti-content">
+                    <p><strong>${escapeHtml(t.name)}</strong> sent you a message.</p>
+                    <span>${escapeHtml(t.time || "Recently")}</span>
+                </div>
+            </div>
+        `).join("");
+
+        list.querySelectorAll(".notification-item").forEach(item => {
+            item.addEventListener("click", () => {
+                const threadId = item.getAttribute("data-thread-id");
+                document.getElementById("drawer-notifications")?.classList.add("hidden");
+                switchView("view-messages");
+                if (threadId) openChatThread(threadId);
+            });
+        });
+    }
+
     function renderInbox() {
         if (!inboxList) return;
 
@@ -971,6 +1154,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (state.chats[threadId] && state.chats[threadId].unread) {
                     try {
                         state.chats[threadId] = await api(`/api/chats/${threadId}/read`, { method: "PUT" });
+                        renderNotifications();
                     } catch (err) {
                         console.warn("Could not mark thread as read", err);
                     }
@@ -1044,6 +1228,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 state.chats[threadId] = savedThread;
                 renderChatMessages(savedThread.messages || []);
                 renderInbox();
+                renderNotifications();
             } catch (err) {
                 chatInputText.value = text;
                 showToast(describeApiError(err, "Could not send your message."), "error");
@@ -1069,6 +1254,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         renderChatMessages(replied.messages || []);
                     }
                     renderInbox();
+                    renderNotifications();
                 } catch (err) {
                     console.warn("Could not save the simulated reply", err);
                 }
@@ -1114,8 +1300,9 @@ document.addEventListener("DOMContentLoaded", () => {
                             </div>
                         </div>
                         <div class="social-actions">
-                            <a href="${soc.url}" target="_blank" rel="noopener" class="btn-social-link" title="Open Link">↗</a>
-                            <button class="btn-social-delete" data-id="${soc.id}" title="Remove Account">&times;</button>
+                            <a href="${escapeHtml(soc.url)}" target="_blank" rel="noopener" class="btn-social-link" title="Open Link">↗</a>
+                            <button class="btn-social-edit" data-id="${escapeHtml(soc.id)}" title="Edit Account">✎</button>
+                            <button class="btn-social-delete" data-id="${escapeHtml(soc.id)}" title="Remove Account">&times;</button>
                         </div>
                     </div>
                 `;
@@ -1125,6 +1312,25 @@ document.addEventListener("DOMContentLoaded", () => {
         if (statPlatformsCount) {
             statPlatformsCount.textContent = state.socials.length;
         }
+
+        // index.html has always had #social-modal-title and a hidden
+        // #social-edit-id for this, but nothing ever used them.
+        socialsContainer.querySelectorAll(".btn-social-edit").forEach(btn => {
+            btn.onclick = () => {
+                const soc = state.socials.find(x => x.id === btn.getAttribute("data-id"));
+                if (!soc) return;
+
+                document.getElementById("social-edit-id").value = soc.id;
+                document.getElementById("social-modal-title").textContent = "Edit Social Account";
+                document.getElementById("btn-save-social").textContent = "Save Changes";
+                document.getElementById("social-platform-select").value = soc.platform;
+                document.getElementById("social-handle-input").value = soc.handle || "";
+                document.getElementById("social-url-input").value = soc.url || "";
+                document.getElementById("social-followers-input").value = soc.followers || "";
+
+                modalAddSocial.classList.remove("hidden");
+            };
+        });
 
         socialsContainer.querySelectorAll(".btn-social-delete").forEach(btn => {
             btn.onclick = async () => {
@@ -1145,6 +1351,9 @@ document.addEventListener("DOMContentLoaded", () => {
     if (btnOpenAddSocial && modalAddSocial) {
         btnOpenAddSocial.addEventListener("click", () => {
             formAddSocial?.reset();
+            document.getElementById("social-edit-id").value = "";
+            document.getElementById("social-modal-title").textContent = "Add Social Account";
+            document.getElementById("btn-save-social").textContent = "Save Social Account";
             modalAddSocial.classList.remove("hidden");
         });
 
@@ -1169,9 +1378,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
             }
 
-            const newSocial = {
-                id: "soc_" + Date.now(),
-                userId: state.currentUser.id,
+            // Present means we are editing; blank means the server assigns an id.
+            const editingId = document.getElementById("social-edit-id").value.trim();
+
+            const payload = {
                 platform: platform,
                 name: meta.name,
                 handle: handle,
@@ -1180,12 +1390,18 @@ document.addEventListener("DOMContentLoaded", () => {
                 icon: meta.icon,
                 class: meta.class
             };
+            if (editingId) payload.id = editingId;
 
             try {
-                const saved = await api(`/api/socials`, { method: "POST", body: newSocial });
-                state.socials.push(saved);
+                const saved = await api(`/api/socials`, { method: "POST", body: payload });
+
+                const idx = state.socials.findIndex(x => x.id === saved.id);
+                if (idx === -1) state.socials.push(saved);
+                else state.socials[idx] = saved;
+
                 renderSocials();
                 modalAddSocial.classList.add("hidden");
+                showToast(editingId ? "Social link updated" : "Social link added");
             } catch (err) {
                 showToast(describeApiError(err, "Could not save this social link."), "error");
             }
@@ -1429,6 +1645,22 @@ document.addEventListener("DOMContentLoaded", () => {
     const btnCopyOutreach = document.getElementById("btn-copy-outreach");
     const btnSendOutreachChat = document.getElementById("btn-send-outreach-chat");
 
+    // "Apply Now" on a brand card had no handler. Drafting an outreach message
+    // to that brand is the action the page implies, and that feature exists.
+    document.addEventListener("click", (e) => {
+        const applyBtn = e.target.closest(".btn-apply-brand");
+        if (!applyBtn) return;
+
+        const brandName = applyBtn.closest(".brand-card")?.querySelector("h4, h3, strong")?.textContent?.trim()
+            || "this brand";
+
+        if (outreachTargetCreator) outreachTargetCreator.textContent = brandName;
+        if (outreachTextBox) {
+            outreachTextBox.textContent = `"Hi ${brandName} team! I'd love to be considered for this campaign. My audience overlaps closely with the one you're targeting, and I can put together a hands-on review that fits your brief. Happy to share my full media kit."`;
+        }
+        if (modalOutreach) modalOutreach.classList.remove("hidden");
+    });
+
     document.querySelectorAll(".btn-open-outreach").forEach(btn => {
         btn.addEventListener("click", () => {
             const target = btn.getAttribute("data-creator") || "Alex Popescu";
@@ -1445,10 +1677,10 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     if (btnCopyOutreach) {
-        btnCopyOutreach.addEventListener("click", () => {
+        btnCopyOutreach.addEventListener("click", async () => {
             if (outreachTextBox) {
-                navigator.clipboard.writeText(outreachTextBox.textContent);
-                btnCopyOutreach.textContent = "Copied! ✓";
+                const ok = await copyToClipboard(outreachTextBox.textContent);
+                btnCopyOutreach.textContent = ok ? "Copied! ✓" : "Press Ctrl+C";
                 setTimeout(() => { btnCopyOutreach.textContent = "Copy Text"; }, 2000);
             }
         });
@@ -1550,6 +1782,16 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         });
     }
+
+    // The ••• button had no handler at all. Opening the creator is the obvious
+    // action for it, and the modal already exists.
+    document.addEventListener("click", (e) => {
+        const moreBtn = e.target.closest(".creator-more");
+        if (!moreBtn) return;
+        e.stopPropagation();
+        const card = moreBtn.closest(".creator-card");
+        if (card) card.click();
+    });
 
     document.addEventListener("click", (e) => {
         const creatorCard = e.target.closest(".creator-card");

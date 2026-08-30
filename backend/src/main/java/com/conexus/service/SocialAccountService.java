@@ -28,6 +28,10 @@ public class SocialAccountService {
         return socialAccountRepository.save(account);
     }
 
+    public boolean exists(String id) {
+        return socialAccountRepository.existsById(id);
+    }
+
     /** True only when this social account exists and belongs to the given user. */
     public boolean isOwnedBy(String id, Long userId) {
         return socialAccountRepository.findById(id)

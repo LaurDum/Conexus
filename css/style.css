@@ -2420,3 +2420,24 @@ button:active {
     border-color: rgba(255, 99, 99, 0.5);
     color: #ffb4b4;
 }
+
+/* Edit control on a linked social account — matches the existing actions */
+.btn-social-edit {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--secondary);
+    border-radius: 8px;
+    width: 28px;
+    height: 28px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.btn-social-edit:hover {
+    color: var(--primary);
+    border-color: var(--primary);
+}

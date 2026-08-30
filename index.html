@@ -256,7 +256,7 @@
                 💬
             </button>
             <button class="notification header-nav-icon" id="btn-notifications" aria-label="Notifications">
-                <span class="notification-badge" id="notification-count">3</span>
+                <span class="notification-badge hidden" id="notification-count">0</span>
                 ♡
             </button>
         </div>
@@ -268,35 +268,8 @@
             <h3>Notifications</h3>
             <button class="icon-btn-close" id="btn-close-notifications">&times;</button>
         </div>
-        <div class="notification-list">
-            <div class="notification-item unread">
-                <div class="noti-icon">🤝</div>
-                <div class="noti-content">
-                    <p><strong>Alex Popescu</strong> accepted your connection request.</p>
-                    <span>10m ago</span>
-                </div>
-            </div>
-            <div class="notification-item unread">
-                <div class="noti-icon">✦</div>
-                <div class="noti-content">
-                    <p><strong>Conexus AI</strong> generated 3 new strategy recommendations for your YouTube channel.</p>
-                    <span>45m ago</span>
-                </div>
-            </div>
-            <div class="notification-item unread">
-                <div class="noti-icon">🏷️</div>
-                <div class="noti-content">
-                    <p><strong>TechGear Pro</strong> matched with your profile for an upcoming campaign.</p>
-                    <span>2h ago</span>
-                </div>
-            </div>
-            <div class="notification-item">
-                <div class="noti-icon">💬</div>
-                <div class="noti-content">
-                    <p><strong>Ioana R.</strong> replied to your comment on Inspo.</p>
-                    <span>5h ago</span>
-                </div>
-            </div>
+        <div class="notification-list" id="notification-list">
+            <!-- Populated from real activity by renderNotifications() in js/app.js -->
         </div>
     </div>
 
@@ -354,64 +327,8 @@
 
                 <p class="section-description">Creators you might click with for your next collaboration.</p>
 
-                <div class="creator-scroll">
-
-                    <!-- Creator 1 -->
-                    <article class="creator-card" data-creator-id="alex">
-                        <div class="creator-avatar avatar-purple">AP</div>
-                        <button class="creator-more" aria-label="More options">•••</button>
-                        <h3>Alex Popescu</h3>
-                        <p class="creator-type">Gaming Creator</p>
-                        <div class="creator-info">🇷🇴 Romania</div>
-                        <div class="creator-followers">24K followers</div>
-                        <div class="match">
-                            <span>87%</span> match
-                        </div>
-                        <button class="connect-button" data-name="Alex Popescu">Connect</button>
-                    </article>
-
-                    <!-- Creator 2 -->
-                    <article class="creator-card" data-creator-id="maria">
-                        <div class="creator-avatar avatar-blue">MS</div>
-                        <button class="creator-more" aria-label="More options">•••</button>
-                        <h3>Maria Stoica</h3>
-                        <p class="creator-type">Travel Creator</p>
-                        <div class="creator-info">🇷🇴 Romania</div>
-                        <div class="creator-followers">58K followers</div>
-                        <div class="match">
-                            <span>81%</span> match
-                        </div>
-                        <button class="connect-button" data-name="Maria Stoica">Connect</button>
-                    </article>
-
-                    <!-- Creator 3 -->
-                    <article class="creator-card" data-creator-id="david">
-                        <div class="creator-avatar avatar-orange">DV</div>
-                        <button class="creator-more" aria-label="More options">•••</button>
-                        <h3>David V.</h3>
-                        <p class="creator-type">Music Creator</p>
-                        <div class="creator-info">🇬🇧 United Kingdom</div>
-                        <div class="creator-followers">41K followers</div>
-                        <div class="match">
-                            <span>76%</span> match
-                        </div>
-                        <button class="connect-button" data-name="David V.">Connect</button>
-                    </article>
-
-                    <!-- Creator 4 -->
-                    <article class="creator-card" data-creator-id="elena">
-                        <div class="creator-avatar avatar-green">EM</div>
-                        <button class="creator-more" aria-label="More options">•••</button>
-                        <h3>Elena M.</h3>
-                        <p class="creator-type">Tech & AI Creator</p>
-                        <div class="creator-info">🇩🇪 Germany</div>
-                        <div class="creator-followers">92K followers</div>
-                        <div class="match">
-                            <span>94%</span> match
-                        </div>
-                        <button class="connect-button" data-name="Elena M.">Connect</button>
-                    </article>
-
+                <div class="creator-scroll" id="home-creator-scroll">
+                    <!-- Populated from the database by renderHomeCreators() in js/app.js -->
                 </div>
             </section>
 
@@ -764,7 +681,7 @@
                         <span class="stat-label">Total Reach</span>
                     </div>
                     <div class="stat-box">
-                        <span class="stat-value">4.8%</span>
+                        <span class="stat-value" id="stat-engagement">0%</span>
                         <span class="stat-label">Avg. Engagement</span>
                     </div>
                     <div class="stat-box">
@@ -841,7 +758,6 @@
         </div>
 
         <form class="chat-input-bar" id="form-chat-send">
-            <button type="button" class="btn-chat-attach">+</button>
             <input type="text" id="chat-input-text" placeholder="Write a message..." autocomplete="off" required>
             <button type="submit" class="btn-chat-send">Send</button>
         </form>
