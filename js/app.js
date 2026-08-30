@@ -408,6 +408,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         renderHomeCreators();
         await loadDiscover(true);
+        loadRecommendedDeals();
 
         try {
             state.posts = await api(`/api/posts`);
@@ -2225,6 +2226,119 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
+
+    // =========================================================================
+    // BRAND DEALS
+    // =========================================================================
+
+    /** One campaign card, used by the recommended strip and the full page. */
+    function brandDealHtml(d) {
+        return `
+            <div class="brand-card" data-deal-id="${escapeHtml(d.id)}">
+                <div class="brand-header">
+                    <div class="brand-logo ${escapeHtml(d.logoClass || "logo-tech")}">${escapeHtml(d.logo || "?")}</div>
+                    <div>
+                        <h4>${escapeHtml(d.brandName)}</h4>
+                        <span>${escapeHtml(d.industry || "")}</span>
+                    </div>
+                </div>
+                <span class="deal-type-tag">${escapeHtml(d.dealType)}</span>
+                <p class="brand-desc">${escapeHtml(d.description || "")}</p>
+                <div class="brand-footer">
+                    <span class="brand-pay">${escapeHtml(d.pay || "")}</span>
+                    <button class="btn-apply-brand">Apply Now</button>
+                </div>
+            </div>
+        `;
+    }
+
+    /** The handful shown on the Strategy page. */
+    async function loadRecommendedDeals() {
+        const grid = document.getElementById("recommended-deals-grid");
+        if (!grid) return;
+
+        try {
+            const data = await api("/api/brand-deals?size=2");
+            grid.innerHTML = (data.items || []).length
+                ? data.items.map(brandDealHtml).join("")
+                : `<div style="color: var(--muted); font-size: 0.78rem;">No open campaigns right now.</div>`;
+        } catch (err) {
+            grid.innerHTML = `<div style="color: var(--muted); font-size: 0.78rem;">Could not load brand matches.</div>`;
+        }
+    }
+
+    let dealsType = "all";
+    let dealsSearchTimer = null;
+
+    /** Every open campaign, filtered by type and search. */
+    async function loadAllDeals() {
+        const grid = document.getElementById("all-deals-grid");
+        const countEl = document.getElementById("deals-count");
+        if (!grid) return;
+
+        const input = document.getElementById("deals-search-input");
+        const params = new URLSearchParams({ size: 50 });
+        if (dealsType !== "all") params.set("type", dealsType);
+        if (input && input.value.trim()) params.set("search", input.value.trim());
+
+        try {
+            const data = await api(`/api/brand-deals?${params.toString()}`);
+
+            if (countEl) countEl.textContent = data.total || 0;
+            renderDealTypeChips(data.types || []);
+
+            grid.innerHTML = (data.items || []).length
+                ? data.items.map(brandDealHtml).join("")
+                : `<div style="grid-column: 1 / -1; text-align: center; padding: 30px; color: var(--muted); font-size: 0.8rem;">
+                       No campaigns match that filter.
+                   </div>`;
+        } catch (err) {
+            showToast(describeApiError(err, "Could not load brand deals."), "error");
+        }
+    }
+
+    /**
+     * Builds the filter chips from the deal types that actually exist, so the
+     * filters cannot drift out of step with the data.
+     */
+    function renderDealTypeChips(types) {
+        const wrap = document.getElementById("deals-filter-chips");
+        if (!wrap || wrap.getAttribute("data-built") === "true") {
+            // Only the active state changes after the first build.
+            wrap?.querySelectorAll(".chip").forEach(chip => {
+                chip.classList.toggle("active", chip.getAttribute("data-type") === dealsType);
+            });
+            return;
+        }
+
+        wrap.innerHTML = [`<button class="chip active" data-type="all">All Deals</button>`]
+            .concat(types.map(t => `<button class="chip" data-type="${escapeHtml(t)}">${escapeHtml(t)}</button>`))
+            .join("");
+        wrap.setAttribute("data-built", "true");
+
+        wrap.querySelectorAll(".chip").forEach(chip => {
+            chip.addEventListener("click", () => {
+                dealsType = chip.getAttribute("data-type") || "all";
+                wrap.querySelectorAll(".chip").forEach(c => c.classList.remove("active"));
+                chip.classList.add("active");
+                loadAllDeals();
+            });
+        });
+    }
+
+    document.getElementById("btn-see-all-deals")?.addEventListener("click", () => {
+        switchView("view-brand-deals");
+        loadAllDeals();
+    });
+
+    document.getElementById("btn-back-from-deals")?.addEventListener("click", () => {
+        switchView("view-recommendations");
+    });
+
+    document.getElementById("deals-search-input")?.addEventListener("input", () => {
+        clearTimeout(dealsSearchTimer);
+        dealsSearchTimer = setTimeout(loadAllDeals, 250);
+    });
 
     // =========================================================================
     // AI OUTREACH MODAL

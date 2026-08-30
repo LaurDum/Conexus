@@ -29,6 +29,7 @@ public class DataSeeder implements CommandLineRunner {
     private final ChatThreadRepository chatThreadRepository;
     private final PostLikeRepository postLikeRepository;
     private final CommentRepository commentRepository;
+    private final BrandDealRepository brandDealRepository;
 
     /**
      * Replies that read naturally under any creator post, so the demo feed has
@@ -59,6 +60,7 @@ public class DataSeeder implements CommandLineRunner {
         seedComments();
         syncPostCommentCounts();
         linkCreatorsToAccounts();
+        seedBrandDeals();
     }
 
     /**
@@ -460,6 +462,69 @@ public class DataSeeder implements CommandLineRunner {
             case "linkedin":  return "💼";
             default:          return "🌐";
         }
+    }
+
+    /**
+     * Campaigns for the brand matching page. The Strategy view previously held
+     * two of these as fixed markup, so there was nothing to "see all" of and no
+     * way to filter.
+     */
+    private void seedBrandDeals() {
+        if (brandDealRepository.count() > 0) return;
+
+        log.info("Seeding brand deals...");
+        brandDealRepository.saveAll(Arrays.asList(
+            deal("bd_techgear", "TechGear Pro", "TG", "logo-tech", "Consumer Tech & Audio", "Tech",
+                 "Product Review", "Looking for tech creators for hands-on reviews of wireless studio headsets.",
+                 "$800 - $1,500", 94),
+            deal("bd_wanderlust", "Wanderlust Escapes", "WL", "logo-travel", "Travel & Digital Nomad", "Travel",
+                 "Sponsored Video", "Sponsoring travel creators testing portable power setups on remote trips.",
+                 "$1,200 + Stay", 88),
+            deal("bd_pixelforge", "PixelForge", "PF", "logo-gaming", "PC Components & Peripherals", "Gaming",
+                 "Sponsored Video", "Seeking gaming creators to feature a new low-latency mechanical keyboard.",
+                 "$600 - $1,100", 91),
+            deal("bd_northaudio", "North Audio", "NA", "logo-tech", "Studio & Podcast Gear", "Tech",
+                 "Brand Ambassador", "Six month ambassador programme for creators who record their own audio.",
+                 "$2,000 / quarter", 86),
+            deal("bd_verdant", "Verdant Kitchen", "VK", "logo-food", "Meal Kits & Groceries", "Food",
+                 "Affiliate", "Recurring commission on meal kit referrals, no exclusivity required.",
+                 "15% per referral", 78),
+            deal("bd_atlaswear", "Atlas Wear", "AW", "logo-fashion", "Sustainable Apparel", "Fashion",
+                 "Social Post", "Three post campaign featuring the autumn range, shot in your own style.",
+                 "$450 per post", 82),
+            deal("bd_lumen", "Lumen Studios", "LS", "logo-tech", "Lighting & Streaming", "Tech",
+                 "Product Review", "Send-and-keep review of a key light aimed at small home studios.",
+                 "Product + $300", 84),
+            deal("bd_trailhead", "Trailhead Co.", "TH", "logo-travel", "Outdoor Equipment", "Travel",
+                 "Affiliate", "Affiliate partnership for hiking and camping gear, tiered commission.",
+                 "10 - 18% tiered", 74),
+            deal("bd_soundwave", "Soundwave Collective", "SC", "logo-music", "Music Production Tools", "Music",
+                 "Sponsored Video", "Walkthrough of a sample library aimed at producers and beatmakers.",
+                 "$700 - $1,300", 89),
+            deal("bd_novacon", "NovaCon", "NC", "logo-gaming", "Gaming Convention", "Gaming",
+                 "Event", "Covering the creator stage at this year's convention, travel included.",
+                 "$1,500 + Travel", 80),
+            deal("bd_brightbrew", "Bright Brew", "BB", "logo-food", "Specialty Coffee", "Food",
+                 "Social Post", "Morning routine feature for a single origin subscription launch.",
+                 "$350 per post", 71),
+            deal("bd_orbitvpn", "Orbit", "OR", "logo-tech", "Privacy & Security", "Tech",
+                 "Affiliate", "Long running affiliate deal with a recurring share of each subscription.",
+                 "30% recurring", 76),
+            deal("bd_studioloft", "Studio Loft", "SL", "logo-fashion", "Creator Workspaces", "Fashion",
+                 "Brand Ambassador", "Year long ambassador role for creators filming in shared studios.",
+                 "$1,800 / quarter", 69),
+            deal("bd_cadence", "Cadence Records", "CR", "logo-music", "Independent Label", "Music",
+                 "Event", "Live session slot at a showcase night, with footage rights retained by you.",
+                 "$900 + Travel", 73)
+        ));
+    }
+
+    private BrandDeal deal(String id, String brand, String logo, String logoClass, String industry,
+                           String category, String dealType, String description, String pay, int match) {
+        return BrandDeal.builder()
+                .id(id).brandName(brand).logo(logo).logoClass(logoClass).industry(industry)
+                .category(category).dealType(dealType).description(description).pay(pay)
+                .matchScore(match).build();
     }
 
     private void seedCreators() {

@@ -537,38 +537,13 @@
             <section class="strategy-block">
                 <div class="strategy-block-header">
                     <h3>💎 Recommended Brand Matches</h3>
+                    <button class="see-all" id="btn-see-all-deals">
+                        See all →
+                    </button>
                 </div>
 
-                <div class="brand-deals-grid">
-                    <div class="brand-card">
-                        <div class="brand-header">
-                            <div class="brand-logo logo-tech">TG</div>
-                            <div>
-                                <h4>TechGear Pro</h4>
-                                <span>Consumer Tech & Audio</span>
-                            </div>
-                        </div>
-                        <p class="brand-desc">Looking for tech creators for hands-on reviews of wireless studio headsets.</p>
-                        <div class="brand-footer">
-                            <span class="brand-pay">$800 - $1,500</span>
-                            <button class="btn-apply-brand">Apply Now</button>
-                        </div>
-                    </div>
-
-                    <div class="brand-card">
-                        <div class="brand-header">
-                            <div class="brand-logo logo-travel">WL</div>
-                            <div>
-                                <h4>Wanderlust Escapes</h4>
-                                <span>Travel & Digital Nomad</span>
-                            </div>
-                        </div>
-                        <p class="brand-desc">Sponsoring travel creators testing portable power setups on remote trips.</p>
-                        <div class="brand-footer">
-                            <span class="brand-pay">$1,200 + Stay</span>
-                            <button class="btn-apply-brand">Apply Now</button>
-                        </div>
-                    </div>
+                <div class="brand-deals-grid" id="recommended-deals-grid">
+                    <!-- Populated from the database by renderRecommendedDeals() -->
                 </div>
             </section>
 
@@ -738,6 +713,33 @@
                     <!-- Populated from the database by renderUserPosts() in js/app.js -->
                 </div>
             </section>
+
+        </section>
+
+        <!-- ==========================================
+             BRAND DEALS — every open campaign
+        =========================================== -->
+        <section id="view-brand-deals" class="view">
+
+            <div class="simple-page-header">
+                <button class="btn-back-page" id="btn-back-from-deals">← Back</button>
+                <div>
+                    <h2>Brand Deals</h2>
+                    <p class="view-subtitle">Open campaigns from brands looking for creators.</p>
+                </div>
+                <span class="connections-count" id="deals-count">0</span>
+            </div>
+
+            <div class="search-bar">
+                <span class="search-icon">⌕</span>
+                <input type="text" id="deals-search-input" placeholder="Search brands, industries, or campaigns...">
+            </div>
+
+            <div class="filter-chips" id="deals-filter-chips">
+                <button class="chip active" data-type="all">All Deals</button>
+            </div>
+
+            <div class="brand-deals-grid" id="all-deals-grid"></div>
 
         </section>
 

@@ -3117,3 +3117,37 @@ a.social-badge {
     cursor: pointer;
     border: 1px solid var(--border);
 }
+
+/* ==========================================================
+   BRAND DEALS
+   ========================================================== */
+.logo-gaming  { background: #4a2a7a; color: #b388ff; }
+.logo-food    { background: #7a4a1e; color: #ffb877; }
+.logo-fashion { background: #7a2a52; color: #ff8fc0; }
+.logo-music   { background: #1e5a7a; color: #7fd4ff; }
+
+/* What kind of campaign this is */
+.deal-type-tag {
+    display: inline-block;
+    margin-top: 10px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: var(--primary-soft);
+    border: 1px solid var(--primary-glow);
+    color: var(--primary);
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+
+/* The full deals page lays cards out in a responsive grid */
+#all-deals-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 12px;
+    margin-top: 14px;
+}
+
+#view-brand-deals .filter-chips {
+    margin-top: 12px;
+}
