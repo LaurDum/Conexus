@@ -733,6 +733,82 @@
 
         </section>
 
+        <!-- ==========================================
+             ANOTHER USER'S PROFILE (a real view, not a modal)
+        =========================================== -->
+        <section id="view-user-profile" class="view">
+
+            <div class="profile-header-card">
+                <div class="profile-banner">
+                    <button class="btn-back-profile" id="btn-back-from-profile">← Back</button>
+                </div>
+
+                <div class="profile-main-info">
+                    <div class="profile-avatar-wrapper">
+                        <div class="creator-avatar avatar-purple profile-avatar-lg" id="up-avatar">?</div>
+                    </div>
+
+                    <div class="profile-identity">
+                        <div class="profile-name-row">
+                            <h2 id="up-display-name">Creator</h2>
+                        </div>
+                        <p class="profile-handle" id="up-handle">@creator</p>
+                        <p class="profile-bio" id="up-bio"></p>
+                        <div class="profile-meta">
+                            <span>📍 <span id="up-location">Worldwide</span></span>
+                            <span id="up-niche-meta">✦ <span id="up-niche">Creator</span></span>
+                        </div>
+
+                        <div class="profile-actions" id="up-actions">
+                            <button class="btn-primary-sm" id="up-btn-connect">Connect</button>
+                            <button class="btn-secondary-sm" id="up-btn-message">Message</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="profile-stats-grid">
+                    <div class="stat-box">
+                        <span class="stat-value" id="up-reach">0</span>
+                        <span class="stat-label">Total Reach</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-value" id="up-engagement">0%</span>
+                        <span class="stat-label">Avg. Engagement</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-value" id="up-platforms">0</span>
+                        <span class="stat-label">Platforms</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-value" id="up-match">—</span>
+                        <span class="stat-label">Match</span>
+                    </div>
+                </div>
+            </div>
+
+            <section class="section socials-section">
+                <div class="section-heading">
+                    <div>
+                        <span class="section-eyebrow">🌐 Creator Channels</span>
+                        <h2>Social Accounts</h2>
+                    </div>
+                </div>
+                <div class="socials-grid" id="up-socials"></div>
+            </section>
+
+            <section class="section">
+                <div class="section-heading">
+                    <div>
+                        <span class="section-eyebrow">📂 Activity</span>
+                        <h2>Recent Posts</h2>
+                    </div>
+                </div>
+                <div class="user-posts-list" id="up-posts"></div>
+            </section>
+
+        </section>
+
+
     </main>
 
 
@@ -905,54 +981,6 @@
 
 
     <!-- 5. CREATOR PROFILE VIEW MODAL -->
-    <div class="modal-overlay hidden" id="modal-creator-view">
-        <div class="modal-card creator-profile-modal">
-            <div class="modal-header">
-                <h3>Creator Profile</h3>
-                <button class="modal-close" id="btn-close-creator-view">&times;</button>
-            </div>
-            <div class="creator-profile-body">
-                <div class="creator-profile-header">
-                    <div class="creator-avatar avatar-purple profile-avatar-lg" id="view-creator-avatar">AP</div>
-                    <div class="creator-profile-title-block">
-                        <div class="profile-name-row">
-                            <h2 id="view-creator-name">Alex Popescu</h2>
-                            <span class="verified-badge" title="Verified Creator">✓</span>
-                        </div>
-                        <p class="profile-handle" id="view-creator-handle">@alex_popescu</p>
-                        <span class="creator-type-pill" id="view-creator-niche">Gaming Creator</span>
-                    </div>
-                </div>
-
-                <div class="creator-profile-meta">
-                    <span>📍 <span id="view-creator-location">Romania</span></span>
-                    <span>👥 <span id="view-creator-followers">24K followers</span></span>
-                    <span>⚡ <span id="view-creator-match">87%</span> match</span>
-                </div>
-
-                <div class="creator-bio-box">
-                    <h4>About</h4>
-                    <p id="view-creator-bio">Gaming creator & reviewer from Bucharest! Loving strategy & action titles 🎮</p>
-                </div>
-
-                <div class="creator-socials-box">
-                    <h4>Connected Channels</h4>
-                    <div class="creator-social-badges" id="view-creator-socials">
-                        <span class="social-badge youtube">▶ YouTube (18K)</span>
-                        <span class="social-badge twitch">👾 Twitch (6.3K)</span>
-                    </div>
-                </div>
-
-                <div class="modal-actions">
-                    <button type="button" class="connect-button" id="btn-creator-connect">Connect</button>
-                    <button type="button" class="btn-primary" id="btn-creator-message">💬 Direct Message</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-
-    <!-- 6. POST COMMENTS & DETAILS MODAL -->
     <div class="modal-overlay hidden" id="modal-post-comments">
         <div class="modal-card post-comments-modal">
             <div class="modal-header">

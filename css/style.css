@@ -2463,3 +2463,73 @@ button:active {
 a.social-badge {
     text-decoration: none;
 }
+
+/* ==========================================================
+   ANOTHER USER'S PROFILE VIEW
+   ========================================================== */
+.btn-back-profile {
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid var(--border-light);
+    color: #fff;
+    padding: 7px 14px;
+    border-radius: 999px;
+    font-size: 0.76rem;
+    font-weight: 500;
+    cursor: pointer;
+    backdrop-filter: blur(6px);
+    transition: background 0.15s ease;
+}
+
+.btn-back-profile:hover {
+    background: rgba(0, 0, 0, 0.55);
+}
+
+.profile-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 14px;
+    flex-wrap: wrap;
+}
+
+.profile-actions button {
+    padding: 9px 20px;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+#up-btn-connect {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #fff;
+}
+
+#up-btn-connect:hover {
+    background: var(--primary-hover);
+}
+
+#up-btn-connect.connected {
+    background: transparent;
+    color: var(--secondary);
+    border-color: var(--border);
+}
+
+#up-btn-message {
+    background: transparent;
+    color: var(--text);
+}
+
+#up-btn-message:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+#up-posts .inspo-card {
+    cursor: default;
+}

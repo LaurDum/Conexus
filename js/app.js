@@ -667,6 +667,9 @@ document.addEventListener("DOMContentLoaded", () => {
     // VIEW SWITCHER & NAVIGATION
     // =========================================================================
 
+    /** The view to return to when leaving someone's profile. */
+    let previousView = "view-home";
+
     const navItems = document.querySelectorAll(".bottom-nav .nav-item");
     const views = document.querySelectorAll(".main-content .view");
 
@@ -675,6 +678,13 @@ document.addEventListener("DOMContentLoaded", () => {
             showAuthScreen();
             return;
         }
+
+        // Remember where we came from so Back on a profile returns there,
+        // without ever pointing back at another profile.
+        if (targetViewId === "view-user-profile" && state.activeView !== "view-user-profile") {
+            previousView = state.activeView;
+        }
+
         state.activeView = targetViewId;
 
         navItems.forEach(item => {
@@ -1725,33 +1735,27 @@ document.addEventListener("DOMContentLoaded", () => {
     // CREATOR PROFILE MODAL LOGIC
     // =========================================================================
 
-    const modalCreatorView = document.getElementById("modal-creator-view");
-    const btnCloseCreatorView = document.getElementById("btn-close-creator-view");
-    const viewCreatorAvatar = document.getElementById("view-creator-avatar");
-    const viewCreatorName = document.getElementById("view-creator-name");
-    const viewCreatorHandle = document.getElementById("view-creator-handle");
-    const viewCreatorNiche = document.getElementById("view-creator-niche");
-    const viewCreatorLocation = document.getElementById("view-creator-location");
-    const viewCreatorFollowers = document.getElementById("view-creator-followers");
-    const viewCreatorMatch = document.getElementById("view-creator-match");
-    const viewCreatorBio = document.getElementById("view-creator-bio");
-    const viewCreatorSocials = document.getElementById("view-creator-socials");
-    const btnCreatorConnect = document.getElementById("btn-creator-connect");
-    const btnCreatorMessage = document.getElementById("btn-creator-message");
 
     let currentOpenCreator = null;
     let currentOpenUserId = null;
 
     /**
-     * Opens a real account's profile in the same modal the discover cards use.
-     * Reachable from a post author, a comment author, a chat header or a
-     * creator card — anywhere a person is named.
+     * Opens a real account's profile as a full view.
+     *
+     * This used to reuse the creator modal, which meant opening a profile from
+     * inside the post modal stacked one overlay behind another — the profile
+     * only appeared once you closed the post.
      */
     async function openUserProfile(userId) {
         if (!userId || !state.currentUser) return;
 
+        // Any overlay we were opened from must go, or it covers the view.
+        document.querySelectorAll(".modal-overlay:not(.hidden)").forEach(m => m.classList.add("hidden"));
+        document.getElementById("drawer-chat")?.classList.add("hidden");
+        document.getElementById("drawer-notifications")?.classList.add("hidden");
+
         if (String(userId) === String(state.currentUser.id)) {
-            switchView("view-profile");   // your own profile is a whole tab
+            switchView("view-profile");   // your own profile is its own tab
             return;
         }
 
@@ -1763,112 +1767,178 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        currentOpenUserId = profile.id;
+        renderProfileView(profile);
+    }
+
+    /**
+     * Fills the profile view. Takes the shape returned by /api/users/{id}; a
+     * discover card with no account behind it is adapted to the same shape by
+     * openCreatorProfile, so both open a page rather than one opening a popup.
+     */
+    function renderProfileView(profile) {
+        currentOpenUserId = profile.id || null;
         currentOpenCreator = profile.creatorId
             ? state.creators.find(c => c.id === profile.creatorId) || null
             : null;
 
-        if (viewCreatorAvatar) {
-            viewCreatorAvatar.textContent = profile.avatar || (profile.displayName || "?").substring(0, 2).toUpperCase();
-            viewCreatorAvatar.className = `creator-avatar ${profile.bgClass || "avatar-purple"} profile-avatar-lg`;
-        }
-        if (viewCreatorName) viewCreatorName.textContent = profile.displayName || profile.username;
-        if (viewCreatorHandle) viewCreatorHandle.textContent = profile.handle || ("@" + profile.username);
-        if (viewCreatorNiche) viewCreatorNiche.textContent = profile.niche || "Creator";
-        if (viewCreatorLocation) viewCreatorLocation.textContent = profile.location || "Worldwide";
-        if (viewCreatorFollowers) viewCreatorFollowers.textContent = `${profile.totalReach || "0"} total reach`;
-        if (viewCreatorBio) viewCreatorBio.textContent = profile.bio || "This creator hasn't written a bio yet.";
+        const name = profile.displayName || profile.username;
+        const set = (id, value) => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = value;
+        };
 
-        // Match only means something for a discover card.
-        const matchEl = viewCreatorMatch ? viewCreatorMatch.closest(".match, .creator-match") || viewCreatorMatch : null;
-        if (viewCreatorMatch) {
-            const creator = currentOpenCreator;
-            viewCreatorMatch.textContent = creator ? `${creator.match}%` : "—";
-            if (matchEl) matchEl.style.display = creator ? "" : "none";
+        const avatarEl = document.getElementById("up-avatar");
+        if (avatarEl) {
+            avatarEl.textContent = profile.avatar || name.substring(0, 2).toUpperCase();
+            avatarEl.className = `creator-avatar ${profile.bgClass || "avatar-purple"} profile-avatar-lg`;
         }
 
-        // Real links, not the three fixed badges this modal used to show.
-        if (viewCreatorSocials) {
-            viewCreatorSocials.innerHTML = (profile.socials || []).length
+        set("up-display-name", name);
+        set("up-handle", profile.handle || ("@" + profile.username));
+        set("up-bio", profile.bio || "This creator hasn't written a bio yet.");
+        set("up-location", profile.location || "Worldwide");
+        set("up-niche", profile.niche || "Creator");
+        set("up-reach", profile.totalReach || "0");
+        set("up-engagement", profile.engagement || "0%");
+        set("up-platforms", (profile.socials || []).length);
+        set("up-match", currentOpenCreator ? `${currentOpenCreator.match}%` : "—");
+
+        // Their linked accounts, rendered like the ones on your own profile.
+        const socialsEl = document.getElementById("up-socials");
+        if (socialsEl) {
+            socialsEl.innerHTML = (profile.socials || []).length
                 ? profile.socials.map(soc => {
-                    const meta = platformMeta[soc.platform] || { name: soc.platform, icon: "🌐" };
-                    return `<a class="social-badge ${escapeHtml(soc.platform)}" href="${escapeHtml(soc.url || "#")}" target="_blank" rel="noopener">${meta.icon} ${escapeHtml(meta.name)}${soc.followers ? " (" + escapeHtml(soc.followers) + ")" : ""}</a>`;
+                    const meta = platformMeta[soc.platform] || { name: soc.platform, icon: "🌐", class: "platform-website" };
+                    return `
+                        <div class="social-card">
+                            <div class="social-left">
+                                <div class="social-icon-badge ${meta.class}">${meta.icon}</div>
+                                <div class="social-info">
+                                    <div class="social-platform-name">${escapeHtml(meta.name)}</div>
+                                    <div class="social-handle-text">${escapeHtml(soc.handle || "")}</div>
+                                    <div class="social-count-badge">${escapeHtml(soc.followers || "0")}</div>
+                                </div>
+                            </div>
+                            <div class="social-actions">
+                                <a href="${escapeHtml(soc.url || "#")}" target="_blank" rel="noopener" class="btn-social-link" title="Open Link">↗</a>
+                            </div>
+                        </div>`;
                 }).join("")
-                : `<span style="color: var(--muted); font-size: 0.75rem;">No linked accounts yet.</span>`;
+                : `<div style="grid-column: 1 / -1; padding: 20px; color: var(--muted); font-size: 0.78rem;">No linked accounts yet.</div>`;
         }
 
-        if (btnCreatorConnect) {
-            const canConnect = !!profile.creatorId;
-            btnCreatorConnect.style.display = canConnect ? "" : "none";
-            btnCreatorConnect.classList.toggle("connected", profile.connected);
-            btnCreatorConnect.textContent = profile.connected ? "Requested" : "Connect";
+        // Their posts, from the feed we already hold.
+        const postsEl = document.getElementById("up-posts");
+        if (postsEl) {
+            const theirs = state.posts.filter(post => String(post.authorId) === String(profile.id));
+            postsEl.innerHTML = theirs.length
+                ? theirs.map(post => `
+                    <div class="inspo-card" data-post-id="${escapeHtml(post.id)}">
+                        <p class="post-content">${escapeHtml(post.content)}</p>
+                        <div class="post-footer">
+                            <button>${post.liked ? "❤️" : "♡"} ${post.likesCount || 0}</button>
+                            <button>💬 ${post.commentsCount || 0}</button>
+                            <span style="color: var(--muted); font-size: 0.72rem;">${escapeHtml(timeAgo(post.createdAt))}</span>
+                        </div>
+                    </div>`).join("")
+                : `<div style="padding: 20px; color: var(--muted); font-size: 0.78rem;">No posts yet.</div>`;
         }
 
-        if (modalCreatorView) modalCreatorView.classList.remove("hidden");
+        // Connect only means something for someone with a discover card.
+        const connectBtn = document.getElementById("up-btn-connect");
+        if (connectBtn) {
+            connectBtn.style.display = profile.creatorId ? "" : "none";
+            connectBtn.classList.toggle("connected", profile.connected);
+            connectBtn.textContent = profile.connected ? "Requested" : "Connect";
+            connectBtn.setAttribute("data-creator-id", profile.creatorId || "");
+        }
+
+        // Messaging needs an account on the other end.
+        const messageBtn = document.getElementById("up-btn-message");
+        if (messageBtn) messageBtn.style.display = profile.id ? "" : "none";
+
+        switchView("view-user-profile");
     }
 
-    function openCreatorModal(creator) {
+    /**
+     * A discover card that nobody has signed up as. Shown in the same view, with
+     * the catalog's own details — there is no account to load links or posts from.
+     */
+    function openCreatorProfile(creator) {
         if (!creator) return;
-        currentOpenCreator = creator;
-        currentOpenUserId = null;   // this card has no account behind it
 
-        if (viewCreatorAvatar) {
-            viewCreatorAvatar.textContent = creator.avatar || creator.name.substring(0, 2).toUpperCase();
-            viewCreatorAvatar.className = `creator-avatar ${creator.bgClass || 'avatar-purple'} profile-avatar-lg`;
-        }
-        if (viewCreatorName) viewCreatorName.textContent = creator.name;
-        if (viewCreatorHandle) viewCreatorHandle.textContent = "@" + (creator.username || creator.name.toLowerCase().replace(/\s+/g, '_'));
-        if (viewCreatorNiche) viewCreatorNiche.textContent = creator.niche || creator.category || "Creator";
-        if (viewCreatorLocation) viewCreatorLocation.textContent = creator.location || "Worldwide";
-        if (viewCreatorFollowers) viewCreatorFollowers.textContent = `${creator.followers || '10K'} followers`;
-        if (viewCreatorMatch) viewCreatorMatch.textContent = `${creator.match || 85}%`;
-        if (viewCreatorBio) viewCreatorBio.textContent = creator.bio || `${creator.name} is an active ${creator.niche || 'creator'} on Conexus sharing growth strategies & collabs.`;
+        document.querySelectorAll(".modal-overlay:not(.hidden)").forEach(m => m.classList.add("hidden"));
+        document.getElementById("drawer-chat")?.classList.add("hidden");
 
-        if (viewCreatorSocials) {
-            viewCreatorSocials.innerHTML = `
-                <span class="social-badge youtube">▶ YouTube (${creator.followers || '10K'})</span>
-                <span class="social-badge instagram">📷 Instagram</span>
-                <span class="social-badge twitch">👾 Twitch</span>
-            `;
-        }
-
-        if (modalCreatorView) modalCreatorView.classList.remove("hidden");
-    }
-
-    if (btnCloseCreatorView && modalCreatorView) {
-        btnCloseCreatorView.addEventListener("click", () => modalCreatorView.classList.add("hidden"));
-    }
-
-    if (btnCreatorConnect) {
-        btnCreatorConnect.addEventListener("click", () => {
-            const connected = btnCreatorConnect.classList.toggle("connected");
-            btnCreatorConnect.textContent = connected ? "Requested" : "Connect";
+        renderProfileView({
+            id: null,
+            username: (creator.name || "creator").toLowerCase().replace(/\s+/g, "_"),
+            displayName: creator.name,
+            handle: "@" + (creator.name || "creator").toLowerCase().replace(/\s+/g, "_"),
+            niche: creator.niche,
+            location: creator.location,
+            avatar: creator.avatar,
+            bgClass: creator.bgClass,
+            bio: `${creator.name} is a ${creator.niche || "creator"} on Conexus. They haven't claimed this profile yet.`,
+            totalReach: creator.followers,
+            engagement: "—",
+            socials: [],
+            creatorId: creator.id,
+            connected: state.connectedCreatorIds.has(creator.id)
         });
+
+        switchView("view-user-profile");
     }
 
-    if (btnCreatorMessage) {
-        btnCreatorMessage.addEventListener("click", async () => {
-            if ((!currentOpenCreator && !currentOpenUserId) || !state.currentUser) return;
-            if (modalCreatorView) modalCreatorView.classList.add("hidden");
+    document.getElementById("btn-back-from-profile")?.addEventListener("click", () => {
+        switchView(previousView || "view-home");
+    });
 
-            // Either route works; the server derives the same thread id, so a
-            // person reached from a post and from Discover is one conversation.
-            const path = currentOpenUserId
-                ? `/api/chats/with-user?otherUserId=${encodeURIComponent(currentOpenUserId)}`
-                : `/api/chats/with-creator?creatorId=${encodeURIComponent(currentOpenCreator.id)}`;
+    // Connect from the profile view, keeping every list in step.
+    document.getElementById("up-btn-connect")?.addEventListener("click", async (e) => {
+        // Hold the element: currentTarget is null once the handler yields at
+        // the first await, so it cannot be used after the request.
+        const btn = e.currentTarget;
+        const targetId = btn.getAttribute("data-creator-id");
+        if (!targetId) return;
 
-            try {
-                const thread = await api(path, { method: "POST" });
-                state.chats[thread.id] = thread;
+        btn.disabled = true;
+        try {
+            const data = await api("/api/connections/toggle", {
+                method: "POST",
+                body: { targetCreatorId: targetId }
+            });
+            const connected = data.status === "connected";
+            if (connected) state.connectedCreatorIds.add(targetId);
+            else state.connectedCreatorIds.delete(targetId);
 
-                renderInbox();
-                switchView("view-messages");
-                openChatThread(thread.id);
-            } catch (err) {
-                showToast(describeApiError(err, "Could not start this conversation."), "error");
-            }
-        });
-    }
+            btn.classList.toggle("connected", connected);
+            btn.textContent = connected ? "Requested" : "Connect";
+            renderDiscoverCreators();
+            renderHomeCreators();
+        } catch (err) {
+            showToast(describeApiError(err, "Could not update this connection."), "error");
+        } finally {
+            btn.disabled = false;
+        }
+    });
+
+    document.getElementById("up-btn-message")?.addEventListener("click", async () => {
+        if (!currentOpenUserId || !state.currentUser) return;
+        try {
+            const thread = await api(`/api/chats/with-user?otherUserId=${encodeURIComponent(currentOpenUserId)}`,
+                                     { method: "POST" });
+            state.chats[thread.id] = thread;
+            renderInbox();
+            switchView("view-messages");
+            openChatThread(thread.id);
+        } catch (err) {
+            showToast(describeApiError(err, "Could not start this conversation."), "error");
+        }
+    });
+
+
+
 
     // The ••• button had no handler at all. Opening the creator is the obvious
     // action for it, and the modal already exists.
@@ -1892,6 +1962,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
             }
 
+            if (creator) {
+                openCreatorProfile(creator);
+                return;
+            }
+
             if (!creator) {
                 const name = creatorCard.querySelector("h3")?.textContent || "Creator";
                 const niche = creatorCard.querySelector(".creator-type")?.textContent || "Creator";
@@ -1901,7 +1976,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 const bgClass = creatorCard.querySelector(".creator-avatar")?.className || "avatar-purple";
                 creator = { id: creatorId || "c_" + Date.now(), name, niche, location: loc, followers, avatar, bgClass, match: 88 };
             }
-            openCreatorModal(creator);
+            openCreatorProfile(creator);
         }
     });
 
