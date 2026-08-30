@@ -26,6 +26,7 @@ public class NotificationService {
     public static final String COMMENT_LIKE = "COMMENT_LIKE";
     public static final String CONNECTION = "CONNECTION";
     public static final String MESSAGE = "MESSAGE";
+    public static final String JOB_APPLICATION = "JOB_APPLICATION";
 
     /**
      * Records a notification, unless there is nobody to tell or the actor is the

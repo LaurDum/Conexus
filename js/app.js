@@ -1062,16 +1062,6 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    document.querySelectorAll(".trending-tag").forEach(tagBtn => {
-        tagBtn.addEventListener("click", () => {
-            const tag = tagBtn.getAttribute("data-tag") || "";
-            if (searchInput) {
-                searchInput.value = tag;
-                searchClear?.classList.remove("hidden");
-                loadDiscover(true);
-            }
-        });
-    });
 
 
     // =========================================================================
@@ -1350,7 +1340,8 @@ document.addEventListener("DOMContentLoaded", () => {
         COMMENT_REPLY: { icon: "↩️", verb: "replied to your comment" },
         COMMENT_LIKE:  { icon: "❤️", verb: "liked your comment" },
         CONNECTION:    { icon: "🤝", verb: "connected with you" },
-        MESSAGE:       { icon: "✉️", verb: "sent you a message" }
+        MESSAGE:       { icon: "✉️", verb: "sent you a message" },
+        JOB_APPLICATION: { icon: "📄", verb: "applied to your listing" }
     };
 
     async function loadNotifications() {
@@ -2292,7 +2283,30 @@ document.addEventListener("DOMContentLoaded", () => {
     // JOBS
     // =========================================================================
 
+    /**
+     * A job card. Your own listings render compact — you posted them, so the
+     * useful thing is how many people applied, not the details you wrote.
+     */
     function jobCardHtml(j) {
+        if (j.mine) {
+            const count = j.applicationCount || 0;
+            return `
+                <div class="job-card job-card-mine" data-job-id="${escapeHtml(j.id)}">
+                    <div class="job-mine-top">
+                        <div class="job-mine-title">
+                            <span class="job-mine-label">Your listing</span>
+                            <h4>${escapeHtml(j.title)}</h4>
+                        </div>
+                        <button class="btn-remove-job" data-job-id="${escapeHtml(j.id)}" data-confirming="false">Remove</button>
+                    </div>
+                    <button class="btn-view-applicants" data-job-id="${escapeHtml(j.id)}" data-title="${escapeHtml(j.title)}">
+                        ${count} applicant${count === 1 ? "" : "s"} ${count ? "→" : ""}
+                    </button>
+                </div>
+            `;
+        }
+
+        const applied = j.applied === true;
         return `
             <div class="job-card" data-job-id="${escapeHtml(j.id)}">
                 <div class="brand-header">
@@ -2310,10 +2324,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 <p class="brand-desc">${escapeHtml(j.description || "")}</p>
                 <div class="brand-footer">
                     <span class="brand-pay">${escapeHtml(j.pay || "")}</span>
-                    ${String(j.postedByUserId || "") === String(state.currentUser?.id || "-")
-                        ? `<button class="btn-remove-job" data-job-id="${escapeHtml(j.id)}" data-confirming="false">Remove</button>`
-                        : `<span class="job-meta">${escapeHtml(j.location || "")} · ${escapeHtml(j.postedAgo || "")}</span>`}
+                    <button class="btn-apply-job ${applied ? "applied" : ""}" data-job-id="${escapeHtml(j.id)}" data-applied="${applied}">
+                        ${applied ? "Applied ✓" : "Apply"}
+                    </button>
                 </div>
+                <span class="job-meta">${escapeHtml(j.location || "")} · ${escapeHtml(j.postedAgo || "")}</span>
             </div>
         `;
     }
@@ -2395,6 +2410,69 @@ document.addEventListener("DOMContentLoaded", () => {
         jobsSearchTimer = setTimeout(loadAllJobs, 250);
     });
 
+
+    // ── Applying, and seeing who applied ───────────────────────────────────
+
+    document.addEventListener("click", async (e) => {
+        const btn = e.target.closest(".btn-apply-job");
+        if (!btn) return;
+        e.stopPropagation();
+        if (!state.currentUser) { showAuthScreen(); return; }
+
+        const jobId = btn.getAttribute("data-job-id");
+        const applied = btn.getAttribute("data-applied") === "true";
+        btn.disabled = true;
+
+        try {
+            if (applied) {
+                await api(`/api/jobs/${jobId}/apply`, { method: "DELETE" });
+                showToast("Application withdrawn");
+            } else {
+                await api(`/api/jobs/${jobId}/apply`, { method: "POST", body: {} });
+                showToast("Applied — they'll see it in their notifications");
+            }
+            await loadAllJobs();
+            loadHomeJobs();
+        } catch (err) {
+            btn.disabled = false;
+            showToast(describeApiError(err, "Could not send your application."), "error");
+        }
+    });
+
+    document.addEventListener("click", async (e) => {
+        const btn = e.target.closest(".btn-view-applicants");
+        if (!btn) return;
+        e.stopPropagation();
+
+        const jobId = btn.getAttribute("data-job-id");
+        const list = document.getElementById("applicants-list");
+        const titleEl = document.getElementById("applicants-job-title");
+        if (titleEl) titleEl.textContent = btn.getAttribute("data-title") || "";
+
+        document.getElementById("modal-applicants")?.classList.remove("hidden");
+        if (list) list.innerHTML = `<div class="applicants-empty">Loading…</div>`;
+
+        try {
+            const data = await api(`/api/jobs/${jobId}/applications`);
+            list.innerHTML = (data.items || []).length
+                ? data.items.map(a => `
+                    <div class="applicant-row">
+                        <div class="creator-avatar ${escapeHtml(a.bgClass)}" data-user-id="${escapeHtml(a.userId)}">${escapeHtml(a.avatar)}</div>
+                        <div class="applicant-info" data-user-id="${escapeHtml(a.userId)}">
+                            <h4>${escapeHtml(a.name)}</h4>
+                            <p>${escapeHtml(a.niche || "Conexus Creator")}</p>
+                        </div>
+                    </div>
+                `).join("")
+                : `<div class="applicants-empty">Nobody has applied yet.</div>`;
+        } catch (err) {
+            list.innerHTML = `<div class="applicants-empty">Could not load applicants.</div>`;
+        }
+    });
+
+    document.getElementById("btn-close-applicants")?.addEventListener("click", () => {
+        document.getElementById("modal-applicants")?.classList.add("hidden");
+    });
 
     // ── A creator posting what they are looking for ────────────────────────
 

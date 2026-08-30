@@ -420,15 +420,6 @@
                 </div>
             </div>
 
-            <!-- Trending Topics -->
-            <div class="trending-bar">
-                <span class="trending-label">🔥 Trending:</span>
-                <button class="trending-tag" data-tag="TokyoVlog">#TokyoVlog</button>
-                <button class="trending-tag" data-tag="SetupTour">#SetupTour</button>
-                <button class="trending-tag" data-tag="AIWorkflows">#AIWorkflows</button>
-                <button class="trending-tag" data-tag="PodcastCollab">#PodcastCollab</button>
-            </div>
-
             <!-- Creator Grid -->
             <div class="discover-grid" id="discover-creators-grid">
                 <!-- Creators dynamically rendered by JS -->
@@ -1012,6 +1003,20 @@
                 <button type="button" class="btn-secondary" id="btn-native-share">Share via…</button>
                 <button type="button" class="btn-secondary" id="btn-open-share-link">Open in new tab</button>
             </div>
+        </div>
+    </div>
+
+    <!-- WHO APPLIED TO ONE OF YOUR LISTINGS -->
+    <div class="modal-overlay hidden" id="modal-applicants">
+        <div class="modal-card">
+            <div class="modal-header">
+                <div>
+                    <h3>Applicants</h3>
+                    <p class="modal-subtitle" id="applicants-job-title"></p>
+                </div>
+                <button class="modal-close" id="btn-close-applicants">&times;</button>
+            </div>
+            <div class="applicants-list" id="applicants-list"></div>
         </div>
     </div>
 
