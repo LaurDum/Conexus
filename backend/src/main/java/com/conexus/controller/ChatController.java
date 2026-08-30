@@ -51,6 +51,16 @@ public class ChatController {
         }
     }
 
+    /** POST /api/chats/with-user?otherUserId=5 — open or reuse a direct conversation. */
+    @PostMapping("/with-user")
+    public ResponseEntity<?> openWithUser(@CurrentUser Long userId, @RequestParam Long otherUserId) {
+        try {
+            return ResponseEntity.ok(chatService.openThreadWithUser(userId, otherUserId));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Collections.singletonMap("message", e.getMessage()));
+        }
+    }
+
     /** PUT /api/chats/{id}/read */
     @PutMapping("/{id}/read")
     public ResponseEntity<?> markRead(@CurrentUser Long userId, @PathVariable String id) {

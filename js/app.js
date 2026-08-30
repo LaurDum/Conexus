@@ -303,6 +303,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const fetchedCreators = await api(`/api/creators`);
             state.creators = fetchedCreators.map(c => ({
                 id: c.id,
+                userId: c.userId,
                 name: c.name,
                 niche: c.niche,
                 category: c.category,
@@ -971,6 +972,15 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
+    // Anywhere a person is named — a post author, a comment author, the chat
+    // header — opens their profile.
+    document.addEventListener("click", (e) => {
+        const personEl = e.target.closest("[data-user-id]");
+        if (!personEl) return;
+        e.stopPropagation();
+        openUserProfile(personEl.getAttribute("data-user-id"));
+    });
+
     window.addEventListener("hashchange", openPostFromHash);
 
     document.addEventListener("click", (e) => {
@@ -1180,6 +1190,18 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         if (chatHeaderName) chatHeaderName.textContent = threadData.name;
         if (chatHeaderStatus) chatHeaderStatus.textContent = threadData.status;
+
+        // Tag the header so the shared [data-user-id] handler can open them.
+        const chatUserInfo = document.querySelector("#drawer-chat .chat-user-info");
+        if (chatUserInfo) {
+            if (threadData.partnerUserId) {
+                chatUserInfo.setAttribute("data-user-id", threadData.partnerUserId);
+                chatUserInfo.classList.add("is-linked");
+            } else {
+                chatUserInfo.removeAttribute("data-user-id");
+                chatUserInfo.classList.remove("is-linked");
+            }
+        }
 
         renderChatMessages(threadData.messages || []);
 
@@ -1523,7 +1545,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             return `
                 <article class="inspo-card" data-post-id="${escapeHtml(post.id)}">
-                    <div class="post-author">
+                    <div class="post-author${post.authorId ? " is-linked" : ""}"${post.authorId ? ` data-user-id="${escapeHtml(post.authorId)}"` : ""}>
                         <div class="small-avatar ${escapeHtml(avatarClass)}">${escapeHtml(initials)}</div>
                         <div>
                             <strong>${escapeHtml(author)}</strong>
@@ -1718,10 +1740,77 @@ document.addEventListener("DOMContentLoaded", () => {
     const btnCreatorMessage = document.getElementById("btn-creator-message");
 
     let currentOpenCreator = null;
+    let currentOpenUserId = null;
+
+    /**
+     * Opens a real account's profile in the same modal the discover cards use.
+     * Reachable from a post author, a comment author, a chat header or a
+     * creator card — anywhere a person is named.
+     */
+    async function openUserProfile(userId) {
+        if (!userId || !state.currentUser) return;
+
+        if (String(userId) === String(state.currentUser.id)) {
+            switchView("view-profile");   // your own profile is a whole tab
+            return;
+        }
+
+        let profile;
+        try {
+            profile = await api(`/api/users/${userId}`);
+        } catch (err) {
+            showToast(describeApiError(err, "Could not open that profile."), "error");
+            return;
+        }
+
+        currentOpenUserId = profile.id;
+        currentOpenCreator = profile.creatorId
+            ? state.creators.find(c => c.id === profile.creatorId) || null
+            : null;
+
+        if (viewCreatorAvatar) {
+            viewCreatorAvatar.textContent = profile.avatar || (profile.displayName || "?").substring(0, 2).toUpperCase();
+            viewCreatorAvatar.className = `creator-avatar ${profile.bgClass || "avatar-purple"} profile-avatar-lg`;
+        }
+        if (viewCreatorName) viewCreatorName.textContent = profile.displayName || profile.username;
+        if (viewCreatorHandle) viewCreatorHandle.textContent = profile.handle || ("@" + profile.username);
+        if (viewCreatorNiche) viewCreatorNiche.textContent = profile.niche || "Creator";
+        if (viewCreatorLocation) viewCreatorLocation.textContent = profile.location || "Worldwide";
+        if (viewCreatorFollowers) viewCreatorFollowers.textContent = `${profile.totalReach || "0"} total reach`;
+        if (viewCreatorBio) viewCreatorBio.textContent = profile.bio || "This creator hasn't written a bio yet.";
+
+        // Match only means something for a discover card.
+        const matchEl = viewCreatorMatch ? viewCreatorMatch.closest(".match, .creator-match") || viewCreatorMatch : null;
+        if (viewCreatorMatch) {
+            const creator = currentOpenCreator;
+            viewCreatorMatch.textContent = creator ? `${creator.match}%` : "—";
+            if (matchEl) matchEl.style.display = creator ? "" : "none";
+        }
+
+        // Real links, not the three fixed badges this modal used to show.
+        if (viewCreatorSocials) {
+            viewCreatorSocials.innerHTML = (profile.socials || []).length
+                ? profile.socials.map(soc => {
+                    const meta = platformMeta[soc.platform] || { name: soc.platform, icon: "🌐" };
+                    return `<a class="social-badge ${escapeHtml(soc.platform)}" href="${escapeHtml(soc.url || "#")}" target="_blank" rel="noopener">${meta.icon} ${escapeHtml(meta.name)}${soc.followers ? " (" + escapeHtml(soc.followers) + ")" : ""}</a>`;
+                }).join("")
+                : `<span style="color: var(--muted); font-size: 0.75rem;">No linked accounts yet.</span>`;
+        }
+
+        if (btnCreatorConnect) {
+            const canConnect = !!profile.creatorId;
+            btnCreatorConnect.style.display = canConnect ? "" : "none";
+            btnCreatorConnect.classList.toggle("connected", profile.connected);
+            btnCreatorConnect.textContent = profile.connected ? "Requested" : "Connect";
+        }
+
+        if (modalCreatorView) modalCreatorView.classList.remove("hidden");
+    }
 
     function openCreatorModal(creator) {
         if (!creator) return;
         currentOpenCreator = creator;
+        currentOpenUserId = null;   // this card has no account behind it
 
         if (viewCreatorAvatar) {
             viewCreatorAvatar.textContent = creator.avatar || creator.name.substring(0, 2).toUpperCase();
@@ -1759,19 +1848,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (btnCreatorMessage) {
         btnCreatorMessage.addEventListener("click", async () => {
-            if (!currentOpenCreator || !state.currentUser) return;
+            if ((!currentOpenCreator && !currentOpenUserId) || !state.currentUser) return;
             if (modalCreatorView) modalCreatorView.classList.add("hidden");
 
-            const creatorId = currentOpenCreator.id;
-            if (!creatorId) return;
+            // Either route works; the server derives the same thread id, so a
+            // person reached from a post and from Discover is one conversation.
+            const path = currentOpenUserId
+                ? `/api/chats/with-user?otherUserId=${encodeURIComponent(currentOpenUserId)}`
+                : `/api/chats/with-creator?creatorId=${encodeURIComponent(currentOpenCreator.id)}`;
 
             try {
-                // The server owns the thread id, so both participants end up
-                // pointing at the same conversation.
-                const thread = await api(
-                    `/api/chats/with-creator?creatorId=${encodeURIComponent(creatorId)}`,
-                    { method: "POST" }
-                );
+                const thread = await api(path, { method: "POST" });
                 state.chats[thread.id] = thread;
 
                 renderInbox();
@@ -1798,6 +1885,13 @@ document.addEventListener("DOMContentLoaded", () => {
         if (creatorCard && !e.target.closest(".connect-button") && !e.target.closest(".creator-more")) {
             const creatorId = creatorCard.getAttribute("data-creator-id");
             let creator = state.creators.find(c => c.id === creatorId);
+
+            // Prefer the real account: it has their actual bio, links and stats.
+            if (creator && creator.userId) {
+                openUserProfile(creator.userId);
+                return;
+            }
+
             if (!creator) {
                 const name = creatorCard.querySelector("h3")?.textContent || "Creator";
                 const niche = creatorCard.querySelector(".creator-type")?.textContent || "Creator";
@@ -1869,6 +1963,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const comments = await api(`/api/comments?postId=${postId}`);
             renderCommentsList(comments.map(c => ({
                 author: c.authorName,
+                authorId: c.authorId,
                 avatar: c.avatar,
                 bgClass: c.bgClass,
                 time: timeAgo(c.createdAt),
@@ -1900,7 +1995,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!postCommentsList) return;
 
         postCommentsList.innerHTML = comments.map(c => `
-            <div class="comment-item">
+            <div class="comment-item${c.authorId ? " is-linked" : ""}"${c.authorId ? ` data-user-id="${escapeHtml(c.authorId)}"` : ""}>
                 <div class="comment-avatar ${escapeHtml(c.bgClass)}">${escapeHtml(c.avatar)}</div>
                 <div class="comment-body">
                     <div class="comment-header">

@@ -3,8 +3,10 @@ package com.conexus.service;
 import com.conexus.model.ChatMessage;
 import com.conexus.model.ChatThread;
 import com.conexus.model.Creator;
+import com.conexus.model.ProfileInfo;
 import com.conexus.model.User;
 import com.conexus.repository.ChatThreadRepository;
+import com.conexus.repository.ProfileInfoRepository;
 import com.conexus.repository.CreatorRepository;
 import com.conexus.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -22,8 +24,23 @@ public class ChatService {
     private final ChatThreadRepository chatThreadRepository;
     private final CreatorRepository creatorRepository;
     private final UserRepository userRepository;
+    private final ProfileInfoRepository profileInfoRepository;
 
     private static final DateTimeFormatter CLOCK = DateTimeFormatter.ofPattern("hh:mm a");
+
+    /**
+     * The name a user is known by. Prefers what they set on their profile, which
+     * is what the rest of the app shows — otherwise a conversation header can
+     * disagree with the profile it links to.
+     */
+    private String displayNameOf(User user) {
+        if (user == null) return "Conexus Creator";
+
+        return profileInfoRepository.findByUserId(user.getId())
+                .map(ProfileInfo::getDisplayName)
+                .filter(name -> name != null && !name.isBlank())
+                .orElseGet(() -> user.getDisplayName() != null ? user.getDisplayName() : user.getUsername());
+    }
 
     public List<ChatThread> getAllThreads() {
         return chatThreadRepository.findAll();
@@ -95,6 +112,39 @@ public class ChatService {
                         .build()));
     }
 
+    /**
+     * Opens (or reuses) a conversation with another account directly, for people
+     * who have no discover card — a post author or commenter, say.
+     */
+    @Transactional
+    public ChatThread openThreadWithUser(Long userId, Long otherUserId) {
+        if (userId.equals(otherUserId)) {
+            throw new RuntimeException("You cannot start a conversation with yourself");
+        }
+
+        User other = userRepository.findById(otherUserId)
+                .orElseThrow(() -> new RuntimeException("User not found: " + otherUserId));
+
+        String threadId = threadIdFor(userId, otherUserId, null);
+
+        return chatThreadRepository.findById(threadId).orElseGet(() -> {
+            String name = displayNameOf(other);
+            return chatThreadRepository.save(ChatThread.builder()
+                    .id(threadId)
+                    .userId(userId)
+                    .partnerUserId(otherUserId)
+                    .name(name)
+                    .avatar(other.getAvatar() != null ? other.getAvatar()
+                            : name.substring(0, Math.min(2, name.length())).toUpperCase())
+                    .bgClass(other.getBgClass() != null ? other.getBgClass() : "avatar-purple")
+                    .status(other.getNiche() != null ? other.getNiche() : "Conexus Creator")
+                    .snippet("")
+                    .time("Just now")
+                    .unread(false)
+                    .build());
+        });
+    }
+
     @Transactional
     public ChatThread markRead(String id) {
         ChatThread thread = getThread(id);
@@ -110,9 +160,7 @@ public class ChatService {
 
         // The display name comes from the account, not from the request body.
         User senderUser = senderId != null ? userRepository.findById(senderId).orElse(null) : null;
-        String senderName = fromOwner
-                ? (senderUser != null ? senderUser.getDisplayName() : "You")
-                : thread.getName();
+        String senderName = fromOwner ? displayNameOf(senderUser) : thread.getName();
 
         appendMessage(thread, fromOwner ? "me" : "them", text, senderName, fromOwner ? senderId : null, now);
         thread.setUnread(false);
@@ -138,7 +186,7 @@ public class ChatService {
 
         // The author's message is "them" from the recipient's point of view.
         User author = authorId != null ? userRepository.findById(authorId).orElse(null) : null;
-        String authorName = author != null ? author.getDisplayName() : sourceThread.getName();
+        String authorName = author != null ? displayNameOf(author) : sourceThread.getName();
 
         appendMessage(partnerThread, "them", text, authorName, authorId, now);
         partnerThread.setUnread(true);
@@ -149,7 +197,7 @@ public class ChatService {
     private ChatThread describeSenderFor(String threadId, Long recipientId, Long authorId) {
         User author = authorId != null ? userRepository.findById(authorId).orElse(null) : null;
 
-        String name = author != null ? author.getDisplayName() : "Conexus Creator";
+        String name = displayNameOf(author);
         String avatar = author != null && author.getAvatar() != null
                 ? author.getAvatar()
                 : name.substring(0, Math.min(2, name.length())).toUpperCase();

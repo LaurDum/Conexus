@@ -2441,3 +2441,25 @@ button:active {
     color: var(--primary);
     border-color: var(--primary);
 }
+
+/* Names and avatars that open a profile — signal they are clickable */
+.is-linked {
+    cursor: pointer;
+    border-radius: 8px;
+    transition: opacity 0.15s ease;
+}
+
+.is-linked:hover {
+    opacity: 0.75;
+}
+
+.post-author.is-linked strong:hover,
+.comment-item.is-linked strong:hover,
+.chat-user-info.is-linked h3:hover {
+    text-decoration: underline;
+}
+
+/* Real social links in the profile modal are anchors now, not static badges */
+a.social-badge {
+    text-decoration: none;
+}
