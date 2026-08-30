@@ -2754,3 +2754,79 @@ a.social-badge {
     border-color: var(--primary);
     color: var(--primary);
 }
+
+/* ==========================================================
+   CONNECTION REQUESTS (Messages tab)
+   ========================================================== */
+.connection-requests {
+    margin-bottom: 18px;
+}
+
+.requests-heading {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--secondary);
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.request-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--card);
+    border: 1px solid var(--primary-soft);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    margin-bottom: 8px;
+}
+
+.request-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.request-info h4 {
+    font-size: 0.84rem;
+    margin-bottom: 2px;
+}
+
+.request-info p {
+    color: var(--muted);
+    font-size: 0.72rem;
+}
+
+.request-actions {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.request-actions button {
+    padding: 7px 14px;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid var(--border);
+}
+
+.btn-accept-request {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #fff;
+}
+
+.btn-accept-request:hover {
+    background: var(--primary-hover);
+}
+
+.btn-decline-request {
+    background: transparent;
+    color: var(--muted);
+}
+
+.btn-decline-request:hover {
+    color: var(--text);
+}

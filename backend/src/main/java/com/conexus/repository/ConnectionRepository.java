@@ -10,4 +10,9 @@ public interface ConnectionRepository extends JpaRepository<Connection, Long> {
     Optional<Connection> findByRequesterIdAndTargetCreatorId(Long requesterId, String targetCreatorId);
     void deleteByRequesterIdAndTargetCreatorId(Long requesterId, String targetCreatorId);
     List<Connection> findByRequesterId(Long requesterId);
+
+    /** Requests waiting on this user. */
+    List<Connection> findByTargetUserIdAndStatusOrderByCreatedAtDesc(Long targetUserId, String status);
+
+    long countByTargetUserIdAndStatus(Long targetUserId, String status);
 }

@@ -38,6 +38,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Creator IDs this user has already connected with (Populated from backend)
         connectedCreatorIds: new Set(),
+        // creatorId -> PENDING | ACCEPTED
+        connectionStatus: {},
+
+        // Connection requests waiting on this user
+        connectionRequests: [],
 
         // Notifications (Populated from backend)
         notifications: [],
@@ -301,6 +306,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         renderInbox();
         renderPendingSteps();
+        await loadConnectionRequests();
         await loadNotifications();
 
         try {
@@ -322,8 +328,12 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         try {
-            const connectedIds = await api(`/api/connections`);
-            state.connectedCreatorIds = new Set(connectedIds);
+            const connections = await api(`/api/connections`);
+            state.connectedCreatorIds = new Set(connections.map(c => c.creatorId));
+            state.connectionStatus = connections.reduce((map, c) => {
+                map[c.creatorId] = c.status;
+                return map;
+            }, {});
         } catch (e) {
             failed.push("connections");
         }
@@ -777,6 +787,9 @@ document.addEventListener("DOMContentLoaded", () => {
     /** One creator card, used by both Discover and the Home "Mingle" strip. */
     function creatorCardHtml(c) {
         const connected = state.connectedCreatorIds.has(c.id);
+        // A request that is still waiting reads differently from an accepted one.
+        const label = !connected ? "Connect"
+            : (state.connectionStatus[c.id] === "PENDING" ? "Requested" : "Connected");
         return `
             <article class="creator-card discover-card" data-creator-id="${escapeHtml(c.id)}">
                 <div class="creator-avatar ${escapeHtml(c.bgClass)}">${escapeHtml(c.avatar)}</div>
@@ -786,7 +799,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 <div class="creator-info">${escapeHtml(c.location)}</div>
                 <div class="creator-followers">${escapeHtml(c.followers)} followers</div>
                 <div class="match"><span>${escapeHtml(c.match)}%</span> match</div>
-                <button class="connect-button ${connected ? "connected" : ""}" data-name="${escapeHtml(c.name)}">${connected ? "Requested" : "Connect"}</button>
+                <button class="connect-button ${connected ? "connected" : ""}" data-name="${escapeHtml(c.name)}">${label}</button>
             </article>
         `;
     }
@@ -900,10 +913,15 @@ document.addEventListener("DOMContentLoaded", () => {
                 try {
                     const data = await api("/api/connections/toggle", { method: "POST", body: reqBody });
 
-                    if (data.status === "connected") {
-                        state.connectedCreatorIds.add(targetId);
-                    } else {
+                    if (data.status === "disconnected") {
                         state.connectedCreatorIds.delete(targetId);
+                        delete state.connectionStatus[targetId];
+                    } else {
+                        state.connectedCreatorIds.add(targetId);
+                        state.connectionStatus[targetId] = data.status === "requested" ? "PENDING" : "ACCEPTED";
+                        showToast(data.status === "requested"
+                            ? "Request sent — they'll see it in their messages"
+                            : "Connected");
                     }
                     // Re-render both lists so the same creator cannot show
                     // "Requested" in one place and "Connect" in the other.
@@ -1238,6 +1256,68 @@ document.addEventListener("DOMContentLoaded", () => {
             renderNotifications();
         } catch (err) {
             showToast(describeApiError(err, "Could not mark notifications read."), "error");
+        }
+    });
+
+    /**
+     * Connection requests waiting on this user, shown above the inbox.
+     *
+     * Connecting used to write a row and change a label, which is why it felt
+     * like it did nothing — nobody on the other end ever saw it.
+     */
+    async function loadConnectionRequests() {
+        try {
+            state.connectionRequests = await api("/api/connections/requests");
+        } catch (err) {
+            state.connectionRequests = [];
+        }
+        renderConnectionRequests();
+    }
+
+    function renderConnectionRequests() {
+        const wrap = document.getElementById("connection-requests");
+        const list = document.getElementById("connection-requests-list");
+        if (!wrap || !list) return;
+
+        const requests = state.connectionRequests || [];
+        wrap.classList.toggle("hidden", requests.length === 0);
+        if (!requests.length) {
+            list.innerHTML = "";   // do not leave stale cards in the hidden section
+            return;
+        }
+
+        list.innerHTML = requests.map(req => `
+            <div class="request-card" data-request-id="${escapeHtml(req.id)}">
+                <div class="creator-avatar ${escapeHtml(req.bgClass)}"${req.requesterId ? ` data-user-id="${escapeHtml(req.requesterId)}"` : ""}>${escapeHtml(req.avatar)}</div>
+                <div class="request-info">
+                    <h4>${escapeHtml(req.name)}</h4>
+                    <p>${escapeHtml(req.niche || "Conexus Creator")} wants to connect</p>
+                </div>
+                <div class="request-actions">
+                    <button class="btn-accept-request" data-request-id="${escapeHtml(req.id)}">Accept</button>
+                    <button class="btn-decline-request" data-request-id="${escapeHtml(req.id)}">Decline</button>
+                </div>
+            </div>
+        `).join("");
+    }
+
+    document.addEventListener("click", async (e) => {
+        const accept = e.target.closest(".btn-accept-request");
+        const decline = e.target.closest(".btn-decline-request");
+        if (!accept && !decline) return;
+
+        const btn = accept || decline;
+        const requestId = btn.getAttribute("data-request-id");
+        btn.disabled = true;
+
+        try {
+            await api(`/api/connections/${requestId}/${accept ? "accept" : "decline"}`, { method: "PUT" });
+            state.connectionRequests = state.connectionRequests.filter(x => String(x.id) !== String(requestId));
+            renderConnectionRequests();
+            if (accept) showToast("Connection accepted");
+        } catch (err) {
+            btn.disabled = false;
+            showToast(describeApiError(err, "Could not respond to that request."), "error");
         }
     });
 
@@ -2018,12 +2098,21 @@ document.addEventListener("DOMContentLoaded", () => {
                 method: "POST",
                 body: { targetCreatorId: targetId }
             });
-            const connected = data.status === "connected";
-            if (connected) state.connectedCreatorIds.add(targetId);
-            else state.connectedCreatorIds.delete(targetId);
+            const connected = data.status !== "disconnected";
+            if (connected) {
+                state.connectedCreatorIds.add(targetId);
+                state.connectionStatus[targetId] = data.status === "requested" ? "PENDING" : "ACCEPTED";
+                showToast(data.status === "requested"
+                    ? "Request sent — they'll see it in their messages"
+                    : "Connected");
+            } else {
+                state.connectedCreatorIds.delete(targetId);
+                delete state.connectionStatus[targetId];
+            }
 
             btn.classList.toggle("connected", connected);
-            btn.textContent = connected ? "Requested" : "Connect";
+            btn.textContent = !connected ? "Connect"
+                : (state.connectionStatus[targetId] === "PENDING" ? "Requested" : "Connected");
             renderDiscoverCreators();
             renderHomeCreators();
         } catch (err) {
