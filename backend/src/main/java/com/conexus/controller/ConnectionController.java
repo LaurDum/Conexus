@@ -1,7 +1,10 @@
 package com.conexus.controller;
 
 import com.conexus.model.Connection;
+import com.conexus.model.Notification;
 import com.conexus.repository.ConnectionRepository;
+import com.conexus.repository.CreatorRepository;
+import com.conexus.service.NotificationService;
 import com.conexus.security.CurrentUser;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +21,8 @@ import java.util.stream.Collectors;
 public class ConnectionController {
 
     private final ConnectionRepository connectionRepository;
+    private final CreatorRepository creatorRepository;
+    private final NotificationService notificationService;
 
     /** GET /api/connections — creator IDs the signed-in user has connected with. */
     @GetMapping
@@ -47,6 +52,12 @@ public class ConnectionController {
         req.setId(null);
         req.setRequesterId(userId);
         Connection saved = connectionRepository.save(req);
+
+        // Tell the person behind the card, when there is one.
+        creatorRepository.findById(req.getTargetCreatorId()).ifPresent(creator ->
+                notificationService.notify(creator.getUserId(), userId, NotificationService.CONNECTION,
+                        Notification.builder()));
+
         return ResponseEntity.ok(Map.of("status", "connected", "id", saved.getId()));
     }
 }

@@ -1,6 +1,7 @@
 package com.conexus.service;
 
 import com.conexus.model.Post;
+import com.conexus.model.Notification;
 import com.conexus.model.PostLike;
 import com.conexus.repository.PostLikeRepository;
 import com.conexus.repository.PostRepository;
@@ -18,6 +19,7 @@ public class PostService {
 
     private final PostRepository postRepository;
     private final PostLikeRepository postLikeRepository;
+    private final NotificationService notificationService;
 
     /**
      * Newest first, with each post's `liked` flag resolved for this viewer.
@@ -64,6 +66,15 @@ public class PostService {
         post.setLikesCount((int) postLikeRepository.countByPostId(postId));
         Post saved = postRepository.save(post);
         saved.setLiked(nowLiked);
+
+        // Only on liking; unliking should not announce itself.
+        if (nowLiked) {
+            notificationService.notify(post.getAuthorId(), userId, NotificationService.POST_LIKE,
+                    Notification.builder()
+                            .postId(post.getId())
+                            .excerpt(NotificationService.excerpt(post.getContent())));
+        }
+
         return saved;
     }
 

@@ -3,6 +3,7 @@ package com.conexus.service;
 import com.conexus.model.ChatMessage;
 import com.conexus.model.ChatThread;
 import com.conexus.model.Creator;
+import com.conexus.model.Notification;
 import com.conexus.model.ProfileInfo;
 import com.conexus.model.User;
 import com.conexus.repository.ChatThreadRepository;
@@ -25,6 +26,7 @@ public class ChatService {
     private final CreatorRepository creatorRepository;
     private final UserRepository userRepository;
     private final ProfileInfoRepository profileInfoRepository;
+    private final NotificationService notificationService;
 
     private static final DateTimeFormatter CLOCK = DateTimeFormatter.ofPattern("hh:mm a");
 
@@ -191,6 +193,11 @@ public class ChatService {
         appendMessage(partnerThread, "them", text, authorName, authorId, now);
         partnerThread.setUnread(true);
         chatThreadRepository.save(partnerThread);
+
+        notificationService.notify(recipientId, authorId, NotificationService.MESSAGE,
+                Notification.builder()
+                        .threadId(partnerThread.getId())
+                        .excerpt(NotificationService.excerpt(text)));
     }
 
     /** Builds the recipient's side of a conversation, described from their view. */

@@ -266,7 +266,10 @@
     <div class="notification-popover hidden" id="drawer-notifications">
         <div class="popover-header">
             <h3>Notifications</h3>
-            <button class="icon-btn-close" id="btn-close-notifications">&times;</button>
+            <div class="popover-actions">
+                <button class="btn-mark-read" id="btn-mark-all-read">Mark all read</button>
+                <button class="icon-btn-close" id="btn-close-notifications">&times;</button>
+            </div>
         </div>
         <div class="notification-list" id="notification-list">
             <!-- Populated from real activity by renderNotifications() in js/app.js -->

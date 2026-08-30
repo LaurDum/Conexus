@@ -39,6 +39,10 @@ document.addEventListener("DOMContentLoaded", () => {
         // Creator IDs this user has already connected with (Populated from backend)
         connectedCreatorIds: new Set(),
 
+        // Notifications (Populated from backend)
+        notifications: [],
+        unreadNotifications: 0,
+
         // Chat Conversations Database (Loaded dynamically per user)
         chats: {},
         activeThreadId: null
@@ -296,8 +300,8 @@ document.addEventListener("DOMContentLoaded", () => {
             failed.push("messages");
         }
         renderInbox();
-        renderNotifications();
         renderPendingSteps();
+        await loadNotifications();
 
         try {
             const fetchedCreators = await api(`/api/creators`);
@@ -741,7 +745,10 @@ document.addEventListener("DOMContentLoaded", () => {
     if (btnNotifications && drawerNotifications) {
         btnNotifications.addEventListener("click", (e) => {
             e.stopPropagation();
+            const opening = drawerNotifications.classList.contains("hidden");
             drawerNotifications.classList.toggle("hidden");
+            // Re-read on open so the list reflects anything that happened since.
+            if (opening) loadNotifications();
         });
 
         btnCloseNotifications?.addEventListener("click", () => {
@@ -1062,13 +1069,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const chatHeaderStatus = document.getElementById("chat-header-status");
 
     /**
-     * Notifications, derived from real unread conversations.
-     *
-     * The drawer used to contain four hardcoded entries and the badge was a
-     * literal "3" in the HTML — it never reflected anything. There is no
-     * notifications table yet, so this shows the activity the app does track.
-     */
-    /**
      * The "N Pending" pill counted a number nobody maintained. Count the steps
      * actually rendered underneath it instead.
      */
@@ -1086,47 +1086,115 @@ document.addEventListener("DOMContentLoaded", () => {
         pill.textContent = `${pending} Pending`;
     }
 
+    /** Wording for each kind of notification. */
+    const NOTIFICATION_TEXT = {
+        POST_LIKE:     { icon: "❤️", verb: "liked your post" },
+        POST_COMMENT:  { icon: "💬", verb: "commented on your post" },
+        COMMENT_REPLY: { icon: "↩️", verb: "replied to your comment" },
+        COMMENT_LIKE:  { icon: "❤️", verb: "liked your comment" },
+        CONNECTION:    { icon: "🤝", verb: "connected with you" },
+        MESSAGE:       { icon: "✉️", verb: "sent you a message" }
+    };
+
+    async function loadNotifications() {
+        try {
+            const data = await api("/api/notifications");
+            state.notifications = data.items || [];
+            state.unreadNotifications = data.unread || 0;
+        } catch (err) {
+            state.notifications = [];
+            state.unreadNotifications = 0;
+        }
+        renderNotifications();
+    }
+
+    /**
+     * The drawer used to hold four hardcoded entries, then a list derived from
+     * unread conversations. These are real records of what other people did.
+     */
     function renderNotifications() {
         const list = document.getElementById("notification-list");
         const badge = document.getElementById("notification-count");
 
-        const unread = Object.values(state.chats).filter(t => t.unread);
-
         if (badge) {
-            badge.textContent = unread.length;
-            badge.classList.toggle("hidden", unread.length === 0);
+            badge.textContent = state.unreadNotifications;
+            badge.classList.toggle("hidden", state.unreadNotifications === 0);
         }
 
         if (!list) return;
 
-        if (!unread.length) {
+        if (!state.notifications.length) {
             list.innerHTML = `
                 <div style="text-align: center; padding: 28px 20px; color: var(--muted); font-size: 0.8rem;">
-                    You're all caught up.
+                    Nothing yet. Likes, comments and messages will show up here.
                 </div>
             `;
             return;
         }
 
-        list.innerHTML = unread.map(t => `
-            <div class="notification-item unread" data-thread-id="${escapeHtml(t.id)}">
-                <div class="noti-icon">💬</div>
-                <div class="noti-content">
-                    <p><strong>${escapeHtml(t.name)}</strong> sent you a message.</p>
-                    <span>${escapeHtml(t.time || "Recently")}</span>
+        list.innerHTML = state.notifications.map(n => {
+            const meta = NOTIFICATION_TEXT[n.type] || { icon: "✦", verb: "interacted with you" };
+            return `
+                <div class="notification-item${n.read ? "" : " unread"}" data-notification-id="${escapeHtml(n.id)}">
+                    <div class="noti-icon">${meta.icon}</div>
+                    <div class="noti-content">
+                        <p><strong>${escapeHtml(n.actorName || "Someone")}</strong> ${meta.verb}.</p>
+                        ${n.excerpt ? `<p class="noti-excerpt">${escapeHtml(n.excerpt)}</p>` : ""}
+                        <span>${escapeHtml(timeAgo(n.createdAt))}</span>
+                    </div>
                 </div>
-            </div>
-        `).join("");
+            `;
+        }).join("");
 
         list.querySelectorAll(".notification-item").forEach(item => {
-            item.addEventListener("click", () => {
-                const threadId = item.getAttribute("data-thread-id");
-                document.getElementById("drawer-notifications")?.classList.add("hidden");
-                switchView("view-messages");
-                if (threadId) openChatThread(threadId);
-            });
+            item.addEventListener("click", () => openNotification(item.getAttribute("data-notification-id")));
         });
     }
+
+    /** Marks a notification read and goes to whatever it is about. */
+    async function openNotification(notificationId) {
+        const n = state.notifications.find(x => String(x.id) === String(notificationId));
+        if (!n) return;
+
+        document.getElementById("drawer-notifications")?.classList.add("hidden");
+
+        if (!n.read) {
+            n.read = true;
+            state.unreadNotifications = Math.max(0, state.unreadNotifications - 1);
+            renderNotifications();
+            api(`/api/notifications/${n.id}/read`, { method: "PUT" })
+                .catch(err => console.warn("Could not mark notification read", err));
+        }
+
+        if (n.threadId) {
+            switchView("view-messages");
+            if (state.chats[n.threadId]) openChatThread(n.threadId);
+            return;
+        }
+
+        if (n.postId) {
+            switchView("view-home");
+            const card = document.querySelector(`.inspo-card[data-post-id="${n.postId}"]`);
+            if (card) {
+                card.scrollIntoView({ behavior: "smooth", block: "center" });
+                openPostCommentsModal(card);
+            }
+            return;
+        }
+
+        if (n.actorId) openUserProfile(n.actorId);
+    }
+
+    document.getElementById("btn-mark-all-read")?.addEventListener("click", async () => {
+        try {
+            await api("/api/notifications/read-all", { method: "PUT" });
+            state.notifications.forEach(n => { n.read = true; });
+            state.unreadNotifications = 0;
+            renderNotifications();
+        } catch (err) {
+            showToast(describeApiError(err, "Could not mark notifications read."), "error");
+        }
+    });
 
     function renderInbox() {
         if (!inboxList) return;
@@ -1174,7 +1242,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (state.chats[threadId] && state.chats[threadId].unread) {
                     try {
                         state.chats[threadId] = await api(`/api/chats/${threadId}/read`, { method: "PUT" });
-                        renderNotifications();
                     } catch (err) {
                         console.warn("Could not mark thread as read", err);
                     }
@@ -1260,7 +1327,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 state.chats[threadId] = savedThread;
                 renderChatMessages(savedThread.messages || []);
                 renderInbox();
-                renderNotifications();
             } catch (err) {
                 chatInputText.value = text;
                 showToast(describeApiError(err, "Could not send your message."), "error");
@@ -1286,7 +1352,6 @@ document.addEventListener("DOMContentLoaded", () => {
                         renderChatMessages(replied.messages || []);
                     }
                     renderInbox();
-                    renderNotifications();
                 } catch (err) {
                     console.warn("Could not save the simulated reply", err);
                 }

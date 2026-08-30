@@ -2621,3 +2621,31 @@ a.social-badge {
     background: transparent;
     color: var(--muted);
 }
+
+/* Notification drawer header actions */
+.popover-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.btn-mark-read {
+    background: none;
+    border: none;
+    color: var(--primary);
+    font-size: 0.72rem;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 0;
+}
+
+.btn-mark-read:hover {
+    text-decoration: underline;
+}
+
+.noti-excerpt {
+    color: var(--muted);
+    font-size: 0.72rem;
+    font-style: italic;
+    margin-top: 2px;
+}

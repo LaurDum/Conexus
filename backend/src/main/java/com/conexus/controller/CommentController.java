@@ -1,6 +1,7 @@
 package com.conexus.controller;
 
 import com.conexus.model.Comment;
+import com.conexus.model.Notification;
 import com.conexus.model.CommentLike;
 import com.conexus.model.Post;
 import com.conexus.model.User;
@@ -10,6 +11,7 @@ import com.conexus.repository.PostRepository;
 import com.conexus.repository.ProfileInfoRepository;
 import com.conexus.repository.UserRepository;
 import com.conexus.security.CurrentUser;
+import com.conexus.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,6 +32,7 @@ public class CommentController {
     private final PostRepository postRepository;
     private final UserRepository userRepository;
     private final ProfileInfoRepository profileInfoRepository;
+    private final NotificationService notificationService;
 
     /**
      * GET /api/comments?postId=1
@@ -108,6 +111,22 @@ public class CommentController {
         post.setCommentsCount((int) commentRepository.countByPostId(post.getId()));
         postRepository.save(post);
 
+        if (saved.getParentId() != null) {
+            // Tell whoever is being replied to.
+            commentRepository.findById(saved.getParentId()).ifPresent(parent ->
+                    notificationService.notify(parent.getAuthorId(), userId, NotificationService.COMMENT_REPLY,
+                            Notification.builder()
+                                    .postId(post.getId())
+                                    .commentId(saved.getId())
+                                    .excerpt(NotificationService.excerpt(saved.getText()))));
+        } else {
+            notificationService.notify(post.getAuthorId(), userId, NotificationService.POST_COMMENT,
+                    Notification.builder()
+                            .postId(post.getId())
+                            .commentId(saved.getId())
+                            .excerpt(NotificationService.excerpt(saved.getText())));
+        }
+
         saved.setLikesCount(0);
         saved.setLiked(false);
         return ResponseEntity.ok(saved);
@@ -135,6 +154,15 @@ public class CommentController {
         commentLikeRepository.flush();
         comment.setLikesCount(commentLikeRepository.countByCommentId(id));
         comment.setLiked(nowLiked);
+
+        if (nowLiked) {
+            notificationService.notify(comment.getAuthorId(), userId, NotificationService.COMMENT_LIKE,
+                    Notification.builder()
+                            .postId(comment.getPostId())
+                            .commentId(comment.getId())
+                            .excerpt(NotificationService.excerpt(comment.getText())));
+        }
+
         return ResponseEntity.ok(comment);
     }
 
