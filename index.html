@@ -252,9 +252,6 @@
         </div>
 
         <div class="header-actions">
-            <button class="notification header-nav-icon" data-target="view-messages" id="nav-messages-header" aria-label="Messages">
-                💬
-            </button>
             <button class="notification header-nav-icon" id="btn-notifications" aria-label="Notifications">
                 <span class="notification-badge hidden" id="notification-count">0</span>
                 ♡
@@ -1062,7 +1059,15 @@
     <!-- ==========================================
          BOTTOM NAVIGATION
     =========================================== -->
+    <!-- Create post — floats above the nav, on the right -->
+    <button class="create-button" id="btn-create-floating" aria-label="Create new post">
+        +
+    </button>
+
     <nav class="bottom-nav">
+
+        <!-- Slides to whichever tab is active -->
+        <span class="nav-bubble" id="nav-bubble" aria-hidden="true"></span>
 
         <button class="nav-item active" data-target="view-home" id="nav-home">
             <span>⌂</span>
@@ -1074,8 +1079,9 @@
             <small>Discover</small>
         </button>
 
-        <button class="create-button" id="btn-create-floating" aria-label="Create new post">
-            +
+        <button class="nav-item" data-target="view-messages" id="nav-messages">
+            <span>✉</span>
+            <small>Messages</small>
         </button>
 
         <button class="nav-item" data-target="view-recommendations" id="nav-recommendations">

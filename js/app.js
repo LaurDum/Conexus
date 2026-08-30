@@ -261,6 +261,17 @@ document.addEventListener("DOMContentLoaded", () => {
         if (onboardingScreen) onboardingScreen.classList.add("hidden");
         if (appContainer) appContainer.classList.remove("hidden");
 
+        // Put the bubble in place before the first transition can run, or it
+        // slides in from the left edge on load.
+        const bubble = document.getElementById("nav-bubble");
+        if (bubble) {
+            bubble.classList.add("no-animation");
+            requestAnimationFrame(() => {
+                moveNavBubble();
+                requestAnimationFrame(() => bubble.classList.remove("no-animation"));
+            });
+        }
+
         loadUserData();
     }
 
@@ -719,8 +730,49 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         });
 
+        moveNavBubble();
         window.scrollTo({ top: 0, behavior: "smooth" });
     }
+
+    /**
+     * Slides the pill behind whichever tab is active.
+     *
+     * Measured from the button rather than hardcoded, so it stays right at any
+     * width and if tabs are ever added or removed. Views without a tab of their
+     * own — someone's profile, say — hide it instead of leaving it stranded.
+     */
+    function moveNavBubble() {
+        const bubble = document.getElementById("nav-bubble");
+        if (!bubble) return;
+
+        const active = document.querySelector(".bottom-nav .nav-item.active");
+        if (!active) {
+            bubble.style.opacity = "0";
+            return;
+        }
+
+        const navRect = active.parentElement.getBoundingClientRect();
+        const itemRect = active.getBoundingClientRect();
+
+        // Measuring while the nav has no layout — a hidden tab, a collapsed
+        // window — would pin the bubble at zero width in the wrong place. Wait
+        // for real dimensions instead.
+        if (itemRect.width === 0) {
+            bubble.style.opacity = "0";
+            clearTimeout(navBubbleRetry);
+            navBubbleRetry = setTimeout(moveNavBubble, 120);
+            return;
+        }
+
+        bubble.style.width = `${itemRect.width}px`;
+        bubble.style.transform = `translateX(${itemRect.left - navRect.left}px)`;
+        bubble.style.opacity = "1";
+    }
+
+    let navBubbleRetry = null;
+
+    // Keep it aligned when the viewport changes size.
+    window.addEventListener("resize", moveNavBubble);
 
     navItems.forEach(item => {
         item.addEventListener("click", () => {

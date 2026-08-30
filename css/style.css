@@ -1522,15 +1522,45 @@ button:active {
     border-radius: 21px;
     background: rgba(17, 21, 28, 0.94);
     backdrop-filter: blur(20px);
+    padding: 0 6px;
+}
+
+/* The pill that slides between tabs. Positioned from JS, which measures the
+   active button — so it stays correct at any width or tab count. */
+.nav-bubble {
+    position: absolute;
+    top: 6px;
+    bottom: 6px;
+    left: 0;
+    width: 0;
+    border-radius: 16px;
+    background: var(--primary-soft);
+    border: 1px solid var(--primary-glow);
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+                width 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+                opacity 0.2s ease;
+}
+
+/* Skip the slide the first time, so it does not fly in from the left on load. */
+.nav-bubble.no-animation {
+    transition: none;
 }
 
 .nav-item {
+    position: relative;   /* sit above the bubble */
+    z-index: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
     gap: 3px;
-    min-width: 48px;
+    flex: 1;
+    min-width: 0;
+    height: 52px;
     color: var(--muted);
+    transition: color 0.2s ease;
 }
 
 .nav-item span {
@@ -1549,18 +1579,35 @@ button:active {
     color: var(--primary);
 }
 
+/* Floats above the nav bar, on the right */
 .create-button {
-    width: 44px;
-    height: 44px;
+    position: fixed;
+    z-index: 101;
+    right: 18px;
+    bottom: 88px;
+    width: 52px;
+    height: 52px;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-top: -22px;
-    border-radius: 14px;
+    border: none;
+    border-radius: 50%;
     background: var(--primary);
     color: white;
-    font-size: 1.5rem;
-    box-shadow: 0 8px 25px rgba(113, 128, 255, 0.35);
+    font-size: 1.6rem;
+    line-height: 1;
+    cursor: pointer;
+    box-shadow: 0 8px 25px rgba(113, 128, 255, 0.4);
+    transition: transform 0.18s ease, background 0.18s ease;
+}
+
+.create-button:hover {
+    background: var(--primary-hover);
+    transform: scale(1.06);
+}
+
+.create-button:active {
+    transform: scale(0.96);
 }
 
 .create-button:hover {
