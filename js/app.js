@@ -1623,6 +1623,11 @@ document.addEventListener("DOMContentLoaded", () => {
             state.connectionRequests = state.connectionRequests.filter(x => String(x.id) !== String(requestId));
             renderConnectionRequests();
 
+            // The bar lives in the open conversation; take it away either way.
+            if (state.activeThreadId && state.chats[state.activeThreadId]) {
+                renderChatRequestBar(state.chats[state.activeThreadId]);
+            }
+
             if (accept) {
                 showToast("Connection accepted");
                 loadConnections();
@@ -1632,6 +1637,11 @@ document.addEventListener("DOMContentLoaded", () => {
                     state.chats = {};
                     threads.forEach(t => { state.chats[t.id] = t; });
                     renderInbox();
+
+                    // The acceptance was written into the thread; show it.
+                    if (state.activeThreadId && state.chats[state.activeThreadId]) {
+                        renderChatMessages(state.chats[state.activeThreadId].messages || []);
+                    }
                 } catch (e) {
                     // The connection is accepted either way.
                 }
@@ -1727,8 +1737,34 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         renderChatMessages(threadData.messages || []);
+        renderChatRequestBar(threadData);
 
         if (drawerChat) drawerChat.classList.remove("hidden");
+    }
+
+    /**
+     * Shows Accept / Decline inside the conversation when this person has a
+     * request waiting on you. The request is written into the thread, so the
+     * answer belongs there too rather than only in the Messages list.
+     */
+    function renderChatRequestBar(thread) {
+        const bar = document.getElementById("chat-request-bar");
+        if (!bar) return;
+
+        const partnerId = thread && thread.partnerUserId;
+        const request = partnerId
+            ? (state.connectionRequests || []).find(r => String(r.requesterId) === String(partnerId))
+            : null;
+
+        bar.classList.toggle("hidden", !request);
+        if (!request) return;
+
+        document.getElementById("chat-request-text").textContent =
+            `${request.name} wants to connect with you`;
+
+        // The shared accept/decline handler works off this attribute.
+        document.getElementById("chat-accept-request").setAttribute("data-request-id", request.id);
+        document.getElementById("chat-decline-request").setAttribute("data-request-id", request.id);
     }
 
     function renderChatMessages(messages) {

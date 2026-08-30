@@ -3083,3 +3083,37 @@ a.social-badge {
     color: var(--text);
     border-color: var(--primary);
 }
+
+/* Connection request answered from inside the conversation */
+.chat-request-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding: 12px 16px;
+    background: var(--primary-soft);
+    border-bottom: 1px solid var(--primary-glow);
+}
+
+.chat-request-bar span {
+    color: var(--text);
+    font-size: 0.78rem;
+    font-weight: 500;
+}
+
+.chat-request-actions {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.chat-request-bar .btn-accept-request,
+.chat-request-bar .btn-decline-request {
+    padding: 7px 16px;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid var(--border);
+}

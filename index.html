@@ -855,6 +855,15 @@
             <button class="icon-btn-more">•••</button>
         </div>
 
+        <!-- Shown when this person has a connection request waiting on you -->
+        <div class="chat-request-bar hidden" id="chat-request-bar">
+            <span id="chat-request-text">wants to connect with you</span>
+            <div class="chat-request-actions">
+                <button class="btn-accept-request" id="chat-accept-request">Accept</button>
+                <button class="btn-decline-request" id="chat-decline-request">Decline</button>
+            </div>
+        </div>
+
         <div class="chat-messages" id="chat-messages-container">
             <!-- Messages rendered dynamically -->
         </div>
