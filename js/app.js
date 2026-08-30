@@ -4,10 +4,12 @@ document.addEventListener("DOMContentLoaded", () => {
     // API BASE URL — works from any host (localhost, LAN IP, etc.)
     // =========================================================================
 
-    // Backend always runs on the same machine as the server, port 8080.
-    // When accessing via LAN (e.g. 192.168.x.x:5500), we still hit 8080 on
-    // that same machine, so we just replace the port from whatever it is now.
-    const API_BASE = `${window.location.protocol}//${window.location.hostname}:8080`;
+    // Where the backend lives. js/config.js sets CONEXUS_API_BASE when the API
+    // is on its own domain (any real deployment). With it unset we fall back to
+    // port 8080 on whatever host served this page, which is what local
+    // development and LAN testing need.
+    const API_BASE = (window.CONEXUS_API_BASE || "").replace(/\/$/, "")
+        || `${window.location.protocol}//${window.location.hostname}:8080`;
 
     // =========================================================================
     // STATE DATA & USER SESSION MANAGEMENT

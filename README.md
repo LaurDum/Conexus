@@ -81,6 +81,39 @@ Seeded automatically on first run:
 
 ---
 
+## Deploying
+
+The app is three independently hosted pieces:
+
+| Piece | Suggested host | What it needs |
+|---|---|---|
+| Frontend (static files) | Netlify, Cloudflare Pages, GitHub Pages | `js/config.js` pointing at the backend URL |
+| Backend | Render, Railway, Fly.io | `backend/Dockerfile`, plus the env vars below |
+| Database | Neon, Supabase | nothing — the backend creates its own schema |
+
+**Frontend:** set the backend's public URL in [`js/config.js`](js/config.js).
+Left empty it assumes port 8080 on the host serving the page, which is right for
+local development and wrong for a real deployment.
+
+```js
+window.CONEXUS_API_BASE = "https://your-backend.onrender.com";
+```
+
+**Backend:** build from `backend/Dockerfile` and set these environment variables
+on the host. Never commit them.
+
+| Variable | Purpose |
+|---|---|
+| `DB_URL` | `jdbc:postgresql://HOST/DB?sslmode=require` |
+| `DB_USER` | Database user |
+| `DB_PASSWORD` | Database password |
+| `CORS_ALLOWED_ORIGINS` | Your frontend's URL, e.g. `https://your-site.netlify.app` |
+
+`PORT` is supplied by the platform automatically; the app reads it and falls
+back to 8080 locally.
+
+---
+
 ## Documentation
 
 - **[SERVICES_GUIDE.md](SERVICES_GUIDE.md)** — startup, database management,
