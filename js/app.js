@@ -46,6 +46,9 @@ document.addEventListener("DOMContentLoaded", () => {
         // Connection requests waiting on this user
         connectionRequests: [],
 
+        // Home screen and theme, stored on the account
+        preferences: null,
+
         // People this user is connected with
         connections: [],
 
@@ -409,6 +412,7 @@ document.addEventListener("DOMContentLoaded", () => {
         renderHomeCreators();
         await loadDiscover(true);
         loadRecommendedDeals();
+        await loadPreferences();
 
         try {
             state.posts = await api(`/api/posts`);
@@ -2228,6 +2232,268 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     // =========================================================================
+    // JOBS
+    // =========================================================================
+
+    function jobCardHtml(j) {
+        return `
+            <div class="job-card" data-job-id="${escapeHtml(j.id)}">
+                <div class="brand-header">
+                    <div class="brand-logo ${escapeHtml(j.logoClass || "logo-tech")}">${escapeHtml(j.logo || "?")}</div>
+                    <div>
+                        <h4>${escapeHtml(j.title)}</h4>
+                        <span>${escapeHtml(j.company || "")}</span>
+                    </div>
+                </div>
+                <div class="job-tags">
+                    <span class="deal-type-tag">${escapeHtml(j.jobType)}</span>
+                    ${j.remote ? `<span class="job-remote-tag">Remote</span>` : ""}
+                </div>
+                <p class="brand-desc">${escapeHtml(j.description || "")}</p>
+                <div class="brand-footer">
+                    <span class="brand-pay">${escapeHtml(j.pay || "")}</span>
+                    <span class="job-meta">${escapeHtml(j.location || "")} · ${escapeHtml(j.postedAgo || "")}</span>
+                </div>
+            </div>
+        `;
+    }
+
+    async function loadHomeJobs() {
+        const grid = document.getElementById("home-jobs-grid");
+        if (!grid) return;
+        try {
+            const data = await api("/api/jobs?size=2");
+            grid.innerHTML = (data.items || []).length
+                ? data.items.map(jobCardHtml).join("")
+                : `<div style="color: var(--muted); font-size: 0.78rem;">No open roles right now.</div>`;
+        } catch (err) {
+            grid.innerHTML = `<div style="color: var(--muted); font-size: 0.78rem;">Could not load jobs.</div>`;
+        }
+    }
+
+    let jobsType = "all";
+    let jobsRemoteOnly = false;
+    let jobsSearchTimer = null;
+
+    async function loadAllJobs() {
+        const grid = document.getElementById("all-jobs-grid");
+        if (!grid) return;
+
+        const input = document.getElementById("jobs-search-input");
+        const params = new URLSearchParams({ size: 50 });
+        if (jobsType !== "all") params.set("type", jobsType);
+        if (jobsRemoteOnly) params.set("remote", "true");
+        if (input && input.value.trim()) params.set("search", input.value.trim());
+
+        try {
+            const data = await api(`/api/jobs?${params.toString()}`);
+            const countEl = document.getElementById("jobs-count");
+            if (countEl) countEl.textContent = data.total || 0;
+
+            renderJobTypeChips(data.types || []);
+
+            grid.innerHTML = (data.items || []).length
+                ? data.items.map(jobCardHtml).join("")
+                : `<div style="grid-column: 1 / -1; text-align: center; padding: 30px; color: var(--muted); font-size: 0.8rem;">
+                       No roles match that filter.
+                   </div>`;
+        } catch (err) {
+            showToast(describeApiError(err, "Could not load jobs."), "error");
+        }
+    }
+
+    /** Chips built from the job types present, plus a remote toggle. */
+    function renderJobTypeChips(types) {
+        const wrap = document.getElementById("jobs-filter-chips");
+        if (!wrap || wrap.getAttribute("data-built") === "true") return;
+
+        wrap.innerHTML = [`<button class="chip active" data-type="all">All Roles</button>`]
+            .concat(types.map(t => `<button class="chip" data-type="${escapeHtml(t)}">${escapeHtml(t)}</button>`))
+            .concat([`<button class="chip chip-remote" data-remote="true">Remote only</button>`])
+            .join("");
+        wrap.setAttribute("data-built", "true");
+
+        wrap.querySelectorAll(".chip").forEach(chip => {
+            chip.addEventListener("click", () => {
+                if (chip.hasAttribute("data-remote")) {
+                    jobsRemoteOnly = !jobsRemoteOnly;
+                    chip.classList.toggle("active", jobsRemoteOnly);
+                } else {
+                    jobsType = chip.getAttribute("data-type") || "all";
+                    wrap.querySelectorAll(".chip:not(.chip-remote)").forEach(c => c.classList.remove("active"));
+                    chip.classList.add("active");
+                }
+                loadAllJobs();
+            });
+        });
+    }
+
+    document.getElementById("btn-see-all-jobs")?.addEventListener("click", () => {
+        switchView("view-jobs");
+        loadAllJobs();
+    });
+
+    document.getElementById("btn-back-from-jobs")?.addEventListener("click", () => {
+        switchView("view-home");
+    });
+
+    document.getElementById("jobs-search-input")?.addEventListener("input", () => {
+        clearTimeout(jobsSearchTimer);
+        jobsSearchTimer = setTimeout(loadAllJobs, 250);
+    });
+
+
+    // =========================================================================
+    // SETTINGS — appearance, home screen, account
+    // =========================================================================
+
+    const SECTION_LABELS = {
+        recommendations: { name: "Recommendations", hint: "Conexus AI suggestions" },
+        mingle:          { name: "Mingle", hint: "Creators you might click with" },
+        inspo:           { name: "Inspo", hint: "Posts from your network" },
+        jobs:            { name: "Jobs", hint: "Paid roles for creators" },
+        deals:           { name: "Brand Deals", hint: "Open campaigns" }
+    };
+
+    async function loadPreferences() {
+        try {
+            state.preferences = await api("/api/preferences");
+        } catch (err) {
+            state.preferences = { homeSections: ["recommendations", "mingle", "inspo"], theme: "dark",
+                                  available: Object.keys(SECTION_LABELS), maxSections: 4 };
+        }
+        applyTheme(state.preferences.theme);
+        applyHomeSections();
+        renderSectionPicker();
+    }
+
+    /** Shows only the chosen sections, in the order they were chosen. */
+    function applyHomeSections() {
+        const chosen = state.preferences?.homeSections || [];
+        const home = document.getElementById("view-home");
+        if (!home) return;
+
+        document.querySelectorAll("#view-home .home-section").forEach(sec => {
+            sec.classList.toggle("hidden", !chosen.includes(sec.getAttribute("data-section")));
+        });
+
+        // Re-append in the chosen order so reordering is possible later.
+        chosen.forEach(name => {
+            const sec = home.querySelector(`.home-section[data-section="${name}"]`);
+            if (sec) home.appendChild(sec);
+        });
+
+        // Only fetch what is actually on screen.
+        if (chosen.includes("jobs")) loadHomeJobs();
+        if (chosen.includes("deals")) loadHomeDeals();
+    }
+
+    function renderSectionPicker() {
+        const picker = document.getElementById("section-picker");
+        if (!picker || !state.preferences) return;
+
+        const chosen = state.preferences.homeSections || [];
+        const max = state.preferences.maxSections || 4;
+
+        picker.innerHTML = (state.preferences.available || []).map(name => {
+            const meta = SECTION_LABELS[name] || { name: name, hint: "" };
+            const on = chosen.includes(name);
+            // A section you have not chosen is unavailable once you are at the cap.
+            const atCap = !on && chosen.length >= max;
+
+            return `
+                <label class="section-option ${on ? "on" : ""} ${atCap ? "disabled" : ""}">
+                    <input type="checkbox" data-section="${escapeHtml(name)}" ${on ? "checked" : ""} ${atCap ? "disabled" : ""}>
+                    <span class="section-option-text">
+                        <strong>${escapeHtml(meta.name)}</strong>
+                        <small>${escapeHtml(meta.hint)}</small>
+                    </span>
+                </label>
+            `;
+        }).join("");
+
+        const remaining = Math.max(0, max - chosen.length);
+        const hint = document.querySelector(".settings-hint");
+        if (hint) {
+            hint.innerHTML = remaining
+                ? `Choose which sections appear, up to <strong>${max}</strong>. ${remaining} slot${remaining === 1 ? "" : "s"} left.`
+                : `Choose which sections appear, up to <strong>${max}</strong>. Uncheck one to swap it out.`;
+        }
+
+        picker.querySelectorAll("input[type=checkbox]").forEach(box => {
+            box.addEventListener("change", () => saveSections(box));
+        });
+    }
+
+    async function saveSections(changedBox) {
+        const picked = [...document.querySelectorAll("#section-picker input:checked")]
+            .map(b => b.getAttribute("data-section"));
+
+        if (!picked.length) {
+            changedBox.checked = true;   // never leave home empty
+            showToast("Keep at least one section on your home screen", "error");
+            return;
+        }
+
+        try {
+            state.preferences = await api("/api/preferences", { method: "PUT", body: { homeSections: picked } });
+            applyHomeSections();
+            renderSectionPicker();
+        } catch (err) {
+            showToast(describeApiError(err, "Could not save your home screen."), "error");
+            renderSectionPicker();
+        }
+    }
+
+    function applyTheme(theme) {
+        const light = theme === "light";
+        document.body.classList.toggle("light-theme", light);
+
+        const toggle = document.getElementById("toggle-theme");
+        if (toggle) {
+            // The switch reads "Dark mode", so it is on when the theme is dark.
+            toggle.setAttribute("aria-checked", String(!light));
+            toggle.classList.toggle("on", !light);
+        }
+    }
+
+    document.getElementById("toggle-theme")?.addEventListener("click", async () => {
+        const nowLight = !document.body.classList.contains("light-theme");
+        applyTheme(nowLight ? "light" : "dark");
+
+        try {
+            state.preferences = await api("/api/preferences", {
+                method: "PUT",
+                body: { theme: nowLight ? "light" : "dark" }
+            });
+        } catch (err) {
+            applyTheme(nowLight ? "dark" : "light");   // put it back
+            showToast(describeApiError(err, "Could not save your theme."), "error");
+        }
+    });
+
+    document.getElementById("btn-open-settings")?.addEventListener("click", () => {
+        switchView("view-settings");
+
+        const u = state.currentUser || {};
+        const nameEl = document.getElementById("settings-username");
+        const mailEl = document.getElementById("settings-email");
+        if (nameEl) nameEl.textContent = "@" + (u.username || "");
+        if (mailEl) mailEl.textContent = u.email || "";
+
+        renderSectionPicker();
+    });
+
+    document.getElementById("btn-back-from-settings")?.addEventListener("click", () => {
+        switchView("view-profile");
+    });
+
+    document.getElementById("btn-settings-edit-profile")?.addEventListener("click", () => {
+        switchView("view-profile");
+        document.getElementById("btn-open-edit-profile")?.click();
+    });
+
+    // =========================================================================
     // BRAND DEALS
     // =========================================================================
 
@@ -2253,6 +2519,20 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     /** The handful shown on the Strategy page. */
+    /** The couple shown in the home Brand Deals section. */
+    async function loadHomeDeals() {
+        const grid = document.getElementById("home-deals-grid");
+        if (!grid) return;
+        try {
+            const data = await api("/api/brand-deals?size=2");
+            grid.innerHTML = (data.items || []).length
+                ? data.items.map(brandDealHtml).join("")
+                : `<div style="color: var(--muted); font-size: 0.78rem;">No open campaigns right now.</div>`;
+        } catch (err) {
+            grid.innerHTML = `<div style="color: var(--muted); font-size: 0.78rem;">Could not load brand matches.</div>`;
+        }
+    }
+
     async function loadRecommendedDeals() {
         const grid = document.getElementById("recommended-deals-grid");
         if (!grid) return;

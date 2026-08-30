@@ -285,7 +285,7 @@
         <section id="view-home" class="view active-view">
 
             <!-- AI RECOMMENDATIONS BANNER -->
-            <section class="section ai-section">
+            <section class="section ai-section home-section" data-section="recommendations">
                 <div class="section-heading">
                     <div>
                         <span class="section-eyebrow">✦ Conexus AI</span>
@@ -314,7 +314,7 @@
 
 
             <!-- MINGLE / NETWORKING CAROUSEL -->
-            <section class="section">
+            <section class="section home-section" data-section="mingle">
                 <div class="section-heading">
                     <div>
                         <span class="section-eyebrow">🤝 Networking</span>
@@ -334,7 +334,33 @@
 
 
             <!-- CREATOR INSPO FEED -->
-            <section class="section inspo-section">
+            <!-- JOBS -->
+            <section class="section home-section" data-section="jobs">
+                <div class="section-heading">
+                    <div>
+                        <span class="section-eyebrow">💼 Opportunities</span>
+                        <h2>Jobs</h2>
+                    </div>
+                    <button class="see-all" id="btn-see-all-jobs">See all →</button>
+                </div>
+                <p class="section-description">Paid roles from companies hiring creators.</p>
+                <div class="jobs-grid" id="home-jobs-grid"></div>
+            </section>
+
+            <!-- BRAND DEALS -->
+            <section class="section home-section" data-section="deals">
+                <div class="section-heading">
+                    <div>
+                        <span class="section-eyebrow">💎 Partnerships</span>
+                        <h2>Brand Deals</h2>
+                    </div>
+                    <button class="see-all nav-switch-trigger" data-target="view-brand-deals">See all →</button>
+                </div>
+                <p class="section-description">Open campaigns matched to your niche.</p>
+                <div class="brand-deals-grid" id="home-deals-grid"></div>
+            </section>
+
+            <section class="section inspo-section home-section" data-section="inspo">
                 <div class="section-heading">
                     <div>
                         <span class="section-eyebrow">💡 From creators</span>
@@ -631,8 +657,8 @@
             <!-- Profile Banner & Header -->
             <div class="profile-header-card">
                 <div class="profile-banner">
-                    <button class="btn-edit-profile" id="btn-open-edit-profile">✏️ Edit Profile</button>
-                    <button class="btn-signout" id="btn-signout" title="Sign Out">🚪 Sign Out</button>
+                    <button class="btn-edit-profile" id="btn-open-edit-profile">✏️ Edit</button>
+                    <button class="btn-profile-settings" id="btn-open-settings" title="Settings">⚙</button>
                 </div>
 
                 <div class="profile-main-info">
@@ -713,6 +739,83 @@
                     <!-- Populated from the database by renderUserPosts() in js/app.js -->
                 </div>
             </section>
+
+        </section>
+
+        <!-- ==========================================
+             JOBS — every open role
+        =========================================== -->
+        <section id="view-jobs" class="view">
+
+            <div class="simple-page-header">
+                <button class="btn-back-page" id="btn-back-from-jobs">← Back</button>
+                <div>
+                    <h2>Jobs</h2>
+                    <p class="view-subtitle">Paid roles from companies hiring creators.</p>
+                </div>
+                <span class="connections-count" id="jobs-count">0</span>
+            </div>
+
+            <div class="search-bar">
+                <span class="search-icon">⌕</span>
+                <input type="text" id="jobs-search-input" placeholder="Search roles, companies, or skills...">
+            </div>
+
+            <div class="filter-chips" id="jobs-filter-chips"></div>
+
+            <div class="jobs-grid" id="all-jobs-grid"></div>
+
+        </section>
+
+        <!-- ==========================================
+             SETTINGS
+        =========================================== -->
+        <section id="view-settings" class="view">
+
+            <div class="simple-page-header">
+                <button class="btn-back-page" id="btn-back-from-settings">← Back</button>
+                <div>
+                    <h2>Settings</h2>
+                    <p class="view-subtitle">Appearance, your home screen, and your account.</p>
+                </div>
+            </div>
+
+            <div class="settings-group">
+                <h3>Appearance</h3>
+                <div class="setting-row">
+                    <div>
+                        <strong>Dark mode</strong>
+                        <p>Switch between the dark and light palette.</p>
+                    </div>
+                    <button class="toggle-switch" id="toggle-theme" role="switch" aria-checked="true">
+                        <span class="toggle-knob"></span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="settings-group">
+                <h3>Home screen</h3>
+                <p class="settings-hint">Choose which sections appear, up to <strong>4</strong>.</p>
+                <div class="section-picker" id="section-picker"></div>
+            </div>
+
+            <div class="settings-group">
+                <h3>Account</h3>
+                <div class="setting-row">
+                    <div>
+                        <strong id="settings-username">@username</strong>
+                        <p id="settings-email">email@example.com</p>
+                    </div>
+                    <button class="btn-secondary-sm" id="btn-settings-edit-profile">Edit profile</button>
+                </div>
+                <div class="setting-row">
+                    <div>
+                        <strong>Sign out</strong>
+                        <p>End this session on this device.</p>
+                    </div>
+                    <button class="btn-signout" id="btn-signout">Sign out</button>
+                </div>
+            </div>
 
         </section>
 

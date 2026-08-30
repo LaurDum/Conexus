@@ -30,6 +30,7 @@ public class DataSeeder implements CommandLineRunner {
     private final PostLikeRepository postLikeRepository;
     private final CommentRepository commentRepository;
     private final BrandDealRepository brandDealRepository;
+    private final JobRepository jobRepository;
 
     /**
      * Replies that read naturally under any creator post, so the demo feed has
@@ -61,6 +62,7 @@ public class DataSeeder implements CommandLineRunner {
         syncPostCommentCounts();
         linkCreatorsToAccounts();
         seedBrandDeals();
+        seedJobs();
     }
 
     /**
@@ -517,6 +519,64 @@ public class DataSeeder implements CommandLineRunner {
                  "Event", "Live session slot at a showcase night, with footage rights retained by you.",
                  "$900 + Travel", 73)
         ));
+    }
+
+    /** Roles for the Jobs section and its page. */
+    private void seedJobs() {
+        if (jobRepository.count() > 0) return;
+
+        log.info("Seeding jobs...");
+        jobRepository.saveAll(Arrays.asList(
+            job("job_editor_pixel", "Short-Form Video Editor", "PixelForge", "PF", "logo-gaming",
+                "Remote", "Contract", "Gaming", true,
+                "Cut weekly gaming shorts from long-form streams. Roughly 6 clips a week.",
+                "$35 / hr", "2 days ago"),
+            job("job_thumb_nova", "Thumbnail Designer", "NovaCon", "NC", "logo-gaming",
+                "Remote", "Freelance", "Gaming", true,
+                "Design click-worthy thumbnails for event recap videos. Portfolio required.",
+                "$120 per set", "4 days ago"),
+            job("job_social_atlas", "Social Media Manager", "Atlas Wear", "AW", "logo-fashion",
+                "Milan, Italy", "Full-time", "Fashion", false,
+                "Own the brand's short-form presence across Instagram and TikTok.",
+                "€38,000 / yr", "1 week ago"),
+            job("job_podcast_north", "Podcast Producer", "North Audio", "NA", "logo-tech",
+                "Remote", "Part-time", "Tech", true,
+                "Produce and edit a weekly interview show. Audio-first, video optional.",
+                "$1,800 / month", "3 days ago"),
+            job("job_writer_orbit", "Technical Writer", "Orbit", "OR", "logo-tech",
+                "Remote", "Contract", "Tech", true,
+                "Write plain-English explainers about privacy tooling for a general audience.",
+                "$45 / hr", "5 days ago"),
+            job("job_camera_trail", "Camera Operator", "Trailhead Co.", "TH", "logo-travel",
+                "Lisbon, Portugal", "Freelance", "Travel", false,
+                "Two week shoot covering a hiking route. Own kit preferred, travel covered.",
+                "$500 / day", "1 day ago"),
+            job("job_producer_cadence", "Session Producer", "Cadence Records", "CR", "logo-music",
+                "London, UK", "Contract", "Music", false,
+                "Run live session recordings for emerging artists, two nights a month.",
+                "£320 / session", "6 days ago"),
+            job("job_community_verdant", "Community Manager", "Verdant Kitchen", "VK", "logo-food",
+                "Remote", "Full-time", "Food", true,
+                "Grow and moderate a recipe-sharing community across Discord and Reddit.",
+                "$52,000 / yr", "2 weeks ago"),
+            job("job_intern_lumen", "Content Intern", "Lumen Studios", "LS", "logo-tech",
+                "Berlin, Germany", "Internship", "Tech", false,
+                "Six month placement supporting the studio's own channel. Mentorship included.",
+                "€1,400 / month", "1 week ago"),
+            job("job_strategist_bright", "Content Strategist", "Bright Brew", "BB", "logo-food",
+                "Remote", "Part-time", "Food", true,
+                "Plan a quarterly content calendar around seasonal coffee launches.",
+                "$1,100 / month", "3 days ago")
+        ));
+    }
+
+    private Job job(String id, String title, String company, String logo, String logoClass,
+                    String location, String jobType, String category, boolean remote,
+                    String description, String pay, String postedAgo) {
+        return Job.builder()
+                .id(id).title(title).company(company).logo(logo).logoClass(logoClass)
+                .location(location).jobType(jobType).category(category).remote(remote)
+                .description(description).pay(pay).postedAgo(postedAgo).build();
     }
 
     private BrandDeal deal(String id, String brand, String logo, String logoClass, String industry,

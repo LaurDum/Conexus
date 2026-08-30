@@ -52,4 +52,15 @@ public class User {
     @Builder.Default
     @Column(columnDefinition = "boolean default false")
     private boolean onboardingComplete = false;
+
+    /**
+     * Which home sections this user wants, in order, comma separated.
+     * Null means the default set. Stored on the account rather than in the
+     * browser so the choice follows them to another device.
+     */
+    @Column(columnDefinition = "TEXT")
+    private String homeSections;
+
+    /** "dark" or "light". Null means dark. */
+    private String theme;
 }
