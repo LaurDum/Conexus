@@ -35,6 +35,14 @@ public class ChatMessage {
 
     private String time;
 
+    /**
+     * A message the app wrote rather than a person — a connection request or
+     * acceptance. Rendered as a centred note instead of a chat bubble.
+     */
+    @Builder.Default
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean system = false;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "thread_id", nullable = false)
     @JsonIgnore

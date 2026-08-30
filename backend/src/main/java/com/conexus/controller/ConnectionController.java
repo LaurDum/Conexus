@@ -10,6 +10,7 @@ import com.conexus.repository.CreatorRepository;
 import com.conexus.repository.ProfileInfoRepository;
 import com.conexus.repository.UserRepository;
 import com.conexus.security.CurrentUser;
+import com.conexus.service.ChatService;
 import com.conexus.service.NotificationService;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -35,6 +36,7 @@ public class ConnectionController {
     private final UserRepository userRepository;
     private final ProfileInfoRepository profileInfoRepository;
     private final NotificationService notificationService;
+    private final ChatService chatService;
 
     /** GET /api/connections — creator IDs the caller has connected with, and their state. */
     @GetMapping
@@ -94,6 +96,11 @@ public class ConnectionController {
         if (targetUserId != null) {
             notificationService.notify(targetUserId, userId, NotificationService.CONNECTION,
                     Notification.builder().excerpt("wants to connect with you"));
+
+            // Put it in the conversation too, so the request is somewhere they
+            // will actually look rather than only behind the bell.
+            chatService.postSystemMessage(userId, targetUserId,
+                    displayNameOf(userId) + " sent a connection request.");
         }
 
         return ResponseEntity.ok(Map.of("status", saved.getStatus().equals(PENDING) ? "requested" : "connected",
@@ -123,6 +130,9 @@ public class ConnectionController {
         notificationService.notify(conn.getRequesterId(), userId, NotificationService.CONNECTION,
                 Notification.builder().excerpt("accepted your connection request"));
 
+        chatService.postSystemMessage(userId, conn.getRequesterId(),
+                displayNameOf(userId) + " accepted the connection request. You're connected.");
+
         return ResponseEntity.ok(Map.of("status", ACCEPTED));
     }
 
@@ -137,6 +147,17 @@ public class ConnectionController {
         // No notification: being turned down does not need announcing.
         connectionRepository.delete(conn);
         return ResponseEntity.noContent().build();
+    }
+
+    /** The name someone is known by, preferring their profile. */
+    private String displayNameOf(Long userId) {
+        User user = userRepository.findById(userId).orElse(null);
+        if (user == null) return "Someone";
+
+        return profileInfoRepository.findByUserId(userId)
+                .map(ProfileInfo::getDisplayName)
+                .filter(n -> n != null && !n.isBlank())
+                .orElseGet(() -> user.getDisplayName() != null ? user.getDisplayName() : user.getUsername());
     }
 
     private RequestView describe(Connection conn) {

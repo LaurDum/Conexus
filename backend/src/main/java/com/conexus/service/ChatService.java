@@ -147,6 +147,41 @@ public class ChatService {
         });
     }
 
+    /**
+     * Writes a note into both sides of a conversation — used when something
+     * happens between two people that belongs in their thread, like a
+     * connection request. Creates the threads if they do not exist yet.
+     */
+    @Transactional
+    public void postSystemMessage(Long fromUserId, Long toUserId, String text) {
+        if (fromUserId == null || toUserId == null || fromUserId.equals(toUserId)) return;
+
+        String now = LocalTime.now().format(CLOCK);
+
+        ChatThread senderSide = openThreadWithUser(fromUserId, toUserId);
+        appendSystem(senderSide, text, now);
+        chatThreadRepository.save(senderSide);
+
+        ChatThread recipientSide = openThreadWithUser(toUserId, fromUserId);
+        appendSystem(recipientSide, text, now);
+        recipientSide.setUnread(true);
+        chatThreadRepository.save(recipientSide);
+    }
+
+    private void appendSystem(ChatThread thread, String text, String now) {
+        thread.getMessages().add(ChatMessage.builder()
+                .sender("system")
+                .senderName("Conexus")
+                .text(text)
+                .time(now)
+                .system(true)
+                .thread(thread)
+                .build());
+
+        thread.setSnippet(text);
+        thread.setTime(now);
+    }
+
     @Transactional
     public ChatThread markRead(String id) {
         ChatThread thread = getThread(id);

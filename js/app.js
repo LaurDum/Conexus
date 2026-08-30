@@ -151,6 +151,58 @@ document.addEventListener("DOMContentLoaded", () => {
         return new Date(isoDate).toLocaleDateString();
     }
 
+    /**
+     * A short burst of confetti, for the rare moment worth marking.
+     *
+     * Deliberately small — about 40 pieces over a second, from an element's own
+     * position rather than the whole screen. Uses the Web Animations API so
+     * there is no library and nothing to clean up but the nodes themselves.
+     * Skipped entirely for anyone who prefers reduced motion.
+     */
+    function celebrate(originEl) {
+        if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+        const rect = originEl
+            ? originEl.getBoundingClientRect()
+            : { left: window.innerWidth / 2, top: window.innerHeight / 2, width: 0, height: 0 };
+
+        const originX = rect.left + rect.width / 2;
+        const originY = rect.top + rect.height / 2;
+
+        const colours = ["#7180ff", "#5d6eff", "#00F2FE", "#1DB954", "#FF6719", "#E1306C"];
+        const layer = document.createElement("div");
+        layer.className = "confetti-layer";
+        document.body.appendChild(layer);
+
+        for (let i = 0; i < 40; i++) {
+            const piece = document.createElement("span");
+            piece.className = "confetti-piece";
+            piece.style.left = `${originX}px`;
+            piece.style.top = `${originY}px`;
+            piece.style.background = colours[i % colours.length];
+            if (i % 3 === 0) piece.style.borderRadius = "50%";
+            layer.appendChild(piece);
+
+            // Spread upward and outward, then fall.
+            const angle = (Math.PI * 2 * i) / 40 + (Math.random() - 0.5);
+            const distance = 60 + Math.random() * 90;
+            const driftX = Math.cos(angle) * distance;
+            const riseY = -Math.abs(Math.sin(angle) * distance) - 20;
+            const fallY = riseY + 120 + Math.random() * 80;
+
+            piece.animate([
+                { transform: "translate(0, 0) rotate(0deg)", opacity: 1 },
+                { transform: `translate(${driftX * 0.6}px, ${riseY}px) rotate(${Math.random() * 180}deg)`, opacity: 1, offset: 0.35 },
+                { transform: `translate(${driftX}px, ${fallY}px) rotate(${Math.random() * 540}deg)`, opacity: 0 }
+            ], {
+                duration: 900 + Math.random() * 500,
+                easing: "cubic-bezier(0.2, 0.7, 0.3, 1)"
+            });
+        }
+
+        setTimeout(() => layer.remove(), 1600);
+    }
+
     /** Small non-blocking message in the corner of the screen. */
     let toastTimer = null;
     function showToast(message, type) {
@@ -1444,9 +1496,24 @@ document.addEventListener("DOMContentLoaded", () => {
 
         try {
             await api(`/api/connections/${requestId}/${accept ? "accept" : "decline"}`, { method: "PUT" });
+
+            if (accept) celebrate(btn);   // burst from the button that was pressed
+
             state.connectionRequests = state.connectionRequests.filter(x => String(x.id) !== String(requestId));
             renderConnectionRequests();
-            if (accept) showToast("Connection accepted");
+
+            if (accept) {
+                showToast("Connection accepted");
+                // The acceptance is written into the conversation, so refresh it.
+                try {
+                    const threads = await api(`/api/chats`);
+                    state.chats = {};
+                    threads.forEach(t => { state.chats[t.id] = t; });
+                    renderInbox();
+                } catch (e) {
+                    // The connection is accepted either way.
+                }
+            }
         } catch (err) {
             btn.disabled = false;
             showToast(describeApiError(err, "Could not respond to that request."), "error");
@@ -1469,14 +1536,14 @@ document.addEventListener("DOMContentLoaded", () => {
         inboxList.innerHTML = threadIds.map(id => {
             const thread = state.chats[id];
             return `
-                <div class="chat-thread ${thread.unread ? 'unread' : ''}" data-thread-id="${id}">
-                    <div class="creator-avatar ${thread.bgClass}">${thread.avatar}</div>
+                <div class="chat-thread ${thread.unread ? 'unread' : ''}" data-thread-id="${escapeHtml(id)}">
+                    <div class="creator-avatar ${escapeHtml(thread.bgClass)}">${escapeHtml(thread.avatar)}</div>
                     <div class="thread-info">
                         <div class="thread-top">
-                            <h4>${thread.name}</h4>
-                            <span class="thread-time">${thread.time || ''}</span>
+                            <h4>${escapeHtml(thread.name)}</h4>
+                            <span class="thread-time">${escapeHtml(thread.time || '')}</span>
                         </div>
-                        <p class="thread-snippet">${thread.snippet || ''}</p>
+                        <p class="thread-snippet">${escapeHtml(thread.snippet || '')}</p>
                     </div>
                     ${thread.unread ? '<span class="unread-dot"></span>' : ''}
                 </div>
@@ -1545,12 +1612,25 @@ document.addEventListener("DOMContentLoaded", () => {
     function renderChatMessages(messages) {
         if (!chatMessagesContainer) return;
 
-        chatMessagesContainer.innerHTML = messages.map(msg => `
-            <div class="msg-bubble ${msg.sender === "me" ? "sent" : "received"}">
-                <p>${msg.text}</p>
-                <span class="msg-time">${msg.time}</span>
-            </div>
-        `).join("");
+        chatMessagesContainer.innerHTML = messages.map(msg => {
+            // Connection requests and acceptances are notes about the
+            // conversation, not messages within it.
+            if (msg.system) {
+                return `
+                    <div class="msg-system">
+                        <span>${escapeHtml(msg.text)}</span>
+                        <small>${escapeHtml(msg.time)}</small>
+                    </div>
+                `;
+            }
+            // Escaped: message text is written by another person.
+            return `
+                <div class="msg-bubble ${msg.sender === "me" ? "sent" : "received"}">
+                    <p>${escapeHtml(msg.text)}</p>
+                    <span class="msg-time">${escapeHtml(msg.time)}</span>
+                </div>
+            `;
+        }).join("");
 
         chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight;
     }
@@ -1642,15 +1722,15 @@ document.addEventListener("DOMContentLoaded", () => {
             socialsContainer.innerHTML = state.socials.map(soc => {
                 const meta = platformMeta[soc.platform] || { name: soc.platform, icon: "🌐", class: "platform-website" };
                 return `
-                    <div class="social-card" data-social-id="${soc.id}">
+                    <div class="social-card" data-social-id="${escapeHtml(soc.id)}">
                         <div class="social-left">
                             <div class="social-icon-badge ${meta.class}">
                                 ${meta.icon}
                             </div>
                             <div class="social-info">
-                                <div class="social-platform-name">${meta.name}</div>
-                                <div class="social-handle-text">${soc.handle}</div>
-                                <div class="social-count-badge">${soc.followers}</div>
+                                <div class="social-platform-name">${escapeHtml(meta.name)}</div>
+                                <div class="social-handle-text">${escapeHtml(soc.handle)}</div>
+                                <div class="social-count-badge">${escapeHtml(soc.followers)}</div>
                             </div>
                         </div>
                         <div class="social-actions">

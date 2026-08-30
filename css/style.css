@@ -2877,3 +2877,50 @@ a.social-badge {
 .btn-decline-request:hover {
     color: var(--text);
 }
+
+/* ==========================================================
+   SYSTEM NOTES IN A CONVERSATION
+   ========================================================== */
+.msg-system {
+    align-self: center;
+    max-width: 78%;
+    margin: 10px auto;
+    padding: 8px 14px;
+    background: var(--primary-soft);
+    border: 1px solid var(--primary-glow);
+    border-radius: 999px;
+    text-align: center;
+}
+
+.msg-system span {
+    display: block;
+    color: var(--secondary);
+    font-size: 0.74rem;
+    line-height: 1.4;
+}
+
+.msg-system small {
+    display: block;
+    margin-top: 2px;
+    color: var(--muted);
+    font-size: 0.62rem;
+}
+
+/* ==========================================================
+   CONFETTI
+   ========================================================== */
+.confetti-layer {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 5000;
+    overflow: hidden;
+}
+
+.confetti-piece {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+    will-change: transform, opacity;
+}
