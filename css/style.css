@@ -2924,3 +2924,92 @@ a.social-badge {
     border-radius: 2px;
     will-change: transform, opacity;
 }
+
+/* ==========================================================
+   CONNECTIONS LIST (own profile)
+   ========================================================== */
+.connections-count {
+    background: var(--primary-soft);
+    border: 1px solid var(--primary-glow);
+    color: var(--primary);
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 999px;
+}
+
+.connections-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.connection-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+}
+
+.connection-info {
+    flex: 1;
+    min-width: 0;
+    cursor: pointer;
+}
+
+.connection-info h4 {
+    font-size: 0.82rem;
+    margin-bottom: 1px;
+}
+
+.connection-info:hover h4 {
+    text-decoration: underline;
+}
+
+.connection-info p {
+    color: var(--muted);
+    font-size: 0.7rem;
+}
+
+.btn-disconnect {
+    flex-shrink: 0;
+    padding: 6px 14px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    font-size: 0.7rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+
+.btn-disconnect:hover {
+    color: #ff9b9b;
+    border-color: rgba(255, 99, 99, 0.5);
+}
+
+/* Armed: one more click removes it */
+.btn-disconnect.confirming {
+    background: rgba(255, 99, 99, 0.12);
+    border-color: rgba(255, 99, 99, 0.6);
+    color: #ff8080;
+}
+
+.btn-disconnect:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+.connections-empty {
+    padding: 22px;
+    text-align: center;
+    background: var(--card);
+    border: 1px dashed var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--muted);
+    font-size: 0.76rem;
+}

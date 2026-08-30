@@ -18,7 +18,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -107,6 +109,75 @@ public class ConnectionController {
                                         "id", saved.getId()));
     }
 
+    /**
+     * GET /api/connections/accepted — everyone the caller is connected with.
+     *
+     * A connection row is directional: one person asked, the other agreed. Both
+     * of them are connected, so this looks in both directions and describes
+     * whoever is on the other end.
+     */
+    @GetMapping("/accepted")
+    public List<ConnectionView> accepted(@CurrentUser Long userId) {
+        List<ConnectionView> out = new ArrayList<>();
+
+        for (Connection c : connectionRepository.findByRequesterIdAndStatus(userId, ACCEPTED)) {
+            out.add(describeOtherSide(c, c.getTargetUserId(), c.getTargetCreatorId()));
+        }
+        for (Connection c : connectionRepository.findByTargetUserIdAndStatusOrderByCreatedAtDesc(userId, ACCEPTED)) {
+            out.add(describeOtherSide(c, c.getRequesterId(), null));
+        }
+
+        out.sort(Comparator.comparing(ConnectionView::getName, String.CASE_INSENSITIVE_ORDER));
+        return out;
+    }
+
+    /**
+     * DELETE /api/connections/{id} — either side may remove a connection, and a
+     * requester may withdraw one still pending.
+     */
+    @DeleteMapping("/{id}")
+    @Transactional
+    public ResponseEntity<?> remove(@CurrentUser Long userId, @PathVariable Long id) {
+        Connection conn = connectionRepository.findById(id).orElse(null);
+        if (conn == null) return ResponseEntity.noContent().build();
+
+        boolean mine = userId.equals(conn.getRequesterId()) || userId.equals(conn.getTargetUserId());
+        if (!mine) {
+            return ResponseEntity.status(403)
+                    .body(Collections.singletonMap("message", "That connection is not yours"));
+        }
+
+        // Removed quietly, the same way declining is.
+        connectionRepository.delete(conn);
+        return ResponseEntity.noContent().build();
+    }
+
+    /** Describes whoever is on the other end of a connection from the caller. */
+    private ConnectionView describeOtherSide(Connection conn, Long otherUserId, String creatorId) {
+        ConnectionView v = new ConnectionView();
+        v.setId(conn.getId());
+        v.setUserId(otherUserId);
+        v.setCreatorId(conn.getTargetCreatorId());
+        v.setSince(conn.getCreatedAt());
+
+        if (otherUserId != null) {
+            User other = userRepository.findById(otherUserId).orElse(null);
+            v.setName(other == null ? "Someone" : displayNameOf(otherUserId));
+            v.setAvatar(other != null ? other.getAvatar() : "?");
+            v.setBgClass(other != null ? other.getBgClass() : "avatar-purple");
+            v.setNiche(other != null ? other.getNiche() : "Conexus Creator");
+            return v;
+        }
+
+        // A discover card nobody has claimed — a one way follow.
+        Creator card = creatorId == null ? null : creatorRepository.findById(creatorId).orElse(null);
+        v.setName(card != null ? card.getName() : "Creator");
+        v.setAvatar(card != null ? card.getAvatar() : "?");
+        v.setBgClass(card != null ? card.getBgClass() : "avatar-purple");
+        v.setNiche(card != null ? card.getNiche() : "Conexus Creator");
+        return v;
+    }
+
     /** GET /api/connections/requests — requests waiting on the caller. */
     @GetMapping("/requests")
     public List<RequestView> incoming(@CurrentUser Long userId) {
@@ -176,6 +247,18 @@ public class ConnectionController {
         v.setBgClass(requester != null ? requester.getBgClass() : "avatar-purple");
         v.setNiche(requester != null ? requester.getNiche() : "Conexus Creator");
         return v;
+    }
+
+    @Data
+    public static class ConnectionView {
+        private Long id;
+        private Long userId;
+        private String creatorId;
+        private String name;
+        private String avatar;
+        private String bgClass;
+        private String niche;
+        private java.time.Instant since;
     }
 
     @Data

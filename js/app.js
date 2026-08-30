@@ -46,6 +46,9 @@ document.addEventListener("DOMContentLoaded", () => {
         // Connection requests waiting on this user
         connectionRequests: [],
 
+        // People this user is connected with
+        connections: [],
+
         // Notifications (Populated from backend)
         notifications: [],
         unreadNotifications: 0,
@@ -372,6 +375,7 @@ document.addEventListener("DOMContentLoaded", () => {
         renderInbox();
         renderPendingSteps();
         await loadConnectionRequests();
+        await loadConnections();
         await loadNotifications();
 
         try {
@@ -1444,6 +1448,94 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     /**
+     * The people you are connected with, listed on your own profile.
+     *
+     * A connection row records who asked and who agreed, so it is read in both
+     * directions — you are connected whether you sent the request or accepted it.
+     */
+    async function loadConnections() {
+        try {
+            state.connections = await api("/api/connections/accepted");
+        } catch (err) {
+            state.connections = [];
+        }
+        renderConnections();
+    }
+
+    function renderConnections() {
+        const list = document.getElementById("connections-list");
+        const count = document.getElementById("connections-count");
+        if (!list) return;
+
+        const people = state.connections || [];
+        if (count) count.textContent = people.length;
+
+        if (!people.length) {
+            list.innerHTML = `
+                <div class="connections-empty">
+                    No connections yet. Find people on Discover and send a request.
+                </div>
+            `;
+            return;
+        }
+
+        list.innerHTML = people.map(c => `
+            <div class="connection-row" data-connection-id="${escapeHtml(c.id)}">
+                <div class="creator-avatar ${escapeHtml(c.bgClass)}"${c.userId ? ` data-user-id="${escapeHtml(c.userId)}"` : ""}>${escapeHtml(c.avatar)}</div>
+                <div class="connection-info"${c.userId ? ` data-user-id="${escapeHtml(c.userId)}"` : ""}>
+                    <h4>${escapeHtml(c.name)}</h4>
+                    <p>${escapeHtml(c.niche || "Conexus Creator")}</p>
+                </div>
+                <button class="btn-disconnect" data-connection-id="${escapeHtml(c.id)}" data-confirming="false">Disconnect</button>
+            </div>
+        `).join("");
+    }
+
+    // Disconnecting asks once. A single click on a small button is too easy to
+    // do by accident for something that cannot be undone.
+    document.addEventListener("click", async (e) => {
+        const btn = e.target.closest(".btn-disconnect");
+        if (!btn) return;
+        e.stopPropagation();
+
+        if (btn.getAttribute("data-confirming") !== "true") {
+            btn.setAttribute("data-confirming", "true");
+            btn.textContent = "Sure?";
+            btn.classList.add("confirming");
+
+            // Revert if they walk away rather than leaving it armed.
+            clearTimeout(btn._revert);
+            btn._revert = setTimeout(() => {
+                btn.setAttribute("data-confirming", "false");
+                btn.textContent = "Disconnect";
+                btn.classList.remove("confirming");
+            }, 4000);
+            return;
+        }
+
+        clearTimeout(btn._revert);
+        const id = btn.getAttribute("data-connection-id");
+        btn.disabled = true;
+
+        try {
+            await api(`/api/connections/${id}`, { method: "DELETE" });
+            state.connections = (state.connections || []).filter(c => String(c.id) !== String(id));
+            renderConnections();
+
+            // The Discover and Home cards show connection state too.
+            await loadDiscover(true);
+            renderHomeCreators();
+            showToast("Disconnected");
+        } catch (err) {
+            btn.disabled = false;
+            btn.setAttribute("data-confirming", "false");
+            btn.textContent = "Disconnect";
+            btn.classList.remove("confirming");
+            showToast(describeApiError(err, "Could not remove that connection."), "error");
+        }
+    });
+
+    /**
      * Connection requests waiting on this user, shown above the inbox.
      *
      * Connecting used to write a row and change a label, which is why it felt
@@ -1504,6 +1596,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             if (accept) {
                 showToast("Connection accepted");
+                loadConnections();
                 // The acceptance is written into the conversation, so refresh it.
                 try {
                     const threads = await api(`/api/chats`);

@@ -18,4 +18,6 @@ public interface ConnectionRepository extends JpaRepository<Connection, Long> {
     List<Connection> findByTargetUserIdAndStatusOrderByCreatedAtDesc(Long targetUserId, String status);
 
     long countByTargetUserIdAndStatus(Long targetUserId, String status);
+
+    List<Connection> findByRequesterIdAndStatus(Long requesterId, String status);
 }
