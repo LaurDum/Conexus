@@ -145,8 +145,18 @@ public class UserController {
                 .findFirst()
                 .orElse(null);
 
-        boolean connected = creatorId != null
-                && connectionRepository.findByRequesterIdAndTargetCreatorId(callerId, creatorId).isPresent();
+        // A connection is keyed by creator card when there is one and by account
+        // otherwise, so both have to be checked — looking only at the card left
+        // people without one always reading as not connected.
+        Connection existing = (creatorId != null
+                ? connectionRepository.findByRequesterIdAndTargetCreatorId(callerId, creatorId)
+                : java.util.Optional.<Connection>empty())
+                .or(() -> connectionRepository.findByRequesterIdAndTargetUserId(callerId, id))
+                .orElse(null);
+
+        boolean connected = existing != null;
+        String connectionStatus = existing == null ? null
+                : (existing.getStatus() == null ? "ACCEPTED" : existing.getStatus());
 
         return ResponseEntity.ok(PublicProfile.builder()
                 .id(user.getId())
@@ -166,6 +176,7 @@ public class UserController {
                 .socials(socialAccountRepository.findByUserId(id))
                 .creatorId(creatorId)
                 .connected(connected)
+                .connectionStatus(connectionStatus)
                 .build());
     }
 }

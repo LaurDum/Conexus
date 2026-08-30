@@ -2999,13 +2999,17 @@ document.addEventListener("DOMContentLoaded", () => {
                 : `<div style="padding: 20px; color: var(--muted); font-size: 0.78rem;">No posts yet.</div>`;
         }
 
-        // Connect only means something for someone with a discover card.
+        // Connect works for anyone with an account, whether or not they have a
+        // discover card — a connection can be keyed by either.
         const connectBtn = document.getElementById("up-btn-connect");
         if (connectBtn) {
-            connectBtn.style.display = profile.creatorId ? "" : "none";
+            const canConnect = !!(profile.id || profile.creatorId);
+            connectBtn.style.display = canConnect ? "" : "none";
             connectBtn.classList.toggle("connected", profile.connected);
-            connectBtn.textContent = profile.connected ? "Requested" : "Connect";
+            connectBtn.textContent = !profile.connected ? "Connect"
+                : (profile.connectionStatus === "PENDING" ? "Requested" : "Connected");
             connectBtn.setAttribute("data-creator-id", profile.creatorId || "");
+            connectBtn.setAttribute("data-owner-id", profile.id || "");
         }
 
         // Messaging needs an account on the other end.
@@ -3054,14 +3058,18 @@ document.addEventListener("DOMContentLoaded", () => {
         // Hold the element: currentTarget is null once the handler yields at
         // the first await, so it cannot be used after the request.
         const btn = e.currentTarget;
-        const targetId = btn.getAttribute("data-creator-id");
-        if (!targetId) return;
+        const creatorId = btn.getAttribute("data-creator-id") || null;
+        const ownerId = btn.getAttribute("data-owner-id") || null;
+        if (!creatorId && !ownerId) return;
+
+        // Whichever identifies them; most people have no catalog card.
+        const targetId = creatorId || `u${ownerId}`;
 
         btn.disabled = true;
         try {
             const data = await api("/api/connections/toggle", {
                 method: "POST",
-                body: { targetCreatorId: targetId }
+                body: creatorId ? { targetCreatorId: creatorId } : { targetUserId: parseInt(ownerId, 10) }
             });
             const connected = data.status !== "disconnected";
             if (connected) {
@@ -3078,8 +3086,10 @@ document.addEventListener("DOMContentLoaded", () => {
             btn.classList.toggle("connected", connected);
             btn.textContent = !connected ? "Connect"
                 : (state.connectionStatus[targetId] === "PENDING" ? "Requested" : "Connected");
-            renderDiscoverCreators();
+            // Every list that shows connection state.
+            await loadDiscover(true);
             renderHomeCreators();
+            loadConnections();
         } catch (err) {
             showToast(describeApiError(err, "Could not update this connection."), "error");
         } finally {

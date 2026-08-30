@@ -43,4 +43,7 @@ public class PublicProfile {
 
     /** Whether the caller has already connected with them. */
     private boolean connected;
+
+    /** PENDING or ACCEPTED when connected, otherwise null. */
+    private String connectionStatus;
 }
