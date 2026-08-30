@@ -3241,10 +3241,33 @@ document.addEventListener("DOMContentLoaded", () => {
         btn.innerHTML = `${post.liked ? "❤️" : "♡"} <span id="post-detail-like-count">${post.likesCount || 0}</span>`;
     }
 
+    /**
+     * Escapes comment text, then highlights @mentions of people in this thread.
+     *
+     * Matched against the names actually present rather than a general pattern:
+     * display names contain spaces ("Laur Swat"), so a pattern permissive enough
+     * to catch those also swallows the words after the name. A literal
+     * split/join avoids escaping names like "Elena M." into a regex.
+     */
+    function withMentions(text) {
+        const safe = escapeHtml(text);
+
+        const names = [...new Set((currentComments || []).map(c => c.authorName).filter(Boolean))]
+            // Longest first, so "@Laur Swat" wins over "@Laur".
+            .sort((a, b) => b.length - a.length);
+
+        return names.reduce((out, name) => {
+            const tag = "@" + escapeHtml(name);
+            return out.split(tag).join(`<span class="comment-mention">${tag}</span>`);
+        }, safe);
+    }
+
     /** The thread currently shown in the post modal, flat as the API returns it. */
     let currentComments = [];
     /** Which comment the reply box is currently attached to. */
     let replyingToId = null;
+    /** Who that reply tags — the person whose Reply button was pressed. */
+    let replyToName = null;
 
     /**
      * Renders one comment. Replies reuse the same markup, indented, so a reply
@@ -3260,14 +3283,14 @@ document.addEventListener("DOMContentLoaded", () => {
                 <div class="comment-body">
                     <div class="comment-header">
                         <strong>${escapeHtml(c.authorName)}</strong>
-                        <span>${escapeHtml(timeAgo(c.createdAt))}</span>
                     </div>
-                    <p>${escapeHtml(c.text)}</p>
+                    <p>${withMentions(c.text)}</p>
                     <div class="comment-actions">
+                        <span class="comment-time">${escapeHtml(timeAgo(c.createdAt))}</span>
                         <button class="btn-comment-like${liked ? " liked" : ""}" data-comment-id="${escapeHtml(c.id)}" data-liked="${liked}">
                             ${liked ? "❤️" : "♡"} <span class="comment-like-count">${count}</span>
                         </button>
-                        <button class="btn-comment-reply" data-comment-id="${escapeHtml(c.id)}">Reply</button>
+                        <button class="btn-comment-reply" data-comment-id="${escapeHtml(c.id)}" data-author="${escapeHtml(c.authorName)}">Reply</button>
                     </div>
                 </div>
             </div>
@@ -3305,9 +3328,13 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function replyBoxHtml(parent) {
+        // Prefilled with the tag, the way a reply reads on Instagram. replyToName
+        // is set when Reply is pressed, so replying to a reply tags that person
+        // rather than the top-level author.
+        const tag = `@${replyToName || parent.authorName} `;
         return `
             <form class="comment-reply-form" data-parent-id="${escapeHtml(parent.id)}">
-                <input type="text" class="comment-reply-input" placeholder="Reply to ${escapeHtml(parent.authorName)}..." autocomplete="off" required>
+                <input type="text" class="comment-reply-input" value="${escapeHtml(tag)}" placeholder="Reply to ${escapeHtml(replyToName || parent.authorName)}..." autocomplete="off" required>
                 <button type="submit" class="btn-reply-send">Reply</button>
                 <button type="button" class="btn-reply-cancel">Cancel</button>
             </form>
@@ -3346,16 +3373,32 @@ document.addEventListener("DOMContentLoaded", () => {
         if (replyBtn) {
             e.stopPropagation();
             const id = replyBtn.getAttribute("data-comment-id");
-            // Toggle: pressing Reply on the open box closes it.
-            replyingToId = replyingToId === id ? null : id;
+            const author = replyBtn.getAttribute("data-author");
+
+            // A reply attaches to the top-level comment, but tags whoever was
+            // actually replied to.
+            const target = currentComments.find(c => String(c.id) === String(id));
+            const threadId = target && target.parentId ? String(target.parentId) : id;
+
+            const closing = replyingToId === threadId && replyToName === author;
+            replyingToId = closing ? null : threadId;
+            replyToName = closing ? null : author;
+
             renderCommentsList(currentComments);
-            postCommentsList?.querySelector(".comment-reply-input")?.focus();
+
+            // Put the caret after the tag rather than before it.
+            const input = postCommentsList?.querySelector(".comment-reply-input");
+            if (input) {
+                input.focus();
+                input.setSelectionRange(input.value.length, input.value.length);
+            }
             return;
         }
 
         if (e.target.closest(".btn-reply-cancel")) {
             e.stopPropagation();
             replyingToId = null;
+            replyToName = null;
             renderCommentsList(currentComments);
         }
     });
@@ -3381,6 +3424,7 @@ document.addEventListener("DOMContentLoaded", () => {
             });
 
             replyingToId = null;
+            replyToName = null;
             currentComments = await api(`/api/comments?postId=${postId}`);
             renderCommentsList(currentComments);
             bumpCommentCount(postId, currentComments.length);

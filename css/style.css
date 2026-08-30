@@ -3698,3 +3698,136 @@ body.light-theme .match span {
     font-size: 0.72rem;
     margin-top: 2px;
 }
+
+/* ==========================================================
+   COMMENTS — flat, no card outlines
+   Name and text run together on one line, actions underneath.
+   ========================================================== */
+.comment-item {
+    padding: 8px 0;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    gap: 10px;
+}
+
+.comment-thread {
+    border-bottom: none;
+    padding-bottom: 0;
+    margin-bottom: 0;
+}
+
+/* A reply is indented, with no rule down the side */
+.comment-reply {
+    margin-left: 42px;
+    padding-left: 0;
+    border-left: none;
+}
+
+.comment-reply .comment-avatar {
+    width: 26px;
+    height: 26px;
+    font-size: 0.65rem;
+}
+
+/* Name sits inline before the text, as in a chat */
+.comment-header {
+    display: block;
+    margin-bottom: 0;
+}
+
+.comment-body p {
+    display: inline;
+    color: var(--text);
+}
+
+.comment-header strong {
+    margin-right: 6px;
+}
+
+.comment-header span {
+    display: none;   /* the timestamp moves down beside the actions */
+}
+
+.comment-actions {
+    gap: 16px;
+    margin-top: 4px;
+    align-items: center;
+}
+
+.comment-time {
+    color: var(--muted);
+    font-size: 0.7rem;
+}
+
+/* Someone tagged in a reply */
+.comment-mention {
+    color: var(--primary);
+    font-weight: 600;
+}
+
+/* The reply box, and the main comment box, without boxes */
+.comment-reply-form {
+    margin: 6px 0 10px 52px;
+}
+
+.comment-reply-input {
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--border);
+    border-radius: 0;
+    padding: 6px 2px;
+}
+
+.comment-reply-input:focus {
+    border-bottom-color: var(--primary);
+}
+
+.btn-reply-send,
+.btn-reply-cancel {
+    border: none;
+    background: transparent;
+    padding: 6px 4px;
+}
+
+.btn-reply-send {
+    color: var(--primary);
+}
+
+.comment-input-form {
+    border-top: 1px solid var(--border-light);
+    align-items: center;
+}
+
+.comment-input-form input {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    padding: 10px 2px;
+}
+
+.comment-input-form input:focus {
+    border: none;
+    outline: none;
+}
+
+.comment-input-form .btn-primary-sm {
+    background: transparent;
+    border: none;
+    color: var(--primary);
+    font-weight: 700;
+}
+
+.comment-input-form .btn-primary-sm:hover {
+    color: var(--primary-hover);
+}
+
+/* Comments only ever scroll vertically; a stray horizontal track here would be
+   a long word or a wide reply indent, neither worth a scrollbar. */
+.comments-list {
+    overflow-x: hidden;
+}
+
+.comment-body p {
+    overflow-wrap: anywhere;
+}
