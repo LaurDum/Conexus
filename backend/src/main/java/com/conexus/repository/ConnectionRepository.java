@@ -11,6 +11,9 @@ public interface ConnectionRepository extends JpaRepository<Connection, Long> {
     void deleteByRequesterIdAndTargetCreatorId(Long requesterId, String targetCreatorId);
     List<Connection> findByRequesterId(Long requesterId);
 
+    /** For accounts that have no creator card to key off. */
+    Optional<Connection> findByRequesterIdAndTargetUserId(Long requesterId, Long targetUserId);
+
     /** Requests waiting on this user. */
     List<Connection> findByTargetUserIdAndStatusOrderByCreatedAtDesc(Long targetUserId, String status);
 

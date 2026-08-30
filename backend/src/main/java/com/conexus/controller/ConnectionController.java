@@ -40,8 +40,13 @@ public class ConnectionController {
     @GetMapping
     public List<Map<String, String>> getConnections(@CurrentUser Long userId) {
         return connectionRepository.findByRequesterId(userId).stream()
-                .map(c -> Map.of("creatorId", c.getTargetCreatorId(),
-                                 "status", c.getStatus() == null ? ACCEPTED : c.getStatus()))
+                .map(c -> {
+                    Map<String, String> m = new java.util.LinkedHashMap<>();
+                    m.put("creatorId", c.getTargetCreatorId());
+                    m.put("targetUserId", c.getTargetUserId() == null ? null : String.valueOf(c.getTargetUserId()));
+                    m.put("status", c.getStatus() == null ? ACCEPTED : c.getStatus());
+                    return m;
+                })
                 .collect(Collectors.toList());
     }
 
@@ -55,18 +60,25 @@ public class ConnectionController {
     @PostMapping("/toggle")
     @Transactional
     public ResponseEntity<?> toggleConnection(@CurrentUser Long userId, @RequestBody Connection req) {
-        if (req.getTargetCreatorId() == null) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Missing targetCreatorId"));
+        // Identified by creator card where there is one, otherwise by account —
+        // most people on Discover have no catalog card.
+        if (req.getTargetCreatorId() == null && req.getTargetUserId() == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Missing targetCreatorId or targetUserId"));
         }
 
-        var existing = connectionRepository.findByRequesterIdAndTargetCreatorId(userId, req.getTargetCreatorId());
+        var existing = req.getTargetCreatorId() != null
+                ? connectionRepository.findByRequesterIdAndTargetCreatorId(userId, req.getTargetCreatorId())
+                : connectionRepository.findByRequesterIdAndTargetUserId(userId, req.getTargetUserId());
+
         if (existing.isPresent()) {
-            connectionRepository.deleteByRequesterIdAndTargetCreatorId(userId, req.getTargetCreatorId());
+            connectionRepository.delete(existing.get());
             return ResponseEntity.ok(Map.of("status", "disconnected"));
         }
 
-        Creator creator = creatorRepository.findById(req.getTargetCreatorId()).orElse(null);
-        Long targetUserId = creator != null ? creator.getUserId() : null;
+        Creator creator = req.getTargetCreatorId() != null
+                ? creatorRepository.findById(req.getTargetCreatorId()).orElse(null)
+                : null;
+        Long targetUserId = creator != null ? creator.getUserId() : req.getTargetUserId();
 
         if (targetUserId != null && targetUserId.equals(userId)) {
             return ResponseEntity.badRequest().body(Map.of("error", "You cannot connect with yourself"));

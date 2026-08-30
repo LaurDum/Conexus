@@ -52,6 +52,7 @@ public class DataSeeder implements CommandLineRunner {
         hashLegacyPasswords();
         seedUsers();
         seedCreators();
+        seedCreatorAccounts();
         seedPosts();
         seedPostLikes();
         syncPostLikeCounts();
@@ -325,6 +326,139 @@ public class DataSeeder implements CommandLineRunner {
             brandChat1.getMessages().add(ChatMessage.builder().sender("me").text("Hi Alex, we loved your channel metrics and would like to propose a sponsorship for Q4!").time("3 days ago").thread(brandChat1).build());
 
             chatThreadRepository.save(brandChat1);
+        }
+    }
+
+    /**
+     * Gives the discover cards real accounts.
+     *
+     * These creators existed only as catalog rows, so connecting with them or
+     * messaging them reached nobody. Each now has an account with a profile and
+     * linked channels, which linkCreatorsToAccounts() attaches to its card by
+     * display name. They also give the paginated Discover list enough people to
+     * page through.
+     *
+     * All use the same password as the other trial accounts: test123
+     */
+    private void seedCreatorAccounts() {
+        seedCreatorAccount("elena_ai", "elena@test.com", "Elena M.", "Tech & AI Creator", "Tech",
+                "Germany", "92K", "EM", "avatar-green",
+                "AI and consumer tech, explained without the hype. Weekly deep dives.",
+                "92K", "6.1%",
+                new String[][] {
+                    {"youtube", "@elenaexplains", "61K"},
+                    {"substack", "elenaonai", "18K"}
+                });
+
+        seedCreatorAccount("maria_travels", "maria@test.com", "Maria Stoica", "Travel Creator", "Travel",
+                "Romania", "58K", "MS", "avatar-blue",
+                "Slow travel across Europe by train. Currently somewhere between Cluj and Lisbon.",
+                "58K", "4.4%",
+                new String[][] {
+                    {"instagram", "@mariastoica", "38K"},
+                    {"tiktok", "@mariatravels", "20K"}
+                });
+
+        seedCreatorAccount("david_sound", "david@test.com", "David V.", "Music Creator", "Music",
+                "United Kingdom", "41K", "DV", "avatar-orange",
+                "Producer and sound designer. Breaking down how records actually get made.",
+                "41K", "5.7%",
+                new String[][] {
+                    {"spotify", "davidv", "24K"},
+                    {"youtube", "@davidvsound", "17K"}
+                });
+
+        seedCreatorAccount("marcus_reviews", "marcus@test.com", "Marcus Chen", "Tech Reviewer", "Tech",
+                "United States", "115K", "MC", "avatar-blue",
+                "Hardware reviews with actual measurements. No sponsorships on review units.",
+                "115K", "3.9%",
+                new String[][] {
+                    {"youtube", "@marcuschen", "98K"},
+                    {"twitter", "@marcusreviews", "17K"}
+                });
+
+        seedCreatorAccount("lucas_silva", "lucas@test.com", "Lucas Silva", "Food & Culinary", "Food",
+                "Brazil", "83K", "LS", "avatar-green",
+                "Home cooking from São Paulo. Recipes you can actually finish on a weeknight.",
+                "83K", "6.8%",
+                new String[][] {
+                    {"youtube", "@lucascooks", "55K"},
+                    {"instagram", "@lucassilva", "28K"}
+                });
+
+        seedCreatorAccount("sophia_rossi", "sophia@test.com", "Sophia Rossi", "Fashion Creator", "Fashion",
+                "Italy", "67K", "SR", "avatar-orange",
+                "Independent labels and second-hand finds from Milan. Style over trends.",
+                "67K", "5.3%",
+                new String[][] {
+                    {"instagram", "@sophiarossi", "52K"},
+                    {"tiktok", "@sophiastyle", "15K"}
+                });
+    }
+
+    private void seedCreatorAccount(String username, String email, String displayName, String niche,
+                                    String category, String location, String followers, String avatar,
+                                    String bgClass, String bio, String reach, String engagement,
+                                    String[][] socials) {
+        if (userRepository.existsByUsername(username)) return;
+
+        User user = userRepository.save(User.builder()
+                .username(username)
+                .email(email)
+                .password(new BCryptPasswordEncoder().encode("test123"))
+                .displayName(displayName)
+                .niche(niche)
+                .category(category)
+                .location(location)
+                .followers(followers)
+                .avatar(avatar)
+                .bgClass(bgClass)
+                .bio(bio)
+                .totalReach(reach)
+                .engagement(engagement)
+                .accountType("creator")
+                .onboardingComplete(true)
+                .build());
+
+        profileInfoRepository.save(ProfileInfo.builder()
+                .userId(user.getId())
+                .displayName(displayName)
+                .handle("@" + username)
+                .bio(bio)
+                .location(location)
+                .totalReach(reach)
+                .engagement(engagement)
+                .build());
+
+        for (String[] soc : socials) {
+            String platform = soc[0];
+            socialAccountRepository.save(SocialAccount.builder()
+                    .id("soc_" + username + "_" + platform)
+                    .userId(user.getId())
+                    .platform(platform)
+                    .name(platform.substring(0, 1).toUpperCase() + platform.substring(1))
+                    .handle(soc[1])
+                    .url("https://" + platform + ".com/" + soc[1].replace("@", ""))
+                    .followers(soc[2])
+                    .icon(getPlatformIcon(platform))
+                    .cssClass("platform-" + platform)
+                    .build());
+        }
+
+        log.info("Seeded creator account '{}'", username);
+    }
+
+    private String getPlatformIcon(String platform) {
+        switch (platform) {
+            case "youtube":   return "▶";
+            case "tiktok":    return "🎵";
+            case "instagram": return "📷";
+            case "twitch":    return "👾";
+            case "twitter":   return "𝕏";
+            case "spotify":   return "🎧";
+            case "substack":  return "📰";
+            case "linkedin":  return "💼";
+            default:          return "🌐";
         }
     }
 

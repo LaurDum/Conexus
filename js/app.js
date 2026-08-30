@@ -38,6 +38,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Creator IDs this user has already connected with (Populated from backend)
         connectedCreatorIds: new Set(),
+        // People shown in Discover, loaded a page at a time
+        discoverPeople: [],
         // creatorId -> PENDING | ACCEPTED
         connectionStatus: {},
 
@@ -337,8 +339,8 @@ document.addEventListener("DOMContentLoaded", () => {
         } catch (e) {
             failed.push("connections");
         }
-        renderDiscoverCreators();
         renderHomeCreators();
+        await loadDiscover(true);
 
         try {
             state.posts = await api(`/api/posts`);
@@ -784,21 +786,26 @@ document.addEventListener("DOMContentLoaded", () => {
 
     let currentCategory = "all";
 
-    /** One creator card, used by both Discover and the Home "Mingle" strip. */
+    /** One person's card, used by both Discover and the Home "Mingle" strip. */
     function creatorCardHtml(c) {
-        const connected = state.connectedCreatorIds.has(c.id);
-        // A request that is still waiting reads differently from an accepted one.
-        const label = !connected ? "Connect"
-            : (state.connectionStatus[c.id] === "PENDING" ? "Requested" : "Connected");
+        // Keyed by creator card where there is one, otherwise by account.
+        const key = c.id || `u${c.userId}`;
+        const connected = c.connected !== undefined
+            ? c.connected
+            : state.connectedCreatorIds.has(key);
+        // The server reports the status alongside the flag; fall back to what we
+        // recorded locally for cards rendered outside Discover.
+        const status = c.status || state.connectionStatus[key];
+        const label = !connected ? "Connect" : (status === "PENDING" ? "Requested" : "Connected");
         return `
-            <article class="creator-card discover-card" data-creator-id="${escapeHtml(c.id)}">
+            <article class="creator-card discover-card" data-creator-id="${escapeHtml(c.id || "")}" data-owner-id="${escapeHtml(c.userId || "")}">
                 <div class="creator-avatar ${escapeHtml(c.bgClass)}">${escapeHtml(c.avatar)}</div>
                 <button class="creator-more" aria-label="More options">•••</button>
                 <h3>${escapeHtml(c.name)}</h3>
                 <p class="creator-type">${escapeHtml(c.niche)}</p>
                 <div class="creator-info">${escapeHtml(c.location)}</div>
                 <div class="creator-followers">${escapeHtml(c.followers)} followers</div>
-                <div class="match"><span>${escapeHtml(c.match)}%</span> match</div>
+                ${c.match ? `<div class="match"><span>${escapeHtml(c.match)}%</span> match</div>` : ""}
                 <button class="connect-button ${connected ? "connected" : ""}" data-name="${escapeHtml(c.name)}">${label}</button>
             </article>
         `;
@@ -822,45 +829,111 @@ document.addEventListener("DOMContentLoaded", () => {
         bindConnectButtons();
     }
 
+    /** Everyone loaded into Discover so far, and whether there is more. */
+    let discoverPage = 0;
+    let discoverHasMore = false;
+    let discoverLoading = false;
+
+    /**
+     * Loads a page of people into Discover.
+     *
+     * Discover used to list the creators catalog, which was mostly cards with
+     * no account behind them. It lists real accounts now, ten at a time, with
+     * search and category applied on the server so paging stays correct.
+     */
+    async function loadDiscover(reset) {
+        if (discoverLoading) return;
+        discoverLoading = true;
+
+        if (reset) {
+            discoverPage = 0;
+            state.discoverPeople = [];
+        }
+
+        const query = searchInput ? searchInput.value.trim() : "";
+        const params = new URLSearchParams({ page: discoverPage, size: 10 });
+        if (query) params.set("search", query);
+        if (currentCategory && currentCategory !== "all") params.set("category", currentCategory);
+
+        try {
+            const data = await api(`/api/users?${params.toString()}`);
+            state.discoverPeople = state.discoverPeople.concat(data.items || []);
+            discoverHasMore = !!data.hasMore;
+            discoverTotal = data.total || 0;
+        } catch (err) {
+            if (reset) state.discoverPeople = [];
+            discoverHasMore = false;
+            showToast(describeApiError(err, "Could not load creators."), "error");
+        } finally {
+            discoverLoading = false;
+        }
+
+        renderDiscoverCreators();
+    }
+
+    let discoverTotal = 0;
+
     function renderDiscoverCreators() {
         if (!discoverGrid) return;
 
-        const query = searchInput ? searchInput.value.toLowerCase().trim() : "";
+        const people = state.discoverPeople || [];
 
-        const filtered = state.creators.filter(c => {
-            const matchCategory = currentCategory === "all" || c.category.toLowerCase() === currentCategory.toLowerCase();
-            const matchQuery = !query || c.name.toLowerCase().includes(query) || c.niche.toLowerCase().includes(query) || c.location.toLowerCase().includes(query);
-            return matchCategory && matchQuery;
-        });
-
-        if (filtered.length === 0) {
+        if (!people.length) {
             discoverGrid.innerHTML = `
                 <div style="grid-column: 1 / -1; text-align: center; padding: 30px; color: var(--muted); font-size: 0.8rem;">
                     No creators found matching your search criteria.
                 </div>
             `;
+            renderLoadMore();
             return;
         }
 
-        discoverGrid.innerHTML = filtered.map(creatorCardHtml).join("");
-
+        discoverGrid.innerHTML = people.map(creatorCardHtml).join("");
         bindConnectButtons();
+        renderLoadMore();
+    }
+
+    /** The "Load more" control lives under the grid, outside it. */
+    function renderLoadMore() {
+        let btn = document.getElementById("btn-load-more-creators");
+
+        if (!discoverHasMore) {
+            if (btn) btn.remove();
+            return;
+        }
+
+        if (!btn) {
+            btn = document.createElement("button");
+            btn.id = "btn-load-more-creators";
+            btn.className = "btn-load-more";
+            btn.addEventListener("click", () => {
+                discoverPage += 1;
+                btn.textContent = "Loading…";
+                btn.disabled = true;
+                loadDiscover(false);
+            });
+            discoverGrid.insertAdjacentElement("afterend", btn);
+        }
+
+        const shown = (state.discoverPeople || []).length;
+        btn.disabled = false;
+        btn.textContent = `Load more (${shown} of ${discoverTotal})`;
     }
 
     if (searchInput) {
+        // Debounced: filtering happens server side now, so do not fire a
+        // request on every keystroke.
+        let searchTimer = null;
         searchInput.addEventListener("input", () => {
-            if (searchInput.value.length > 0) {
-                searchClear?.classList.remove("hidden");
-            } else {
-                searchClear?.classList.add("hidden");
-            }
-            renderDiscoverCreators();
+            searchClear?.classList.toggle("hidden", searchInput.value.length === 0);
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(() => loadDiscover(true), 250);
         });
 
         searchClear?.addEventListener("click", () => {
             searchInput.value = "";
             searchClear.classList.add("hidden");
-            renderDiscoverCreators();
+            loadDiscover(true);
         });
     }
 
@@ -870,7 +943,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 filterChipsContainer.querySelectorAll(".chip").forEach(ch => ch.classList.remove("active"));
                 chip.classList.add("active");
                 currentCategory = chip.getAttribute("data-category") || "all";
-                renderDiscoverCreators();
+                loadDiscover(true);
             });
         });
     }
@@ -881,12 +954,10 @@ document.addEventListener("DOMContentLoaded", () => {
             if (searchInput) {
                 searchInput.value = tag;
                 searchClear?.classList.remove("hidden");
-                renderDiscoverCreators();
+                loadDiscover(true);
             }
         });
     });
-
-    renderDiscoverCreators();
 
 
     // =========================================================================
@@ -903,11 +974,17 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
 
                 const creatorCard = button.closest(".creator-card");
-                const targetId = creatorCard ? creatorCard.getAttribute("data-creator-id") : null;
-                
-                if (!targetId) return;
+                if (!creatorCard) return;
 
-                const reqBody = { targetCreatorId: targetId };
+                const creatorId = creatorCard.getAttribute("data-creator-id") || null;
+                const ownerId = creatorCard.getAttribute("data-owner-id") || null;
+                if (!creatorId && !ownerId) return;
+
+                // Whichever identifies them; most people have no catalog card.
+                const targetId = creatorId || `u${ownerId}`;
+                const reqBody = creatorId
+                    ? { targetCreatorId: creatorId }
+                    : { targetUserId: parseInt(ownerId, 10) };
 
                 button.disabled = true;
                 try {
@@ -923,8 +1000,11 @@ document.addEventListener("DOMContentLoaded", () => {
                             ? "Request sent — they'll see it in their messages"
                             : "Connected");
                     }
-                    // Re-render both lists so the same creator cannot show
-                    // "Requested" in one place and "Connect" in the other.
+                    // Keep the loaded page in step, then re-render both lists.
+                    const idx = (state.discoverPeople || []).findIndex(pp =>
+                        (pp.id && pp.id === creatorId) || (!creatorId && String(pp.userId) === String(ownerId)));
+                    if (idx !== -1) state.discoverPeople[idx].connected = data.status !== "disconnected";
+
                     renderDiscoverCreators();
                     renderHomeCreators();
                 } catch (err) {
@@ -2153,6 +2233,13 @@ document.addEventListener("DOMContentLoaded", () => {
         const creatorCard = e.target.closest(".creator-card");
         if (creatorCard && !e.target.closest(".connect-button") && !e.target.closest(".creator-more")) {
             const creatorId = creatorCard.getAttribute("data-creator-id");
+            // Discover cards carry the account directly.
+            const ownerId = creatorCard.getAttribute("data-owner-id");
+            if (ownerId) {
+                openUserProfile(ownerId);
+                return;
+            }
+
             let creator = state.creators.find(c => c.id === creatorId);
 
             // Prefer the real account: it has their actual bio, links and stats.
