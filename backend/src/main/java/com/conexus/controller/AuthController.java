@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.Collections;
 
 @RestController
@@ -31,5 +32,15 @@ public class AuthController {
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(Collections.singletonMap("message", e.getMessage()));
         }
+    }
+
+    /** POST /api/auth/logout — invalidates the caller's token server-side. */
+    @PostMapping("/logout")
+    public ResponseEntity<?> logout(HttpServletRequest request) {
+        String header = request.getHeader("Authorization");
+        if (header != null && header.regionMatches(true, 0, "Bearer ", 0, 7)) {
+            authService.logout(header.substring(7).trim());
+        }
+        return ResponseEntity.noContent().build();
     }
 }

@@ -43,6 +43,15 @@
             <artifactId>spring-boot-starter-validation</artifactId>
         </dependency>
 
+        <!-- BCrypt password hashing.
+             Deliberately the standalone crypto module, not spring-boot-starter-security:
+             we want the hashing utilities without auto-configuring a filter chain
+             over the whole app. -->
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-crypto</artifactId>
+        </dependency>
+
         <!-- PostgreSQL JDBC Driver -->
         <dependency>
             <groupId>org.postgresql</groupId>

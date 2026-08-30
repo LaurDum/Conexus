@@ -1,6 +1,7 @@
 package com.conexus.controller;
 
 import com.conexus.model.ChatThread;
+import com.conexus.security.CurrentUser;
 import com.conexus.service.ChatService;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -17,45 +18,32 @@ public class ChatController {
 
     private final ChatService chatService;
 
-    /** GET /api/chats?userId=123 */
-    @GetMapping
-    public List<ChatThread> getAll(@RequestParam(required = false) Long userId) {
-        if (userId != null) {
-            return chatService.getThreadsForUser(userId);
-        }
-        return chatService.getAllThreads();
+    private static ResponseEntity<?> notYours() {
+        return ResponseEntity.status(403)
+                .body(Collections.singletonMap("message", "That conversation is not yours"));
     }
 
-    /** GET /api/chats/{id} — single thread with messages */
+    /** GET /api/chats — the signed-in user's threads. */
+    @GetMapping
+    public List<ChatThread> getAll(@CurrentUser Long userId) {
+        return chatService.getThreadsForUser(userId);
+    }
+
+    /** GET /api/chats/{id} — a single thread the caller owns. */
     @GetMapping("/{id}")
-    public ResponseEntity<ChatThread> getById(@PathVariable String id) {
+    public ResponseEntity<?> getById(@CurrentUser Long userId, @PathVariable String id) {
         try {
-            return ResponseEntity.ok(chatService.getThread(id));
+            ChatThread thread = chatService.getThread(id);
+            if (!chatService.isOwnedBy(thread, userId)) return notYours();
+            return ResponseEntity.ok(thread);
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();
         }
     }
 
-    /** POST /api/chats — create a thread (idempotent: returns the existing one) */
-    @PostMapping
-    public ResponseEntity<?> createThread(@RequestBody ChatThread thread) {
-        if (thread.getId() == null || thread.getId().isBlank()) {
-            return ResponseEntity.badRequest().body(Collections.singletonMap("message", "Thread id is required"));
-        }
-        if (thread.getUserId() == null) {
-            return ResponseEntity.badRequest().body(Collections.singletonMap("message", "userId is required"));
-        }
-        return ResponseEntity.ok(chatService.createOrGetThread(thread));
-    }
-
-    /**
-     * POST /api/chats/with-creator?userId=1&creatorId=alex
-     * Opens the caller's conversation with a creator card, reusing it if it
-     * already exists. The thread id is derived server-side so both participants
-     * agree on it.
-     */
+    /** POST /api/chats/with-creator?creatorId=alex — open or reuse a conversation. */
     @PostMapping("/with-creator")
-    public ResponseEntity<?> openWithCreator(@RequestParam Long userId, @RequestParam String creatorId) {
+    public ResponseEntity<?> openWithCreator(@CurrentUser Long userId, @RequestParam String creatorId) {
         try {
             return ResponseEntity.ok(chatService.openThreadWithCreator(userId, creatorId));
         } catch (RuntimeException e) {
@@ -63,21 +51,27 @@ public class ChatController {
         }
     }
 
-    /** PUT /api/chats/{id}/read — mark thread as read */
+    /** PUT /api/chats/{id}/read */
     @PutMapping("/{id}/read")
-    public ChatThread markRead(@PathVariable String id) {
-        return chatService.markRead(id);
+    public ResponseEntity<?> markRead(@CurrentUser Long userId, @PathVariable String id) {
+        try {
+            if (!chatService.isOwnedBy(chatService.getThread(id), userId)) return notYours();
+            return ResponseEntity.ok(chatService.markRead(id));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Collections.singletonMap("message", e.getMessage()));
+        }
     }
 
-    /** POST /api/chats/{id}/messages — send a message */
+    /** POST /api/chats/{id}/messages — send as the signed-in user. */
     @PostMapping("/{id}/messages")
-    public ResponseEntity<?> sendMessage(@PathVariable String id, @RequestBody MessageRequest req) {
+    public ResponseEntity<?> sendMessage(@CurrentUser Long userId, @PathVariable String id,
+                                         @RequestBody MessageRequest req) {
         if (req.getText() == null || req.getText().isBlank()) {
             return ResponseEntity.badRequest().body(Collections.singletonMap("message", "Message text is required"));
         }
         try {
-            return ResponseEntity.ok(
-                chatService.sendMessage(id, req.getText(), req.getSenderName(), req.getSenderId(), req.getSender()));
+            if (!chatService.isOwnedBy(chatService.getThread(id), userId)) return notYours();
+            return ResponseEntity.ok(chatService.sendMessage(id, req.getText(), userId, req.getSender()));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(Collections.singletonMap("message", e.getMessage()));
         }
@@ -86,9 +80,7 @@ public class ChatController {
     @Data
     static class MessageRequest {
         private String text;
-        private String senderName;
-        private Long senderId;
-        /** "me" (default) or "them" */
+        /** "me" (default) or "them" — used by the demo auto-reply. */
         private String sender;
     }
 }

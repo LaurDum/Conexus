@@ -28,6 +28,13 @@ public class SocialAccountService {
         return socialAccountRepository.save(account);
     }
 
+    /** True only when this social account exists and belongs to the given user. */
+    public boolean isOwnedBy(String id, Long userId) {
+        return socialAccountRepository.findById(id)
+                .map(account -> userId != null && userId.equals(account.getUserId()))
+                .orElse(false);
+    }
+
     @Transactional
     public void delete(String id) {
         socialAccountRepository.deleteById(id);

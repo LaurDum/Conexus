@@ -75,11 +75,24 @@ document.addEventListener("DOMContentLoaded", () => {
      */
     async function api(path, options) {
         const opts = options || {};
+        const headers = {};
+        if (opts.body) headers["Content-Type"] = "application/json";
+
+        // Every protected endpoint needs the session token. The server decides
+        // who you are from this — it no longer trusts a userId in the request.
+        const token = state.currentUser && state.currentUser.token;
+        if (token) headers["Authorization"] = `Bearer ${token}`;
+
         const res = await fetch(`${API_BASE}${path}`, {
             method: opts.method || "GET",
-            headers: opts.body ? { "Content-Type": "application/json" } : undefined,
+            headers: headers,
             body: opts.body ? JSON.stringify(opts.body) : undefined
         });
+
+        if (res.status === 401) {
+            handleSessionExpired();
+            throw new Error("Your session has expired. Please sign in again.");
+        }
 
         if (!res.ok) {
             const problem = await res.json().catch(() => ({}));
@@ -87,6 +100,16 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         if (res.status === 204) return null;
         return res.json().catch(() => null);
+    }
+
+    /** Drops a token the server has rejected and returns to the sign-in screen. */
+    function handleSessionExpired() {
+        localStorage.removeItem("conexus_user");
+        state.currentUser = null;
+        state.socials = [];
+        state.chats = {};
+        state.posts = [];
+        showAuthScreen();
     }
 
     /** Escapes user-supplied text before it goes into innerHTML. */
@@ -250,21 +273,21 @@ document.addEventListener("DOMContentLoaded", () => {
         const failed = [];
 
         try {
-            state.profile = await api(`/api/profile?userId=${userId}`);
+            state.profile = await api(`/api/profile`);
         } catch (e) {
             failed.push("profile");
         }
         renderProfileData();
 
         try {
-            state.socials = await api(`/api/socials?userId=${userId}`);
+            state.socials = await api(`/api/socials`);
         } catch (e) {
             failed.push("social links");
         }
         renderSocials();
 
         try {
-            const threads = await api(`/api/chats?userId=${userId}`);
+            const threads = await api(`/api/chats`);
             state.chats = {};
             threads.forEach(t => { state.chats[t.id] = t; });
         } catch (e) {
@@ -290,7 +313,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         try {
-            const connectedIds = await api(`/api/connections?requesterId=${userId}`);
+            const connectedIds = await api(`/api/connections`);
             state.connectedCreatorIds = new Set(connectedIds);
         } catch (e) {
             failed.push("connections");
@@ -298,7 +321,7 @@ document.addEventListener("DOMContentLoaded", () => {
         renderDiscoverCreators();
 
         try {
-            state.posts = await api(`/api/posts?userId=${userId}`);
+            state.posts = await api(`/api/posts`);
         } catch (e) {
             failed.push("feed");
         }
@@ -463,11 +486,18 @@ document.addEventListener("DOMContentLoaded", () => {
     // SIGN OUT BUTTON
     const btnSignOut = document.getElementById("btn-signout");
     if (btnSignOut) {
-        btnSignOut.addEventListener("click", () => {
+        btnSignOut.addEventListener("click", async () => {
+            // Revoke the token so it cannot be reused if it was ever captured.
+            try {
+                await api("/api/auth/logout", { method: "POST" });
+            } catch (e) {
+                // Signing out locally matters more than the server round-trip.
+            }
             localStorage.removeItem("conexus_user");
             state.currentUser = null;
             state.socials = [];
             state.chats = {};
+            state.posts = [];
             if (splashScreen) splashScreen.classList.remove("fade-out");
             showAuthScreen();
             setTimeout(() => {
@@ -591,7 +621,10 @@ document.addEventListener("DOMContentLoaded", () => {
         try {
             const res = await fetch(`${API_BASE}/api/onboarding/complete`, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${state.currentUser.token}`
+                },
                 body: JSON.stringify(onboardingPayload)
             });
 
@@ -601,6 +634,9 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             const updatedUser = await res.json();
+            // Onboarding is not an authentication event, so the response carries
+            // no token — keep the session we already have or we'd be logged out.
+            updatedUser.token = updatedUser.token || state.currentUser.token;
             localStorage.setItem("conexus_user", JSON.stringify(updatedUser));
             state.currentUser = updatedUser;
         } catch (e) {
@@ -807,10 +843,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 
                 if (!targetId) return;
 
-                const reqBody = {
-                    requesterId: state.currentUser.id,
-                    targetCreatorId: targetId
-                };
+                const reqBody = { targetCreatorId: targetId };
 
                 button.disabled = true;
                 try {
@@ -860,10 +893,7 @@ document.addEventListener("DOMContentLoaded", () => {
         // up as liked for everyone else.
         likeBtn.disabled = true;
         try {
-            const updated = await api(
-                `/api/posts/${postId}/like?userId=${state.currentUser.id}`,
-                { method: "PUT" }
-            );
+            const updated = await api(`/api/posts/${postId}/like`, { method: "PUT" });
             const idx = state.posts.findIndex(p => String(p.id) === String(updated.id));
             if (idx !== -1) state.posts[idx] = updated;
 
@@ -1007,12 +1037,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 // exactly what will still be there after a reload.
                 const savedThread = await api(`/api/chats/${threadId}/messages`, {
                     method: "POST",
-                    body: {
-                        text,
-                        sender: "me",
-                        senderName: state.currentUser?.displayName,
-                        senderId: state.currentUser?.id
-                    }
+                    body: { text, sender: "me" }
                 });
                 state.chats[threadId] = savedThread;
                 renderChatMessages(savedThread.messages || []);
@@ -1034,8 +1059,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         method: "POST",
                         body: {
                             text: "Sounds awesome! Let's definitely coordinate on this.",
-                            sender: "them",
-                            senderName: state.chats[threadId]?.name
+                            sender: "them"
                         }
                     });
                     state.chats[threadId] = replied;
@@ -1156,10 +1180,7 @@ document.addEventListener("DOMContentLoaded", () => {
             };
 
             try {
-                const saved = await api(`/api/socials?userId=${state.currentUser.id}`, {
-                    method: "POST",
-                    body: newSocial
-                });
+                const saved = await api(`/api/socials`, { method: "POST", body: newSocial });
                 state.socials.push(saved);
                 renderSocials();
                 modalAddSocial.classList.add("hidden");
@@ -1208,10 +1229,9 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             try {
-                state.profile = await api(`/api/profile?userId=${state.currentUser.id}`, {
+                state.profile = await api(`/api/profile`, {
                     method: "PUT",
                     body: {
-                        userId: state.currentUser.id,
                         displayName: nameVal,
                         handle: handleVal,
                         location: locVal,
@@ -1515,7 +1535,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 // The server owns the thread id, so both participants end up
                 // pointing at the same conversation.
                 const thread = await api(
-                    `/api/chats/with-creator?userId=${state.currentUser.id}&creatorId=${encodeURIComponent(creatorId)}`,
+                    `/api/chats/with-creator?creatorId=${encodeURIComponent(creatorId)}`,
                     { method: "POST" }
                 );
                 state.chats[thread.id] = thread;
@@ -1669,19 +1689,10 @@ document.addEventListener("DOMContentLoaded", () => {
             const postId = currentOpenPostCard.getAttribute("data-post-id");
             if (!postId) return;
 
-            const dispName = state.currentUser.displayName || state.currentUser.username;
-
             try {
                 await api("/api/comments", {
                     method: "POST",
-                    body: {
-                        postId: parseInt(postId, 10),
-                        authorId: state.currentUser.id,
-                        authorName: dispName,
-                        avatar: dispName.substring(0, 2).toUpperCase(),
-                        bgClass: state.currentUser.bgClass || "avatar-purple",
-                        text: text
-                    }
+                    body: { postId: parseInt(postId, 10), text: text }
                 });
 
                 inputCommentText.value = "";

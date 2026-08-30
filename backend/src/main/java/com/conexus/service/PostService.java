@@ -67,6 +67,13 @@ public class PostService {
         return saved;
     }
 
+    /** True only when this post exists and was written by the given user. */
+    public boolean isAuthoredBy(Long postId, Long userId) {
+        return postRepository.findById(postId)
+                .map(post -> userId != null && userId.equals(post.getAuthorId()))
+                .orElse(false);
+    }
+
     @Transactional
     public void delete(Long id) {
         postRepository.deleteById(id);

@@ -245,6 +245,27 @@ If you get `Web server failed to start. Port 8080 was already in use` or the fro
 
 The backend exposes the following REST endpoints on `http://localhost:8080`:
 
+### Authentication
+
+Every `/api/**` endpoint requires a bearer token except `POST /api/auth/register`
+and `POST /api/auth/login`. Send it on each request:
+
+```
+Authorization: Bearer <token>
+```
+
+- `POST /api/auth/register` — `{ username, email, password, displayName, niche }`, returns the user plus a token
+- `POST /api/auth/login` — `{ usernameOrEmail, password }`, returns the user plus a token
+- `POST /api/auth/logout` — revokes the caller's token server-side
+
+Tokens are stored in the `auth_tokens` table and expire after 30 days. Passwords
+are hashed with BCrypt; a plain-text password left over from an older version is
+re-hashed automatically the first time that account signs in.
+
+> **The acting user always comes from the token.** Endpoints that used to take
+> `?userId=` ignore it now — a client-supplied id could be changed to anyone
+> else's. Requests touching another account's data return `403`.
+
 ### Creators (`/api/creators`)
 - `GET /api/creators` — List all creators (supports query params: `?category=Tech&search=Elena`)
 - `GET /api/creators/{id}` — Get single creator details
@@ -253,9 +274,9 @@ The backend exposes the following REST endpoints on `http://localhost:8080`:
 - `DELETE /api/creators/{id}` — Delete creator
 
 ### Inspo Posts (`/api/posts`)
-- `GET /api/posts?userId={userId}` — Get all posts (newest first). Each post's `liked` is resolved for that viewer; omit `userId` and nothing comes back liked
+- `GET /api/posts` — Get all posts (newest first). Each post's `liked` is resolved for the signed-in user
 - `POST /api/posts` — Create a new post (`{ authorId, authorName, niche, content, avatarClass }`)
-- `PUT /api/posts/{id}/like?userId={userId}` — Toggle **this account's** like (**`userId` is required**)
+- `PUT /api/posts/{id}/like` — Toggle the signed-in user's like
 - `DELETE /api/posts/{id}` — Delete post
 
 > **Likes are per account.** They live in `post_likes`, one row per
@@ -266,18 +287,18 @@ The backend exposes the following REST endpoints on `http://localhost:8080`:
 > liked.
 
 ### Social Accounts (`/api/socials`)
-- `GET /api/socials?userId={userId}` — List a user's connected social accounts (omit `userId` for all)
-- `POST /api/socials?userId={userId}` — Connect a new social account (**`userId` is required**)
-- `DELETE /api/socials/{id}` — Remove a social account
+- `GET /api/socials` — List the signed-in user's connected social accounts
+- `POST /api/socials` — Connect a new social account to the signed-in user
+- `DELETE /api/socials/{id}` — Remove a social account (owner only; `403` otherwise)
 
 ### Profile (`/api/profile`)
-- `GET /api/profile?userId={userId}` — Get a user's profile info
-- `PUT /api/profile?userId={userId}` — Update a user's profile (**`userId` is required**)
+- `GET /api/profile` — Get the signed-in user's profile info
+- `PUT /api/profile` — Update the signed-in user's profile
 
 ### Messaging & Chats (`/api/chats`)
-- `GET /api/chats?userId={userId}` — List a user's chat threads (omit `userId` for all)
+- `GET /api/chats` — List the signed-in user's chat threads
 - `GET /api/chats/{id}` — Get specific thread and full message history
-- `POST /api/chats/with-creator?userId={userId}&creatorId={creatorId}` — Open (or reuse) a conversation with a creator card; the server derives the thread id so both participants agree on it
+- `POST /api/chats/with-creator?creatorId={creatorId}` — Open (or reuse) a conversation with a creator card; the server derives the thread id so both participants agree on it
 - `POST /api/chats` — Create a thread directly (`{ id, userId, name, avatar, bgClass, status }`); returns the existing thread if the id is already taken
 - `PUT /api/chats/{id}/read` — Mark thread as read
 - `POST /api/chats/{id}/messages` — Send a message in thread (`{ text, sender, senderName, senderId }`, `sender` is `"me"` or `"them"`)
@@ -287,8 +308,8 @@ The backend exposes the following REST endpoints on `http://localhost:8080`:
 - `POST /api/comments` — Add a comment (`{ postId, authorId, authorName, avatar, bgClass, text }`); also keeps the post's `commentsCount` in sync
 
 ### Connections (`/api/connections`)
-- `GET /api/connections?requesterId={userId}` — Creator IDs this user has connected with (used to restore "Requested" buttons after a reload)
-- `POST /api/connections/toggle` — Connect / disconnect (`{ requesterId, targetCreatorId }`)
+- `GET /api/connections` — Creator IDs the signed-in user has connected with (used to restore "Requested" buttons after a reload)
+- `POST /api/connections/toggle` — Connect / disconnect (`{ targetCreatorId }`)
 
 > **How conversations are stored:** each participant owns their own thread row,
 > `chat_u{ownerId}_u{partnerId}`, so unread state is per-user. Sending a message
@@ -296,9 +317,8 @@ The backend exposes the following REST endpoints on `http://localhost:8080`:
 > A thread whose `partnerUserId` is null has no account on the other end — a
 > demo creator card — and nothing is delivered.
 
-> **Note on `userId`:** endpoints that store per-user data reject requests without a
-> `userId` with `400`. Writing a row with no owner would make it unreadable by
-> `GET ...?userId=...` afterwards — data that is saved but can never be loaded back.
+> **Ownership:** endpoints that touch per-user data derive the owner from the
+> bearer token. Acting on a row belonging to someone else returns `403`.
 
 ---
 

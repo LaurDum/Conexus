@@ -7,6 +7,7 @@ import com.conexus.model.User;
 import com.conexus.repository.ProfileInfoRepository;
 import com.conexus.repository.SocialAccountRepository;
 import com.conexus.repository.UserRepository;
+import com.conexus.security.CurrentUser;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,12 +27,12 @@ public class OnboardingController {
 
     @PostMapping("/complete")
     @Transactional
-    public ResponseEntity<?> completeOnboarding(@RequestBody AuthDTOs.OnboardingRequest req) {
-        if (req.getUserId() == null) {
-            return ResponseEntity.badRequest().body(Collections.singletonMap("message", "User ID is required"));
-        }
-
-        User user = userRepository.findById(req.getUserId())
+    public ResponseEntity<?> completeOnboarding(@CurrentUser Long currentUserId,
+                                                @RequestBody AuthDTOs.OnboardingRequest req) {
+        // The account being onboarded is always the caller's own. The userId in
+        // the request body used to be trusted, which let anyone complete (and
+        // rewrite the profile of) any account.
+        User user = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         user.setAccountType(req.getAccountType() != null ? req.getAccountType() : "creator");
@@ -81,7 +82,8 @@ public class OnboardingController {
             }
         }
 
-        String token = UUID.randomUUID().toString();
+        // The caller keeps the token they already signed in with; onboarding is
+        // not an authentication event.
         AuthDTOs.AuthResponse response = new AuthDTOs.AuthResponse(
                 user.getId(),
                 user.getUsername(),
@@ -90,7 +92,7 @@ public class OnboardingController {
                 user.getNiche(),
                 user.getAvatar(),
                 user.getBgClass(),
-                token,
+                null,
                 user.getAccountType(),
                 user.isOnboardingComplete()
         );

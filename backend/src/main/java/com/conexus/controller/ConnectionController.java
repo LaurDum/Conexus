@@ -2,10 +2,11 @@ package com.conexus.controller;
 
 import com.conexus.model.Connection;
 import com.conexus.repository.ConnectionRepository;
+import com.conexus.security.CurrentUser;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
@@ -18,33 +19,34 @@ public class ConnectionController {
 
     private final ConnectionRepository connectionRepository;
 
-    /**
-     * GET /api/connections?requesterId=123
-     * Returns the creator IDs this user has already connected with, so the UI
-     * can restore the "Requested" state of connect buttons after a reload.
-     */
+    /** GET /api/connections — creator IDs the signed-in user has connected with. */
     @GetMapping
-    public List<String> getConnections(@RequestParam Long requesterId) {
-        return connectionRepository.findByRequesterId(requesterId).stream()
+    public List<String> getConnections(@CurrentUser Long userId) {
+        return connectionRepository.findByRequesterId(userId).stream()
                 .map(Connection::getTargetCreatorId)
                 .collect(Collectors.toList());
     }
 
+    /** POST /api/connections/toggle — connect or disconnect, always as the caller. */
     @PostMapping("/toggle")
     @Transactional
-    public ResponseEntity<?> toggleConnection(@RequestBody Connection req) {
-        if (req.getRequesterId() == null || req.getTargetCreatorId() == null) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Missing requesterId or targetCreatorId"));
+    public ResponseEntity<?> toggleConnection(@CurrentUser Long userId, @RequestBody Connection req) {
+        if (req.getTargetCreatorId() == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Missing targetCreatorId"));
         }
 
-        var existing = connectionRepository.findByRequesterIdAndTargetCreatorId(req.getRequesterId(), req.getTargetCreatorId());
-        
+        // requesterId from the body is ignored — it would let anyone create
+        // connections on another account's behalf.
+        var existing = connectionRepository.findByRequesterIdAndTargetCreatorId(userId, req.getTargetCreatorId());
+
         if (existing.isPresent()) {
-            connectionRepository.deleteByRequesterIdAndTargetCreatorId(req.getRequesterId(), req.getTargetCreatorId());
+            connectionRepository.deleteByRequesterIdAndTargetCreatorId(userId, req.getTargetCreatorId());
             return ResponseEntity.ok(Map.of("status", "disconnected"));
-        } else {
-            Connection saved = connectionRepository.save(req);
-            return ResponseEntity.ok(Map.of("status", "connected", "id", saved.getId()));
         }
+
+        req.setId(null);
+        req.setRequesterId(userId);
+        Connection saved = connectionRepository.save(req);
+        return ResponseEntity.ok(Map.of("status", "connected", "id", saved.getId()));
     }
 }

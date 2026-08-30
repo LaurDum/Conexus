@@ -2,6 +2,8 @@ package com.conexus.config;
 
 import com.conexus.model.*;
 import com.conexus.repository.*;
+import com.conexus.service.AuthService;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
@@ -47,6 +49,7 @@ public class DataSeeder implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
+        hashLegacyPasswords();
         seedUsers();
         seedCreators();
         seedPosts();
@@ -175,6 +178,27 @@ public class DataSeeder implements CommandLineRunner {
                         log.info("Linked creator '{}' to account '{}'", creator.getId(), matches.get(0).getUsername());
                     }
                 });
+    }
+
+    /**
+     * Replaces any password still stored as plain text with a BCrypt hash.
+     *
+     * Passwords were originally saved verbatim, so anyone able to read the
+     * users table could read real passwords — which people reuse elsewhere.
+     * Runs on every startup and is a no-op once everything is hashed.
+     */
+    private void hashLegacyPasswords() {
+        BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+
+        List<User> legacy = userRepository.findAll().stream()
+                .filter(u -> u.getPassword() != null && !AuthService.isBcryptHash(u.getPassword()))
+                .collect(Collectors.toList());
+
+        if (legacy.isEmpty()) return;
+
+        legacy.forEach(u -> u.setPassword(encoder.encode(u.getPassword())));
+        userRepository.saveAll(legacy);
+        log.info("Hashed {} plain-text password(s)", legacy.size());
     }
 
     private void seedUsers() {

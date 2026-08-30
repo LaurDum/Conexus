@@ -34,6 +34,11 @@ public class ChatService {
         return chatThreadRepository.findByUserId(userId);
     }
 
+    /** True only when this thread belongs to the given user's inbox. */
+    public boolean isOwnedBy(ChatThread thread, Long userId) {
+        return thread != null && userId != null && userId.equals(thread.getUserId());
+    }
+
     public ChatThread getThread(String id) {
         return chatThreadRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Thread not found: " + id));
@@ -98,12 +103,18 @@ public class ChatService {
     }
 
     @Transactional
-    public ChatThread sendMessage(String threadId, String text, String senderName, Long senderId, String sender) {
+    public ChatThread sendMessage(String threadId, String text, Long senderId, String sender) {
         ChatThread thread = getThread(threadId);
         String now = LocalTime.now().format(CLOCK);
         boolean fromOwner = !"them".equals(sender);
 
-        appendMessage(thread, fromOwner ? "me" : "them", text, senderName, senderId, now);
+        // The display name comes from the account, not from the request body.
+        User senderUser = senderId != null ? userRepository.findById(senderId).orElse(null) : null;
+        String senderName = fromOwner
+                ? (senderUser != null ? senderUser.getDisplayName() : "You")
+                : thread.getName();
+
+        appendMessage(thread, fromOwner ? "me" : "them", text, senderName, fromOwner ? senderId : null, now);
         thread.setUnread(false);
         ChatThread saved = chatThreadRepository.save(thread);
 

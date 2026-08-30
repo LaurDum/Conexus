@@ -1,12 +1,10 @@
 package com.conexus.controller;
 
 import com.conexus.model.ProfileInfo;
+import com.conexus.security.CurrentUser;
 import com.conexus.service.ProfileInfoService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.Collections;
 
 @RestController
 @RequestMapping("/api/profile")
@@ -15,20 +13,20 @@ public class ProfileInfoController {
 
     private final ProfileInfoService profileInfoService;
 
-    /** GET /api/profile?userId=123 */
+    /**
+     * GET /api/profile — the signed-in user's profile.
+     *
+     * The old ?userId= parameter is gone: it let anyone read any profile just by
+     * changing the number.
+     */
     @GetMapping
-    public ProfileInfo get(@RequestParam(required = false) Long userId) {
+    public ProfileInfo get(@CurrentUser Long userId) {
         return profileInfoService.getByUserId(userId);
     }
 
-    /** PUT /api/profile?userId=123 */
+    /** PUT /api/profile — updates the signed-in user's own profile. */
     @PutMapping
-    public ResponseEntity<?> update(@RequestParam(required = false) Long userId, @RequestBody ProfileInfo profileInfo) {
-        Long targetId = userId != null ? userId : profileInfo.getUserId();
-        try {
-            return ResponseEntity.ok(profileInfoService.update(targetId, profileInfo));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(Collections.singletonMap("message", e.getMessage()));
-        }
+    public ProfileInfo update(@CurrentUser Long userId, @RequestBody ProfileInfo profileInfo) {
+        return profileInfoService.update(userId, profileInfo);
     }
 }

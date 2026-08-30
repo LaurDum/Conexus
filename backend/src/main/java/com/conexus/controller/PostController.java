@@ -1,6 +1,7 @@
 package com.conexus.controller;
 
 import com.conexus.model.Post;
+import com.conexus.security.CurrentUser;
 import com.conexus.service.PostService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -16,35 +17,29 @@ public class PostController {
 
     private final PostService postService;
 
-    /** GET /api/posts?userId=123 — newest first, `liked` resolved for that user */
+    /** GET /api/posts — newest first, `liked` resolved for the signed-in user. */
     @GetMapping
-    public List<Post> getAll(@RequestParam(required = false) Long userId) {
+    public List<Post> getAll(@CurrentUser Long userId) {
         return postService.getAll(userId);
     }
 
-    /** POST /api/posts — create a new post */
+    /** POST /api/posts — publish as the signed-in user. */
     @PostMapping
-    public ResponseEntity<?> create(@RequestBody Post post) {
+    public ResponseEntity<?> create(@CurrentUser Long userId, @RequestBody Post post) {
         if (post.getContent() == null || post.getContent().isBlank()) {
             return ResponseEntity.badRequest().body(Collections.singletonMap("message", "Post content is required"));
         }
         if (post.getAuthorName() == null || post.getAuthorName().isBlank()) {
             return ResponseEntity.badRequest().body(Collections.singletonMap("message", "authorName is required"));
         }
-        post.setId(null); // always insert, never overwrite an existing post
+        post.setId(null);          // always insert, never overwrite an existing post
+        post.setAuthorId(userId);  // authorship comes from the token, not the body
         return ResponseEntity.ok(postService.create(post));
     }
 
-    /**
-     * PUT /api/posts/{id}/like?userId=123 — toggle this user's like.
-     * userId is required: without it a like has no owner and would be shared
-     * by every account.
-     */
+    /** PUT /api/posts/{id}/like — toggle the signed-in user's like. */
     @PutMapping("/{id}/like")
-    public ResponseEntity<?> like(@PathVariable Long id, @RequestParam(required = false) Long userId) {
-        if (userId == null) {
-            return ResponseEntity.badRequest().body(Collections.singletonMap("message", "userId is required to like a post"));
-        }
+    public ResponseEntity<?> like(@CurrentUser Long userId, @PathVariable Long id) {
         try {
             return ResponseEntity.ok(postService.toggleLike(id, userId));
         } catch (RuntimeException e) {
@@ -52,9 +47,13 @@ public class PostController {
         }
     }
 
-    /** DELETE /api/posts/{id} */
+    /** DELETE /api/posts/{id} — only the author may delete. */
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
+    public ResponseEntity<?> delete(@CurrentUser Long userId, @PathVariable Long id) {
+        if (!postService.isAuthoredBy(id, userId)) {
+            return ResponseEntity.status(403)
+                    .body(Collections.singletonMap("message", "That post is not yours to delete"));
+        }
         postService.delete(id);
         return ResponseEntity.noContent().build();
     }
