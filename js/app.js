@@ -2035,16 +2035,10 @@ document.addEventListener("DOMContentLoaded", () => {
         renderPostDetailLike(state.posts.find(p => String(p.id) === String(postId)));
 
         try {
-            const comments = await api(`/api/comments?postId=${postId}`);
-            renderCommentsList(comments.map(c => ({
-                author: c.authorName,
-                authorId: c.authorId,
-                avatar: c.avatar,
-                bgClass: c.bgClass,
-                time: timeAgo(c.createdAt),
-                text: c.text
-            })));
+            currentComments = await api(`/api/comments?postId=${postId}`);
+            renderCommentsList(currentComments);
         } catch (e) {
+            currentComments = [];
             renderCommentsList([]);
             showToast(describeApiError(e, "Could not load comments."), "error");
         }
@@ -2066,21 +2060,164 @@ document.addEventListener("DOMContentLoaded", () => {
         btn.innerHTML = `${post.liked ? "❤️" : "♡"} <span id="post-detail-like-count">${post.likesCount || 0}</span>`;
     }
 
-    function renderCommentsList(comments) {
-        if (!postCommentsList) return;
+    /** The thread currently shown in the post modal, flat as the API returns it. */
+    let currentComments = [];
+    /** Which comment the reply box is currently attached to. */
+    let replyingToId = null;
 
-        postCommentsList.innerHTML = comments.map(c => `
-            <div class="comment-item${c.authorId ? " is-linked" : ""}"${c.authorId ? ` data-user-id="${escapeHtml(c.authorId)}"` : ""}>
+    /**
+     * Renders one comment. Replies reuse the same markup, indented, so a reply
+     * can be liked and replied to exactly like a top-level comment.
+     */
+    function commentHtml(c, isReply) {
+        const liked = c.liked === true;
+        const count = c.likesCount || 0;
+
+        return `
+            <div class="comment-item${isReply ? " comment-reply" : ""}${c.authorId ? " is-linked" : ""}" data-comment-id="${escapeHtml(c.id)}"${c.authorId ? ` data-user-id="${escapeHtml(c.authorId)}"` : ""}>
                 <div class="comment-avatar ${escapeHtml(c.bgClass)}">${escapeHtml(c.avatar)}</div>
                 <div class="comment-body">
                     <div class="comment-header">
-                        <strong>${escapeHtml(c.author)}</strong>
-                        <span>${escapeHtml(c.time)}</span>
+                        <strong>${escapeHtml(c.authorName)}</strong>
+                        <span>${escapeHtml(timeAgo(c.createdAt))}</span>
                     </div>
                     <p>${escapeHtml(c.text)}</p>
+                    <div class="comment-actions">
+                        <button class="btn-comment-like${liked ? " liked" : ""}" data-comment-id="${escapeHtml(c.id)}" data-liked="${liked}">
+                            ${liked ? "❤️" : "♡"} <span class="comment-like-count">${count}</span>
+                        </button>
+                        <button class="btn-comment-reply" data-comment-id="${escapeHtml(c.id)}">Reply</button>
+                    </div>
                 </div>
             </div>
-        `).join("");
+        `;
+    }
+
+    function renderCommentsList(comments) {
+        if (!postCommentsList) return;
+
+        if (!comments.length) {
+            postCommentsList.innerHTML = `
+                <div style="padding: 18px; color: var(--muted); font-size: 0.78rem; text-align: center;">
+                    No comments yet. Be the first to reply.
+                </div>
+            `;
+            return;
+        }
+
+        const topLevel = comments.filter(c => !c.parentId);
+        const repliesBy = comments.reduce((map, c) => {
+            if (c.parentId) (map[c.parentId] = map[c.parentId] || []).push(c);
+            return map;
+        }, {});
+
+        postCommentsList.innerHTML = topLevel.map(c => {
+            const replies = repliesBy[c.id] || [];
+            return `
+                <div class="comment-thread">
+                    ${commentHtml(c, false)}
+                    ${replies.map(rep => commentHtml(rep, true)).join("")}
+                    ${replyingToId === String(c.id) ? replyBoxHtml(c) : ""}
+                </div>
+            `;
+        }).join("");
+    }
+
+    function replyBoxHtml(parent) {
+        return `
+            <form class="comment-reply-form" data-parent-id="${escapeHtml(parent.id)}">
+                <input type="text" class="comment-reply-input" placeholder="Reply to ${escapeHtml(parent.authorName)}..." autocomplete="off" required>
+                <button type="submit" class="btn-reply-send">Reply</button>
+                <button type="button" class="btn-reply-cancel">Cancel</button>
+            </form>
+        `;
+    }
+
+    // ── Comment likes and replies ──────────────────────────────────────────
+    // Delegated, because the thread is re-rendered after every change.
+
+    document.addEventListener("click", async (e) => {
+        const likeBtn = e.target.closest(".btn-comment-like");
+        if (!likeBtn) return;
+        e.stopPropagation();          // do not open the author's profile
+
+        if (!state.currentUser) { showAuthScreen(); return; }
+
+        const commentId = likeBtn.getAttribute("data-comment-id");
+        likeBtn.disabled = true;
+        try {
+            const updated = await api(`/api/comments/${commentId}/like`, { method: "PUT" });
+
+            const idx = currentComments.findIndex(c => String(c.id) === String(updated.id));
+            if (idx !== -1) {
+                currentComments[idx].liked = updated.liked;
+                currentComments[idx].likesCount = updated.likesCount;
+            }
+            renderCommentsList(currentComments);
+        } catch (err) {
+            showToast(describeApiError(err, "Could not save your like."), "error");
+            likeBtn.disabled = false;
+        }
+    });
+
+    document.addEventListener("click", (e) => {
+        const replyBtn = e.target.closest(".btn-comment-reply");
+        if (replyBtn) {
+            e.stopPropagation();
+            const id = replyBtn.getAttribute("data-comment-id");
+            // Toggle: pressing Reply on the open box closes it.
+            replyingToId = replyingToId === id ? null : id;
+            renderCommentsList(currentComments);
+            postCommentsList?.querySelector(".comment-reply-input")?.focus();
+            return;
+        }
+
+        if (e.target.closest(".btn-reply-cancel")) {
+            e.stopPropagation();
+            replyingToId = null;
+            renderCommentsList(currentComments);
+        }
+    });
+
+    document.addEventListener("submit", async (e) => {
+        const form = e.target.closest(".comment-reply-form");
+        if (!form) return;
+        e.preventDefault();
+        e.stopPropagation();
+
+        if (!state.currentUser) { showAuthScreen(); return; }
+
+        const input = form.querySelector(".comment-reply-input");
+        const text = input ? input.value.trim() : "";
+        const parentId = form.getAttribute("data-parent-id");
+        const postId = currentOpenPostCard?.getAttribute("data-post-id");
+        if (!text || !postId) return;
+
+        try {
+            await api("/api/comments", {
+                method: "POST",
+                body: { postId: parseInt(postId, 10), parentId: parseInt(parentId, 10), text: text }
+            });
+
+            replyingToId = null;
+            currentComments = await api(`/api/comments?postId=${postId}`);
+            renderCommentsList(currentComments);
+            bumpCommentCount(postId, currentComments.length);
+        } catch (err) {
+            showToast(describeApiError(err, "Could not post your reply."), "error");
+        }
+    });
+
+    /** Keeps the count on the feed card and the modal header in step. */
+    function bumpCommentCount(postId, total) {
+        const idx = state.posts.findIndex(p => String(p.id) === String(postId));
+        if (idx !== -1) {
+            state.posts[idx].commentsCount = total;
+            renderFeed();
+            renderUserPosts();
+            currentOpenPostCard = document.querySelector(`.inspo-card[data-post-id="${postId}"]`) || currentOpenPostCard;
+        }
+        if (postDetailCommentCount) postDetailCommentCount.textContent = total;
     }
 
     if (btnClosePostComments && modalPostComments) {
@@ -2111,15 +2248,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 inputCommentText.value = "";
 
-                // Re-read the post so the stored comment count is what we show.
-                const idx = state.posts.findIndex(p => String(p.id) === String(postId));
-                if (idx !== -1) {
-                    state.posts[idx].commentsCount = (state.posts[idx].commentsCount || 0) + 1;
-                    renderFeed();
-                    currentOpenPostCard = document.querySelector(`.inspo-card[data-post-id="${postId}"]`) || currentOpenPostCard;
-                }
-
-                await openPostCommentsModal(currentOpenPostCard);
+                // Re-read the thread so the new comment, and the count, come
+                // from the server rather than being guessed at locally.
+                currentComments = await api(`/api/comments?postId=${postId}`);
+                renderCommentsList(currentComments);
+                bumpCommentCount(postId, currentComments.length);
             } catch (e) {
                 showToast(describeApiError(e, "Could not post your comment."), "error");
             }

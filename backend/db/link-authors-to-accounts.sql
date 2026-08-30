@@ -51,4 +51,16 @@ UPDATE chat_threads t
    AND pi.display_name <> ''
    AND t.name <> pi.display_name;
 
+-- Comment bylines were captured from users.display_name while profiles show
+-- profile_info.display_name, so a byline could disagree with the profile it
+-- links to. Align existing comments with the name shown everywhere else.
+UPDATE comments c
+   SET author_name = pi.display_name
+  FROM profile_info pi
+ WHERE c.author_id IS NOT NULL
+   AND pi.user_id = c.author_id
+   AND pi.display_name IS NOT NULL
+   AND pi.display_name <> ''
+   AND c.author_name <> pi.display_name;
+
 COMMIT;

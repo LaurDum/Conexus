@@ -31,6 +31,13 @@ public class Comment {
 
     private Long authorId;
 
+    /**
+     * The comment this one replies to, or null for a top-level comment.
+     * Replies are one level deep: a reply to a reply attaches to the same
+     * parent, so a thread stays readable rather than nesting indefinitely.
+     */
+    private Long parentId;
+
     @NotBlank
     private String authorName;
 
@@ -45,4 +52,12 @@ public class Comment {
     @CreationTimestamp
     @Column(updatable = false)
     private Instant createdAt;
+
+    /** Derived per request from comment_likes, never stored. */
+    @Transient
+    private long likesCount;
+
+    /** Whether the user who asked for this comment has liked it. */
+    @Transient
+    private boolean liked;
 }

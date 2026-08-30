@@ -2533,3 +2533,91 @@ a.social-badge {
 #up-posts .inspo-card {
     cursor: default;
 }
+
+/* ==========================================================
+   COMMENT THREADS — likes and replies
+   ========================================================== */
+.comment-thread {
+    border-bottom: 1px solid var(--border-light);
+    padding-bottom: 6px;
+    margin-bottom: 6px;
+}
+
+.comment-thread:last-child {
+    border-bottom: none;
+}
+
+.comment-reply {
+    margin-left: 34px;
+    padding-left: 10px;
+    border-left: 2px solid var(--border);
+}
+
+.comment-actions {
+    display: flex;
+    gap: 14px;
+    margin-top: 5px;
+}
+
+.comment-actions button {
+    background: none;
+    border: none;
+    padding: 0;
+    color: var(--muted);
+    font-size: 0.72rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: color 0.15s ease;
+}
+
+.comment-actions button:hover {
+    color: var(--text);
+}
+
+.btn-comment-like.liked {
+    color: #ff6b81;
+}
+
+.comment-reply-form {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin: 8px 0 10px 44px;
+}
+
+.comment-reply-input {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 8px 14px;
+    color: var(--text);
+    font-size: 0.76rem;
+    font-family: inherit;
+}
+
+.comment-reply-input:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
+.btn-reply-send,
+.btn-reply-cancel {
+    border-radius: 999px;
+    padding: 7px 14px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid var(--border);
+}
+
+.btn-reply-send {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #fff;
+}
+
+.btn-reply-cancel {
+    background: transparent;
+    color: var(--muted);
+}
