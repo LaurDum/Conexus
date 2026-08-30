@@ -848,6 +848,33 @@
          MODALS
     =========================================== -->
 
+    <!-- 0. SHARE POST MODAL -->
+    <div class="modal-overlay hidden" id="modal-share">
+        <div class="modal-card share-modal">
+            <div class="modal-header">
+                <h3>Share this post</h3>
+                <button class="modal-close" id="btn-close-share">&times;</button>
+            </div>
+
+            <div class="share-preview">
+                <strong id="share-post-author">Creator</strong>
+                <p id="share-post-excerpt"></p>
+            </div>
+
+            <label class="share-label">Link to this post</label>
+            <div class="share-link-row">
+                <input type="text" id="share-link-input" readonly>
+                <button type="button" class="btn-primary" id="btn-copy-share-link">Copy</button>
+            </div>
+            <p class="share-hint">Anyone with a Conexus account can open this link.</p>
+
+            <div class="share-actions">
+                <button type="button" class="btn-secondary" id="btn-native-share">Share via…</button>
+                <button type="button" class="btn-secondary" id="btn-open-share-link">Open in new tab</button>
+            </div>
+        </div>
+    </div>
+
     <!-- 1. CREATE POST MODAL -->
     <div class="modal-overlay hidden" id="modal-create">
         <div class="modal-card">

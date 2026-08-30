@@ -927,36 +927,77 @@ document.addEventListener("DOMContentLoaded", () => {
     // =========================================================================
 
     /**
-     * Shares a post. The link carries #post-<id>, which openPostFromHash() picks
-     * up on load, so what the recipient opens is the actual post.
+     * Opens the share sheet for a post.
+     *
+     * This used to copy the link and show a toast. A four second line at the
+     * bottom of the screen was too easy to miss for something you deliberately
+     * clicked, and it silently did nothing at all when the clipboard was
+     * blocked. The sheet always shows the link, so there is something to see
+     * and something to copy by hand if the button cannot.
      */
-    async function sharePost(postCard) {
+    function sharePost(postCard) {
         const postId = postCard.getAttribute("data-post-id");
         if (!postId) return;
 
         const post = state.posts.find(p => String(p.id) === String(postId));
         const url = `${location.origin}${location.pathname}#post-${postId}`;
-        const text = post ? `${post.authorName} on Conexus: ${post.content}` : "A post on Conexus";
 
-        // navigator.share only exists on mobile and some desktop browsers, and
-        // only on a secure origin, so the clipboard is the fallback everywhere else.
-        if (navigator.share) {
-            try {
-                await navigator.share({ title: "Conexus", text, url });
-                return;
-            } catch (err) {
-                if (err && err.name === "AbortError") return;  // user dismissed the sheet
+        shareUrl = url;
+        shareText = post ? `${post.authorName} on Conexus: ${post.content}` : "A post on Conexus";
+
+        const authorEl = document.getElementById("share-post-author");
+        const excerptEl = document.getElementById("share-post-excerpt");
+        if (authorEl) authorEl.textContent = post ? post.authorName : "Conexus";
+        if (excerptEl) excerptEl.textContent = post ? post.content : "";
+
+        const input = document.getElementById("share-link-input");
+        if (input) input.value = url;
+
+        const copyBtn = document.getElementById("btn-copy-share-link");
+        if (copyBtn) copyBtn.textContent = "Copy";
+
+        // Only offer the native sheet where the browser actually has one.
+        const nativeBtn = document.getElementById("btn-native-share");
+        if (nativeBtn) nativeBtn.style.display = navigator.share ? "" : "none";
+
+        document.getElementById("modal-share")?.classList.remove("hidden");
+        if (input) { input.focus(); input.select(); }
+    }
+
+    /** The link and text for whichever post the share sheet is showing. */
+    let shareUrl = "";
+    let shareText = "";
+
+    document.getElementById("btn-close-share")?.addEventListener("click", () => {
+        document.getElementById("modal-share")?.classList.add("hidden");
+    });
+
+    document.getElementById("btn-copy-share-link")?.addEventListener("click", async (e) => {
+        const btn = e.currentTarget;
+        const input = document.getElementById("share-link-input");
+        if (input) { input.focus(); input.select(); }
+
+        const ok = await copyToClipboard(shareUrl);
+        btn.textContent = ok ? "Copied ✓" : "Press Ctrl+C";
+        setTimeout(() => { btn.textContent = "Copy"; }, 2500);
+    });
+
+    document.getElementById("btn-native-share")?.addEventListener("click", async () => {
+        if (!navigator.share) return;
+        try {
+            await navigator.share({ title: "Conexus", text: shareText, url: shareUrl });
+            document.getElementById("modal-share")?.classList.add("hidden");
+        } catch (err) {
+            // The user dismissing the sheet is not a failure.
+            if (err && err.name !== "AbortError") {
+                showToast(describeApiError(err, "Could not open the share sheet."), "error");
             }
         }
+    });
 
-        if (await copyToClipboard(url)) {
-            showToast("Link copied to clipboard");
-        } else {
-            // Never leave the user with nothing: show the link so it can be
-            // selected by hand.
-            showToast(`Copy this link: ${url}`);
-        }
-    }
+    document.getElementById("btn-open-share-link")?.addEventListener("click", () => {
+        window.open(shareUrl, "_blank", "noopener");
+    });
 
     /**
      * navigator.clipboard needs a secure origin and a real user gesture, and is
@@ -992,9 +1033,13 @@ document.addEventListener("DOMContentLoaded", () => {
     // Anywhere a person is named — a post author, a comment author, the chat
     // header — opens their profile.
     document.addEventListener("click", (e) => {
+        // A control inside a person's row does its own job. stopPropagation in
+        // those handlers cannot help: they are registered on document too, so
+        // this listener would still run.
+        if (e.target.closest("button, a, input, textarea, select, .comment-actions, .comment-reply-form")) return;
+
         const personEl = e.target.closest("[data-user-id]");
         if (!personEl) return;
-        e.stopPropagation();
         openUserProfile(personEl.getAttribute("data-user-id"));
     });
 
