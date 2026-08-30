@@ -696,7 +696,7 @@
                     </div>
                     <button class="stat-box stat-box-action" id="stat-connections" aria-expanded="false">
                         <span class="stat-value" id="stat-connections-count">0</span>
-                        <span class="stat-label">Connections <span class="stat-chevron">▾</span></span>
+                        <span class="stat-label">Connections →</span>
                     </button>
                 </div>
             </div>
@@ -724,17 +724,7 @@
 
 
             <!-- PROFILE CONTENT SHOWCASE TAB -->
-            <!-- CONNECTIONS — opened from the Connections stat above -->
-            <section class="section connections-section hidden" id="connections-section">
-                <div class="section-heading">
-                    <div>
-                        <span class="section-eyebrow">🤝 Your Network</span>
-                        <h2>Connections</h2>
-                    </div>
-                    <span class="connections-count" id="connections-count">0</span>
-                </div>
-                <div class="connections-list" id="connections-list"></div>
-            </section>
+
 
             <section class="section">
                 <div class="section-heading">
@@ -748,6 +738,24 @@
                     <!-- Populated from the database by renderUserPosts() in js/app.js -->
                 </div>
             </section>
+
+        </section>
+
+        <!-- ==========================================
+             CONNECTIONS — a page of its own
+        =========================================== -->
+        <section id="view-connections" class="view">
+
+            <div class="simple-page-header">
+                <button class="btn-back-page" id="btn-back-from-connections">← Back</button>
+                <div>
+                    <h2>Connections</h2>
+                    <p class="view-subtitle">People you're connected with, and requests you've sent.</p>
+                </div>
+                <span class="connections-count" id="connections-count">0</span>
+            </div>
+
+            <div class="connections-list" id="connections-list"></div>
 
         </section>
 

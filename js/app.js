@@ -1508,19 +1508,12 @@ document.addEventListener("DOMContentLoaded", () => {
     // The Connections stat opens the list rather than being a number that does
     // nothing — the tile it replaced showed a hardcoded "12 Collabs Done".
     document.getElementById("stat-connections")?.addEventListener("click", () => {
-        const section = document.getElementById("connections-section");
-        const tile = document.getElementById("stat-connections");
-        if (!section) return;
+        switchView("view-connections");
+        loadConnections();
+    });
 
-        const opening = section.classList.contains("hidden");
-        section.classList.toggle("hidden", !opening);
-        tile.setAttribute("aria-expanded", String(opening));
-        tile.classList.toggle("open", opening);
-
-        if (opening) {
-            loadConnections();
-            section.scrollIntoView({ behavior: "smooth", block: "nearest" });
-        }
+    document.getElementById("btn-back-from-connections")?.addEventListener("click", () => {
+        switchView("view-profile");   // it is only reachable from there
     });
 
     // Disconnecting asks once. A single click on a small button is too easy to

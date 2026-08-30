@@ -3027,15 +3027,7 @@ a.social-badge {
     opacity: 0.8;
 }
 
-.stat-chevron {
-    display: inline-block;
-    font-size: 0.6rem;
-    transition: transform 0.22s ease;
-}
 
-.stat-box-action.open .stat-chevron {
-    transform: rotate(180deg);
-}
 
 .stat-box-action .stat-value {
     color: var(--primary);
@@ -3053,4 +3045,41 @@ a.social-badge {
     font-size: 0.6rem;
     font-weight: 600;
     vertical-align: middle;
+}
+
+
+/* A plain page header with a way back — used by the Connections page */
+.simple-page-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 20px;
+}
+
+.simple-page-header > div {
+    flex: 1;
+    min-width: 0;
+}
+
+.simple-page-header h2 {
+    font-size: 1.35rem;
+    margin-bottom: 2px;
+}
+
+.btn-back-page {
+    flex-shrink: 0;
+    background: var(--card);
+    border: 1px solid var(--border);
+    color: var(--secondary);
+    padding: 8px 14px;
+    border-radius: 999px;
+    font-size: 0.76rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.btn-back-page:hover {
+    color: var(--text);
+    border-color: var(--primary);
 }
