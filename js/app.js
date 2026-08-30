@@ -1468,7 +1468,15 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!list) return;
 
         const people = state.connections || [];
-        if (count) count.textContent = people.length;
+
+        // Both places say "Connections", so both must mean the same thing:
+        // people you are actually connected with. Pending rows still appear in
+        // the list, labelled, so a sent request can be withdrawn.
+        const settled = people.filter(c => c.status !== "PENDING").length;
+        if (count) count.textContent = settled;
+
+        const statCount = document.getElementById("stat-connections-count");
+        if (statCount) statCount.textContent = settled;
 
         if (!people.length) {
             list.innerHTML = `
@@ -1479,17 +1487,41 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        list.innerHTML = people.map(c => `
-            <div class="connection-row" data-connection-id="${escapeHtml(c.id)}">
-                <div class="creator-avatar ${escapeHtml(c.bgClass)}"${c.userId ? ` data-user-id="${escapeHtml(c.userId)}"` : ""}>${escapeHtml(c.avatar)}</div>
-                <div class="connection-info"${c.userId ? ` data-user-id="${escapeHtml(c.userId)}"` : ""}>
-                    <h4>${escapeHtml(c.name)}</h4>
-                    <p>${escapeHtml(c.niche || "Conexus Creator")}</p>
+        list.innerHTML = people.map(c => {
+            const pending = c.status === "PENDING";
+            // A request you sent can be withdrawn; an accepted one is removed.
+            const action = pending ? "Cancel request" : "Disconnect";
+
+            return `
+                <div class="connection-row" data-connection-id="${escapeHtml(c.id)}">
+                    <div class="creator-avatar ${escapeHtml(c.bgClass)}"${c.userId ? ` data-user-id="${escapeHtml(c.userId)}"` : ""}>${escapeHtml(c.avatar)}</div>
+                    <div class="connection-info"${c.userId ? ` data-user-id="${escapeHtml(c.userId)}"` : ""}>
+                        <h4>${escapeHtml(c.name)}${pending ? ` <span class="connection-pending">Pending</span>` : ""}</h4>
+                        <p>${escapeHtml(c.niche || "Conexus Creator")}</p>
+                    </div>
+                    <button class="btn-disconnect" data-connection-id="${escapeHtml(c.id)}" data-confirming="false">${action}</button>
                 </div>
-                <button class="btn-disconnect" data-connection-id="${escapeHtml(c.id)}" data-confirming="false">Disconnect</button>
-            </div>
-        `).join("");
+            `;
+        }).join("");
     }
+
+    // The Connections stat opens the list rather than being a number that does
+    // nothing — the tile it replaced showed a hardcoded "12 Collabs Done".
+    document.getElementById("stat-connections")?.addEventListener("click", () => {
+        const section = document.getElementById("connections-section");
+        const tile = document.getElementById("stat-connections");
+        if (!section) return;
+
+        const opening = section.classList.contains("hidden");
+        section.classList.toggle("hidden", !opening);
+        tile.setAttribute("aria-expanded", String(opening));
+        tile.classList.toggle("open", opening);
+
+        if (opening) {
+            loadConnections();
+            section.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        }
+    });
 
     // Disconnecting asks once. A single click on a small button is too easy to
     // do by accident for something that cannot be undone.
@@ -1504,10 +1536,11 @@ document.addEventListener("DOMContentLoaded", () => {
             btn.classList.add("confirming");
 
             // Revert if they walk away rather than leaving it armed.
+            const original = btn.textContent;
             clearTimeout(btn._revert);
             btn._revert = setTimeout(() => {
                 btn.setAttribute("data-confirming", "false");
-                btn.textContent = "Disconnect";
+                btn.textContent = original;
                 btn.classList.remove("confirming");
             }, 4000);
             return;
@@ -1515,6 +1548,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
         clearTimeout(btn._revert);
         const id = btn.getAttribute("data-connection-id");
+        // Withdrawing a request you sent is not the same as ending a connection.
+        const wasPending = (state.connections || [])
+            .some(c => String(c.id) === String(id) && c.status === "PENDING");
         btn.disabled = true;
 
         try {
@@ -1525,12 +1561,12 @@ document.addEventListener("DOMContentLoaded", () => {
             // The Discover and Home cards show connection state too.
             await loadDiscover(true);
             renderHomeCreators();
-            showToast("Disconnected");
+            showToast(wasPending ? "Request withdrawn" : "Disconnected");
         } catch (err) {
             btn.disabled = false;
             btn.setAttribute("data-confirming", "false");
-            btn.textContent = "Disconnect";
             btn.classList.remove("confirming");
+            renderConnections();   // puts the right label back
             showToast(describeApiError(err, "Could not remove that connection."), "error");
         }
     });

@@ -120,14 +120,26 @@ public class ConnectionController {
     public List<ConnectionView> accepted(@CurrentUser Long userId) {
         List<ConnectionView> out = new ArrayList<>();
 
-        for (Connection c : connectionRepository.findByRequesterIdAndStatus(userId, ACCEPTED)) {
-            out.add(describeOtherSide(c, c.getTargetUserId(), c.getTargetCreatorId()));
-        }
-        for (Connection c : connectionRepository.findByTargetUserIdAndStatusOrderByCreatedAtDesc(userId, ACCEPTED)) {
-            out.add(describeOtherSide(c, c.getRequesterId(), null));
+        // Outgoing: ones this user asked for, accepted or still waiting.
+        for (Connection c : connectionRepository.findByRequesterId(userId)) {
+            ConnectionView v = describeOtherSide(c, c.getTargetUserId(), c.getTargetCreatorId());
+            v.setStatus(c.getStatus() == null ? ACCEPTED : c.getStatus());
+            v.setOutgoing(true);
+            out.add(v);
         }
 
-        out.sort(Comparator.comparing(ConnectionView::getName, String.CASE_INSENSITIVE_ORDER));
+        // Incoming and already accepted — a pending one belongs in the requests
+        // list, where it can be accepted or declined.
+        for (Connection c : connectionRepository.findByTargetUserIdAndStatusOrderByCreatedAtDesc(userId, ACCEPTED)) {
+            ConnectionView v = describeOtherSide(c, c.getRequesterId(), null);
+            v.setStatus(ACCEPTED);
+            v.setOutgoing(false);
+            out.add(v);
+        }
+
+        // Connected first, then anything still waiting, each alphabetical.
+        out.sort(Comparator.comparing((ConnectionView v) -> !ACCEPTED.equals(v.getStatus()))
+                .thenComparing(ConnectionView::getName, String.CASE_INSENSITIVE_ORDER));
         return out;
     }
 
@@ -258,6 +270,9 @@ public class ConnectionController {
         private String avatar;
         private String bgClass;
         private String niche;
+        private String status;
+        /** True when this user sent the request, so they can withdraw it. */
+        private boolean outgoing;
         private java.time.Instant since;
     }
 

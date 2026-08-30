@@ -694,10 +694,10 @@
                         <span class="stat-value" id="stat-platforms-count">5</span>
                         <span class="stat-label">Platforms</span>
                     </div>
-                    <div class="stat-box">
-                        <span class="stat-value">12</span>
-                        <span class="stat-label">Collabs Done</span>
-                    </div>
+                    <button class="stat-box stat-box-action" id="stat-connections" aria-expanded="false">
+                        <span class="stat-value" id="stat-connections-count">0</span>
+                        <span class="stat-label">Connections <span class="stat-chevron">▾</span></span>
+                    </button>
                 </div>
             </div>
 
@@ -724,8 +724,8 @@
 
 
             <!-- PROFILE CONTENT SHOWCASE TAB -->
-            <!-- CONNECTIONS -->
-            <section class="section connections-section">
+            <!-- CONNECTIONS — opened from the Connections stat above -->
+            <section class="section connections-section hidden" id="connections-section">
                 <div class="section-heading">
                     <div>
                         <span class="section-eyebrow">🤝 Your Network</span>

@@ -3013,3 +3013,44 @@ a.social-badge {
     color: var(--muted);
     font-size: 0.76rem;
 }
+
+/* Connections stat tile — a button, not just a number */
+.stat-box-action {
+    background: transparent;
+    border: none;
+    font: inherit;
+    cursor: pointer;
+    transition: opacity 0.15s ease;
+}
+
+.stat-box-action:hover {
+    opacity: 0.8;
+}
+
+.stat-chevron {
+    display: inline-block;
+    font-size: 0.6rem;
+    transition: transform 0.22s ease;
+}
+
+.stat-box-action.open .stat-chevron {
+    transform: rotate(180deg);
+}
+
+.stat-box-action .stat-value {
+    color: var(--primary);
+}
+
+/* A request that has not been answered yet */
+.connection-pending {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 1px 7px;
+    border-radius: 999px;
+    background: var(--primary-soft);
+    border: 1px solid var(--primary-glow);
+    color: var(--primary);
+    font-size: 0.6rem;
+    font-weight: 600;
+    vertical-align: middle;
+}
