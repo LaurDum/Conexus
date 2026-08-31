@@ -116,6 +116,9 @@ back to 8080 locally.
 
 ## Documentation
 
+- **[DEPLOYMENT.md](DEPLOYMENT.md)** — hosting the three pieces, the environment
+  variables each needs, and how to check it worked.
+
 - **[SERVICES_GUIDE.md](SERVICES_GUIDE.md)** — startup, database management,
   troubleshooting, and the full API reference.
 - **`backend/db/*.sql`** — one-off migration scripts, each documenting the

@@ -60,7 +60,7 @@ public class CorsConfig implements WebMvcConfigurer {
         // registering — you cannot present a token before you have one.
         registry.addInterceptor(authInterceptor)
                 .addPathPatterns("/api/**")
-                .excludePathPatterns("/api/auth/register", "/api/auth/login");
+                .excludePathPatterns("/api/auth/register", "/api/auth/login", "/api/health");
     }
 
     @Override
