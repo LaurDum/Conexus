@@ -68,6 +68,15 @@ public class UserController {
                         c -> c.getStatus() == null ? "ACCEPTED" : c.getStatus(),
                         (a, b) -> a));
 
+        // Rows other people started count too: whoever accepted you is connected
+        // to you, and someone waiting on your answer is not a stranger.
+        for (Connection c : connectionRepository.findByTargetUserId(callerId)) {
+            connectedAccounts.putIfAbsent(c.getRequesterId(), incomingStatus(c));
+        }
+
+        size = Math.max(1, Math.min(size, 100));
+        page = Math.max(0, page);
+
         List<Map<String, Object>> all = userRepository.findAll().stream()
                 .filter(u -> !u.getId().equals(callerId))
                 .map(u -> summarise(u, creators, connectedCards, connectedAccounts))
@@ -90,6 +99,11 @@ public class UserController {
         result.put("total", all.size());
         result.put("hasMore", to < all.size());
         return result;
+    }
+
+    /** A request someone sent the caller reads as INCOMING until it is answered. */
+    private static String incomingStatus(Connection c) {
+        return c.getStatus() == null || "ACCEPTED".equals(c.getStatus()) ? "ACCEPTED" : "INCOMING";
     }
 
     /** The card-sized view of an account used by Discover. */
@@ -154,14 +168,18 @@ public class UserController {
                 .or(() -> connectionRepository.findByRequesterIdAndTargetUserId(callerId, id))
                 .orElse(null);
 
-        boolean connected = existing != null;
-        String connectionStatus = existing == null ? null
-                : (existing.getStatus() == null ? "ACCEPTED" : existing.getStatus());
+        String connectionStatus = existing != null
+                ? (existing.getStatus() == null ? "ACCEPTED" : existing.getStatus())
+                : connectionRepository.findByRequesterIdAndTargetUserId(id, callerId)
+                        .map(UserController::incomingStatus)
+                        .orElse(null);
+        boolean connected = connectionStatus != null;
 
         return ResponseEntity.ok(PublicProfile.builder()
                 .id(user.getId())
                 .username(user.getUsername())
-                .displayName(info != null && info.getDisplayName() != null ? info.getDisplayName() : user.getDisplayName())
+                .displayName(info != null && info.getDisplayName() != null && !info.getDisplayName().isBlank()
+                        ? info.getDisplayName() : user.getDisplayName())
                 .handle(info != null && info.getHandle() != null ? info.getHandle() : "@" + user.getUsername())
                 .niche(user.getNiche())
                 .category(user.getCategory())

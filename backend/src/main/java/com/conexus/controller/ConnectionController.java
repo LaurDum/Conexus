@@ -67,7 +67,7 @@ public class ConnectionController {
         // Identified by creator card where there is one, otherwise by account —
         // most people on Discover have no catalog card.
         if (req.getTargetCreatorId() == null && req.getTargetUserId() == null) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Missing targetCreatorId or targetUserId"));
+            return ResponseEntity.badRequest().body(Map.of("message", "Missing targetCreatorId or targetUserId"));
         }
 
         var existing = req.getTargetCreatorId() != null
@@ -85,7 +85,22 @@ public class ConnectionController {
         Long targetUserId = creator != null ? creator.getUserId() : req.getTargetUserId();
 
         if (targetUserId != null && targetUserId.equals(userId)) {
-            return ResponseEntity.badRequest().body(Map.of("error", "You cannot connect with yourself"));
+            return ResponseEntity.badRequest().body(Map.of("message", "You cannot connect with yourself"));
+        }
+
+        // They may already have asked us. Connecting back answers that request
+        // rather than opening a second one in the other direction, and on an
+        // accepted pair the button means disconnect.
+        var reverse = targetUserId == null ? java.util.Optional.<Connection>empty()
+                : connectionRepository.findByRequesterIdAndTargetUserId(targetUserId, userId);
+        if (reverse.isPresent()) {
+            Connection theirs = reverse.get();
+            if (ACCEPTED.equals(theirs.getStatus()) || theirs.getStatus() == null) {
+                connectionRepository.delete(theirs);
+                return ResponseEntity.ok(Map.of("status", "disconnected"));
+            }
+            acceptRequest(theirs, userId);
+            return ResponseEntity.ok(Map.of("status", "connected", "id", theirs.getId()));
         }
 
         Connection saved = connectionRepository.save(Connection.builder()
@@ -207,16 +222,19 @@ public class ConnectionController {
             return ResponseEntity.status(403).body(Collections.singletonMap("message", "That request is not yours"));
         }
 
+        acceptRequest(conn, userId);
+        return ResponseEntity.ok(Map.of("status", ACCEPTED));
+    }
+
+    private void acceptRequest(Connection conn, Long acceptingUserId) {
         conn.setStatus(ACCEPTED);
         connectionRepository.save(conn);
 
-        notificationService.notify(conn.getRequesterId(), userId, NotificationService.CONNECTION,
+        notificationService.notify(conn.getRequesterId(), acceptingUserId, NotificationService.CONNECTION,
                 Notification.builder().excerpt("accepted your connection request"));
 
-        chatService.postSystemMessage(userId, conn.getRequesterId(),
-                displayNameOf(userId) + " accepted the connection request. You're connected.");
-
-        return ResponseEntity.ok(Map.of("status", ACCEPTED));
+        chatService.postSystemMessage(acceptingUserId, conn.getRequesterId(),
+                displayNameOf(acceptingUserId) + " accepted the connection request. You're connected.");
     }
 
     /** PUT /api/connections/{id}/decline — removes it quietly. */

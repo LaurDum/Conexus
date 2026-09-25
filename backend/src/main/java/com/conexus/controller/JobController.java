@@ -190,6 +190,9 @@ public class JobController {
         User me = userRepository.findById(userId).orElse(null);
         String myCategory = me != null && me.getCategory() != null ? me.getCategory() : "";
 
+        size = Math.max(1, Math.min(size, 100));
+        page = Math.max(0, page);
+
         List<Job> all = jobRepository.findAll().stream()
                 .filter(j -> wantedType == null || wantedType.equalsIgnoreCase(j.getJobType()))
                 .filter(j -> remote == null || j.isRemote() == remote)
@@ -229,6 +232,8 @@ public class JobController {
             m.put("description", j.getDescription());
             m.put("pay", j.getPay());
             m.put("postedAgo", j.getPostedAgo());
+            // The stored "Just now" never ages; the client prefers this.
+            m.put("createdAt", j.getCreatedAt());
             m.put("postedByUserId", j.getPostedByUserId());
             m.put("mine", userId.equals(j.getPostedByUserId()));
             m.put("applied", appliedTo.contains(j.getId()));

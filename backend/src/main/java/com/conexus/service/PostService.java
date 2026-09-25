@@ -1,10 +1,17 @@
 package com.conexus.service;
 
+import com.conexus.model.Comment;
 import com.conexus.model.Post;
 import com.conexus.model.Notification;
 import com.conexus.model.PostLike;
+import com.conexus.model.ProfileInfo;
+import com.conexus.model.User;
+import com.conexus.repository.CommentLikeRepository;
+import com.conexus.repository.CommentRepository;
 import com.conexus.repository.PostLikeRepository;
 import com.conexus.repository.PostRepository;
+import com.conexus.repository.ProfileInfoRepository;
+import com.conexus.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,6 +26,10 @@ public class PostService {
 
     private final PostRepository postRepository;
     private final PostLikeRepository postLikeRepository;
+    private final CommentRepository commentRepository;
+    private final CommentLikeRepository commentLikeRepository;
+    private final UserRepository userRepository;
+    private final ProfileInfoRepository profileInfoRepository;
     private final NotificationService notificationService;
 
     /**
@@ -36,9 +47,27 @@ public class PostService {
         return posts;
     }
 
+    /**
+     * Publishes a post as this user. The byline and avatar come from the
+     * account, so a request cannot post under someone else's name.
+     */
     @Transactional
-    public Post create(Post post) {
-        Post saved = postRepository.save(post);
+    public Post create(Long userId, String content, String niche) {
+        User author = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("Sign in to continue"));
+
+        String name = profileInfoRepository.findByUserId(userId)
+                .map(ProfileInfo::getDisplayName)
+                .filter(n -> n != null && !n.isBlank())
+                .orElseGet(() -> author.getDisplayName() != null ? author.getDisplayName() : author.getUsername());
+
+        Post saved = postRepository.save(Post.builder()
+                .authorId(userId)
+                .authorName(name)
+                .niche(niche != null && !niche.isBlank() ? niche : author.getNiche())
+                .content(content.trim())
+                .avatarClass(author.getBgClass() != null ? author.getBgClass() : "avatar-purple")
+                .build());
         saved.setLiked(false);
         return saved;
     }
@@ -85,8 +114,14 @@ public class PostService {
                 .orElse(false);
     }
 
+    /** Removes a post along with its comments and likes, which would otherwise be orphaned. */
     @Transactional
     public void delete(Long id) {
+        for (Comment comment : commentRepository.findByPostIdOrderByCreatedAtAsc(id)) {
+            commentLikeRepository.deleteByCommentId(comment.getId());
+            commentRepository.delete(comment);
+        }
+        postLikeRepository.deleteByPostId(id);
         postRepository.deleteById(id);
     }
 }

@@ -14,8 +14,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Comparator;
 import java.util.List;
 
 @Service
@@ -44,13 +46,12 @@ public class ChatService {
                 .orElseGet(() -> user.getDisplayName() != null ? user.getDisplayName() : user.getUsername());
     }
 
-    public List<ChatThread> getAllThreads() {
-        return chatThreadRepository.findAll();
-    }
-
+    /** The user's inbox, most recent conversation first. */
     public List<ChatThread> getThreadsForUser(Long userId) {
-        if (userId == null) return getAllThreads();
-        return chatThreadRepository.findByUserId(userId);
+        List<ChatThread> threads = chatThreadRepository.findByUserId(userId);
+        threads.sort(Comparator.comparing(ChatThread::getUpdatedAt,
+                Comparator.nullsLast(Comparator.reverseOrder())));
+        return threads;
     }
 
     /** True only when this thread belongs to the given user's inbox. */
@@ -111,6 +112,7 @@ public class ChatService {
                         .snippet("")
                         .time("Just now")
                         .unread(false)
+                        .updatedAt(Instant.now())
                         .build()));
     }
 
@@ -143,6 +145,7 @@ public class ChatService {
                     .snippet("")
                     .time("Just now")
                     .unread(false)
+                    .updatedAt(Instant.now())
                     .build());
         });
     }
@@ -180,6 +183,7 @@ public class ChatService {
 
         thread.setSnippet(text);
         thread.setTime(now);
+        thread.setUpdatedAt(Instant.now());
     }
 
     @Transactional
@@ -193,7 +197,9 @@ public class ChatService {
     public ChatThread sendMessage(String threadId, String text, Long senderId, String sender) {
         ChatThread thread = getThread(threadId);
         String now = LocalTime.now().format(CLOCK);
-        boolean fromOwner = !"them".equals(sender);
+        // "them" exists for the demo auto-reply. A thread with a real account
+        // on the other end must never carry words that person did not send.
+        boolean fromOwner = !"them".equals(sender) || thread.getPartnerUserId() != null;
 
         // The display name comes from the account, not from the request body.
         User senderUser = senderId != null ? userRepository.findById(senderId).orElse(null) : null;
@@ -255,6 +261,7 @@ public class ChatService {
                 .snippet("")
                 .time(LocalTime.now().format(CLOCK))
                 .unread(true)
+                .updatedAt(Instant.now())
                 .build();
     }
 
@@ -270,5 +277,6 @@ public class ChatService {
 
         thread.setSnippet(text);
         thread.setTime(now);
+        thread.setUpdatedAt(Instant.now());
     }
 }

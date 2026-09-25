@@ -31,33 +31,37 @@ public class AuthService {
 
     @Transactional
     public AuthDTOs.AuthResponse register(AuthDTOs.RegisterRequest request) {
-        if (request.getUsername() == null || request.getUsername().isBlank()) {
-            throw new RuntimeException("Username is required");
+        String username = request.getUsername() == null ? "" : request.getUsername().toLowerCase().trim();
+        String email = request.getEmail() == null ? "" : request.getEmail().toLowerCase().trim();
+        String displayName = request.getDisplayName() == null || request.getDisplayName().isBlank()
+                ? username : request.getDisplayName().trim();
+
+        if (!username.matches("[a-z0-9_.]{3,30}")) {
+            throw new RuntimeException("Username must be 3–30 characters: letters, numbers, dots or underscores");
+        }
+        if (!email.matches("[^@\\s]+@[^@\\s]+\\.[^@\\s]+")) {
+            throw new RuntimeException("Enter a valid email address");
         }
         if (request.getPassword() == null || request.getPassword().length() < 6) {
             throw new RuntimeException("Password must be at least 6 characters");
         }
-        if (userRepository.existsByUsername(request.getUsername().toLowerCase().trim())) {
+        if (userRepository.existsByUsername(username)) {
             throw new RuntimeException("Username is already taken");
         }
-        if (userRepository.existsByEmail(request.getEmail().toLowerCase().trim())) {
+        if (userRepository.existsByEmail(email)) {
             throw new RuntimeException("Email is already registered");
         }
 
-        String initials = request.getDisplayName() != null && !request.getDisplayName().isEmpty()
-            ? request.getDisplayName().substring(0, Math.min(2, request.getDisplayName().length())).toUpperCase()
-            : request.getUsername().substring(0, 2).toUpperCase();
-
         User user = User.builder()
-                .username(request.getUsername().toLowerCase().trim())
-                .email(request.getEmail().toLowerCase().trim())
+                .username(username)
+                .email(email)
                 .password(encoder.encode(request.getPassword()))
-                .displayName(request.getDisplayName() != null ? request.getDisplayName() : request.getUsername())
+                .displayName(displayName)
                 .niche(request.getNiche() != null ? request.getNiche() : "Creator")
                 .category("General")
                 .location("Worldwide")
                 .followers("0")
-                .avatar(initials)
+                .avatar(initialsOf(displayName))
                 .bgClass("avatar-purple")
                 .bio("Welcome to my Conexus profile!")
                 // A brand new account has no audience. These used to be seeded
@@ -106,6 +110,15 @@ public class AuthService {
         user.setPassword(encoder.encode(submitted));
         userRepository.save(user);
         return true;
+    }
+
+    /** "Alex Popescu" → "AP", "laur" → "LA". */
+    public static String initialsOf(String name) {
+        String[] words = name.trim().split("\\s+");
+        String initials = words.length > 1
+                ? words[0].substring(0, 1) + words[1].substring(0, 1)
+                : words[0].substring(0, Math.min(2, words[0].length()));
+        return initials.toUpperCase();
     }
 
     /** Distinguishes an already-hashed password from a legacy plain-text one. */

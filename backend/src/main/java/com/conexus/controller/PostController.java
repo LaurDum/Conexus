@@ -29,12 +29,10 @@ public class PostController {
         if (post.getContent() == null || post.getContent().isBlank()) {
             return ResponseEntity.badRequest().body(Collections.singletonMap("message", "Post content is required"));
         }
-        if (post.getAuthorName() == null || post.getAuthorName().isBlank()) {
-            return ResponseEntity.badRequest().body(Collections.singletonMap("message", "authorName is required"));
+        if (post.getContent().length() > 2000) {
+            return ResponseEntity.badRequest().body(Collections.singletonMap("message", "Keep posts under 2,000 characters"));
         }
-        post.setId(null);          // always insert, never overwrite an existing post
-        post.setAuthorId(userId);  // authorship comes from the token, not the body
-        return ResponseEntity.ok(postService.create(post));
+        return ResponseEntity.ok(postService.create(userId, post.getContent(), post.getNiche()));
     }
 
     /** PUT /api/posts/{id}/like — toggle the signed-in user's like. */

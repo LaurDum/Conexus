@@ -40,6 +40,20 @@ public class SocialAccountController {
                     .body(Collections.singletonMap("message", "That account is not yours to edit"));
         }
 
+        if (!SocialAccountService.isKnownPlatform(account.getPlatform())) {
+            return ResponseEntity.badRequest().body(Collections.singletonMap("message", "Pick a platform from the list"));
+        }
+        if (account.getHandle() == null || account.getHandle().isBlank()) {
+            return ResponseEntity.badRequest().body(Collections.singletonMap("message", "Add your handle or channel name"));
+        }
+        String url = SocialAccountService.normalizeUrl(account.getUrl());
+        if (url == null) {
+            return ResponseEntity.badRequest().body(Collections.singletonMap("message", "Enter a web address starting with https://"));
+        }
+        account.setUrl(url);
+        account.setHandle(account.getHandle().trim());
+        SocialAccountService.applyPlatformMeta(account);
+
         // Ownership always comes from the token, never from the request body.
         account.setUserId(userId);
 

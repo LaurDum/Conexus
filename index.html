@@ -248,13 +248,13 @@
     <header class="header">
         <div class="header-branding">
             <div class="logo">conexus</div>
-            <p class="greeting" id="header-greeting">Good evening, Laur 👋</p>
+            <p class="greeting" id="header-greeting">&nbsp;</p>
         </div>
 
         <div class="header-actions">
             <button class="notification header-nav-icon" id="btn-notifications" aria-label="Notifications">
                 <span class="notification-badge hidden" id="notification-count">0</span>
-                ♡
+                <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
             </button>
         </div>
     </header>
@@ -321,7 +321,7 @@
                         <h2>Mingle</h2>
                     </div>
                     <button class="see-all nav-switch-trigger" data-target="view-discover">
-                        See all
+                        See all →
                     </button>
                 </div>
 
@@ -335,7 +335,8 @@
 
             <!-- CREATOR INSPO FEED -->
             <!-- JOBS -->
-            <section class="section home-section" data-section="jobs">
+            <!-- Off by default; shown once preferences load, so they never flash in empty -->
+            <section class="section home-section hidden" data-section="jobs">
                 <div class="section-heading">
                     <div>
                         <span class="section-eyebrow">💼 Opportunities</span>
@@ -348,13 +349,13 @@
             </section>
 
             <!-- BRAND DEALS -->
-            <section class="section home-section" data-section="deals">
+            <section class="section home-section hidden" data-section="deals">
                 <div class="section-heading">
                     <div>
                         <span class="section-eyebrow">💎 Partnerships</span>
                         <h2>Brand Deals</h2>
                     </div>
-                    <button class="see-all" id="btn-see-all-deals">See all →</button>
+                    <button class="see-all btn-see-all-deals">See all →</button>
                 </div>
                 <p class="section-description">Open campaigns matched to your niche.</p>
                 <div class="brand-deals-grid" id="home-deals-grid"></div>
@@ -485,18 +486,19 @@
                 <p class="strategy-desc">Prioritized actions tailored to your channel velocity and reach goals.</p>
 
                 <div class="next-steps-list">
-                    <div class="step-card">
+                    <!-- Filled in with your strongest match by renderCollabStep() -->
+                    <div class="step-card hidden" id="step-collab" data-step="collab">
                         <label class="step-checkbox-container">
                             <input type="checkbox" class="step-checkbox">
                             <span class="checkmark"></span>
                         </label>
                         <div class="step-content">
                             <div class="step-top">
-                                <h4>Cross-Promote Gaming Content with Alex Popescu</h4>
+                                <h4 id="step-collab-title">Cross-promote with a top match</h4>
                                 <span class="step-tag tag-high">High Impact</span>
                             </div>
-                            <p>You share 87% audience overlap in gaming & tech. A joint YouTube Short could gain ~15K new impressions.</p>
-                            <button class="btn-step-action btn-open-outreach" data-creator="Alex Popescu">Draft Collab Pitch</button>
+                            <p id="step-collab-desc">You share a strong audience overlap. A joint short could reach both audiences.</p>
+                            <button class="btn-step-action btn-open-outreach" id="step-collab-action">Draft Collab Pitch</button>
                         </div>
                     </div>
 
@@ -601,7 +603,7 @@
             <section class="strategy-block">
                 <div class="strategy-block-header">
                     <h3>💎 Recommended Brand Matches</h3>
-                    <button class="see-all" id="btn-see-all-deals">
+                    <button class="see-all btn-see-all-deals">
                         See all →
                     </button>
                 </div>
@@ -632,56 +634,7 @@
 
             <!-- Inbox List -->
             <div class="inbox-list" id="inbox-list">
-
-                <!-- Thread 1 -->
-                <div class="chat-thread unread" data-thread-id="alex">
-                    <div class="creator-avatar avatar-purple">AP</div>
-                    <div class="thread-info">
-                        <div class="thread-top">
-                            <h4>Alex Popescu</h4>
-                            <span class="thread-time">12m ago</span>
-                        </div>
-                        <p class="thread-snippet">Hey Laur! Saw your recent tech setup video. Would love to collab on a stream!</p>
-                    </div>
-                    <span class="unread-dot"></span>
-                </div>
-
-                <!-- Thread 2 -->
-                <div class="chat-thread" data-thread-id="elena">
-                    <div class="creator-avatar avatar-green">EM</div>
-                    <div class="thread-info">
-                        <div class="thread-top">
-                            <h4>Elena M.</h4>
-                            <span class="thread-time">2h ago</span>
-                        </div>
-                        <p class="thread-snippet">That AI tool breakdown was super clean. Let me know when you're free for a chat.</p>
-                    </div>
-                </div>
-
-                <!-- Thread 3 -->
-                <div class="chat-thread" data-thread-id="ioana">
-                    <div class="creator-avatar avatar-blue">IR</div>
-                    <div class="thread-info">
-                        <div class="thread-top">
-                            <h4>Ioana R.</h4>
-                            <span class="thread-time">Yesterday</span>
-                        </div>
-                        <p class="thread-snippet">Thanks for sharing the Tokyo spot recommendations! Super helpful.</p>
-                    </div>
-                </div>
-
-                <!-- Thread 4 -->
-                <div class="chat-thread" data-thread-id="techgear">
-                    <div class="creator-avatar avatar-orange">TG</div>
-                    <div class="thread-info">
-                        <div class="thread-top">
-                            <h4>TechGear Pro (Brand)</h4>
-                            <span class="thread-time">3 days ago</span>
-                        </div>
-                        <p class="thread-snippet">Hi Laur, we loved your channel metrics and would like to propose a sponsorship!</p>
-                    </div>
-                </div>
-
+                <!-- Populated from the database by renderInbox() in js/app.js -->
             </div>
 
         </section>
@@ -701,20 +654,19 @@
 
                 <div class="profile-main-info">
                     <div class="profile-avatar-wrapper">
-                        <div class="creator-avatar avatar-purple profile-avatar-lg">L</div>
+                        <div class="creator-avatar avatar-purple profile-avatar-lg" id="profile-avatar"></div>
                         <span class="status-indicator online"></span>
                     </div>
 
                     <div class="profile-identity">
                         <div class="profile-name-row">
-                            <h2 id="profile-display-name">Laur</h2>
-                            <span class="verified-badge" title="Verified Creator">✓</span>
+                            <h2 id="profile-display-name"></h2>
                         </div>
-                        <p class="profile-handle" id="profile-handle">@laur_creates</p>
-                        <p class="profile-bio" id="profile-bio">Digital Creator & Tech Enthusiast | Building the future of content 🚀 Tech reviews, gaming streams & creator tips.</p>
+                        <p class="profile-handle" id="profile-handle"></p>
+                        <p class="profile-bio" id="profile-bio"></p>
                         <div class="profile-meta">
-                            <span>📍 <span id="profile-location">Bucharest, Romania</span></span>
-                            <span>📅 Joined Conexus 2026</span>
+                            <span>📍 <span id="profile-location"></span></span>
+                            <span>✦ <span id="profile-niche"></span></span>
                         </div>
                     </div>
                 </div>
@@ -722,7 +674,7 @@
                 <!-- Stats summary -->
                 <div class="profile-stats-grid">
                     <div class="stat-box">
-                        <span class="stat-value" id="stat-total-reach">237.5K</span>
+                        <span class="stat-value" id="stat-total-reach">0</span>
                         <span class="stat-label">Total Reach</span>
                     </div>
                     <div class="stat-box">
@@ -730,7 +682,7 @@
                         <span class="stat-label">Avg. Engagement</span>
                     </div>
                     <div class="stat-box">
-                        <span class="stat-value" id="stat-platforms-count">5</span>
+                        <span class="stat-value" id="stat-platforms-count">0</span>
                         <span class="stat-label">Platforms</span>
                     </div>
                     <button class="stat-box stat-box-action" id="stat-connections" aria-expanded="false">
@@ -945,13 +897,12 @@
         <div class="chat-header">
             <button class="icon-btn-back" id="btn-close-chat">←</button>
             <div class="chat-user-info">
-                <div class="small-avatar avatar-purple" id="chat-header-avatar">AP</div>
+                <div class="small-avatar avatar-purple" id="chat-header-avatar"></div>
                 <div>
-                    <h3 id="chat-header-name">Alex Popescu</h3>
-                    <span class="chat-status" id="chat-header-status">Online · Gaming Creator</span>
+                    <h3 id="chat-header-name"></h3>
+                    <span class="chat-status" id="chat-header-status"></span>
                 </div>
             </div>
-            <button class="icon-btn-more">•••</button>
         </div>
 
         <!-- Shown when this person has a connection request waiting on you -->
@@ -1153,19 +1104,19 @@
             <form id="form-edit-profile">
                 <div class="form-group">
                     <label>Display Name</label>
-                    <input type="text" id="edit-display-name" value="Laur" required>
+                    <input type="text" id="edit-display-name" maxlength="60" required>
                 </div>
                 <div class="form-group">
                     <label>Handle</label>
-                    <input type="text" id="edit-handle" value="@laur_creates" required>
+                    <input type="text" id="edit-handle" maxlength="40" placeholder="@yourname" required>
                 </div>
                 <div class="form-group">
                     <label>Location</label>
-                    <input type="text" id="edit-location" value="Bucharest, Romania" required>
+                    <input type="text" id="edit-location" maxlength="80" placeholder="City, Country">
                 </div>
                 <div class="form-group">
                     <label>Bio</label>
-                    <textarea id="edit-bio" rows="3" required>Digital Creator & Tech Enthusiast | Building the future of content 🚀 Tech reviews, gaming streams & creator tips.</textarea>
+                    <textarea id="edit-bio" rows="3" maxlength="300" placeholder="What you make, and who it's for"></textarea>
                 </div>
                 <div class="modal-actions">
                     <button type="button" class="btn-secondary" id="btn-cancel-edit-profile">Cancel</button>
@@ -1184,10 +1135,8 @@
                 <button class="modal-close" id="btn-close-outreach">&times;</button>
             </div>
             <div class="outreach-body">
-                <p>Personalized pitch message for <strong id="outreach-target-creator">Alex Popescu</strong>:</p>
-                <div class="outreach-preview-box" id="outreach-text-box">
-                    "Hey Alex! Loved your recent video. Based on our audience overlap in gaming & tech, I think a joint dual stream or short-form collab would perform amazingly for both our channels. Let me know if you'd be down to chat!"
-                </div>
+                <p>Personalized pitch message for <strong id="outreach-target-creator"></strong>:</p>
+                <div class="outreach-preview-box" id="outreach-text-box"></div>
             </div>
             <div class="modal-actions">
                 <button type="button" class="btn-secondary" id="btn-copy-outreach">Copy Text</button>
@@ -1201,23 +1150,23 @@
     <div class="modal-overlay hidden" id="modal-post-comments">
         <div class="modal-card post-comments-modal">
             <div class="modal-header">
-                <h3>Inspo Post & Comments</h3>
-                <button class="modal-close" id="btn-close-post-comments">&times;</button>
+                <h3>Post</h3>
+                <button class="modal-close" id="btn-close-post-comments" aria-label="Close">&times;</button>
             </div>
             <div class="post-comments-body">
                 <!-- Post Card Detail -->
                 <div class="inspo-card-detail" id="post-detail-card">
-                    <div class="post-author">
-                        <div class="small-avatar avatar-purple" id="post-detail-avatar">AP</div>
+                    <div class="post-author" id="post-detail-author-row">
+                        <div class="small-avatar avatar-purple" id="post-detail-avatar"></div>
                         <div>
-                            <strong id="post-detail-author">Alex Popescu</strong>
-                            <span id="post-detail-niche">Gaming Creator · 2h ago</span>
+                            <strong id="post-detail-author"></strong>
+                            <span id="post-detail-niche"></span>
                         </div>
                     </div>
-                    <p class="post-content" id="post-detail-content">Post content here...</p>
+                    <p class="post-content" id="post-detail-content"></p>
                     <div class="post-footer">
-                        <button class="btn-like" id="post-detail-like">♡ <span id="post-detail-like-count">14</span></button>
-                        <span>💬 <span id="post-detail-comment-count">2</span> comments</span>
+                        <button class="btn-like" id="post-detail-like">♡ <span id="post-detail-like-count">0</span></button>
+                        <span class="post-detail-comment-total">💬 <span id="post-detail-comment-count">0</span></span>
                     </div>
                 </div>
 
@@ -1229,11 +1178,17 @@
                     </div>
                 </div>
 
-                <!-- Add Comment Form -->
-                <form class="comment-input-form" id="form-add-comment">
-                    <input type="text" id="input-comment-text" placeholder="Write a thoughtful comment..." required autocomplete="off">
-                    <button type="submit" class="btn-primary-sm">Post</button>
-                </form>
+                <!-- One composer for comments and replies -->
+                <div class="comment-composer">
+                    <div class="reply-banner hidden" id="reply-banner">
+                        <span>Replying to <strong id="reply-banner-name"></strong></span>
+                        <button type="button" id="btn-cancel-reply" aria-label="Cancel reply">&times;</button>
+                    </div>
+                    <form class="comment-input-form" id="form-add-comment">
+                        <input type="text" id="input-comment-text" placeholder="Add a comment…" maxlength="1000" required autocomplete="off">
+                        <button type="submit" class="btn-primary-sm">Post</button>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
@@ -1254,27 +1209,27 @@
         <span class="nav-bubble" id="nav-bubble" aria-hidden="true"></span>
 
         <button class="nav-item active" data-target="view-home" id="nav-home">
-            <span>⌂</span>
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V9.5"/></svg>
             <small>Home</small>
         </button>
 
         <button class="nav-item" data-target="view-discover" id="nav-discover">
-            <span>⌕</span>
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
             <small>Discover</small>
         </button>
 
         <button class="nav-item" data-target="view-messages" id="nav-messages">
-            <span>✉</span>
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.7 7.1L4 20.5l1.4-4.6A8 8 0 1 1 21 12z"/></svg>
             <small>Messages</small>
         </button>
 
         <button class="nav-item" data-target="view-recommendations" id="nav-recommendations">
-            <span>✦</span>
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z"/></svg>
             <small>Strategy</small>
         </button>
 
         <button class="nav-item" data-target="view-profile" id="nav-profile">
-            <span>○</span>
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
             <small>Profile</small>
         </button>
 
