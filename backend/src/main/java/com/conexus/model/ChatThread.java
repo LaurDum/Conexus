@@ -47,6 +47,9 @@ public class ChatThread {
     @Builder.Default
     private boolean unread = false;
 
+    /** When the last message landed — orders the inbox and ages the timestamp. */
+    private java.time.Instant updatedAt;
+
     @OneToMany(mappedBy = "thread", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     @OrderBy("id ASC")
     @Builder.Default

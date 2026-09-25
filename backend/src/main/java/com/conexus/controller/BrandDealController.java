@@ -41,6 +41,9 @@ public class BrandDealController {
         User me = userRepository.findById(userId).orElse(null);
         String myCategory = me != null && me.getCategory() != null ? me.getCategory() : "";
 
+        size = Math.max(1, Math.min(size, 100));
+        page = Math.max(0, page);
+
         List<BrandDeal> all = brandDealRepository.findAll().stream()
                 .filter(d -> wantedType == null || wantedType.equalsIgnoreCase(d.getDealType()))
                 .filter(d -> needle.isEmpty()

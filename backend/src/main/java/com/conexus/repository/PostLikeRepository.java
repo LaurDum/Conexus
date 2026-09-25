@@ -15,6 +15,8 @@ public interface PostLikeRepository extends JpaRepository<PostLike, Long> {
 
     long countByPostId(Long postId);
 
+    void deleteByPostId(Long postId);
+
     /** The post IDs this user has liked — one query for a whole feed render. */
     @Query("SELECT l.postId FROM PostLike l WHERE l.userId = :userId")
     List<Long> findPostIdsLikedBy(Long userId);

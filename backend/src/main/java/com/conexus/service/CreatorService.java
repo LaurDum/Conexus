@@ -4,7 +4,6 @@ import com.conexus.model.Creator;
 import com.conexus.repository.CreatorRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -29,15 +28,5 @@ public class CreatorService {
 
     public List<Creator> search(String name) {
         return creatorRepository.findByNameContainingIgnoreCase(name);
-    }
-
-    @Transactional
-    public Creator save(Creator creator) {
-        return creatorRepository.save(creator);
-    }
-
-    @Transactional
-    public void delete(String id) {
-        creatorRepository.deleteById(id);
     }
 }

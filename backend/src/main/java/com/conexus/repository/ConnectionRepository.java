@@ -14,6 +14,9 @@ public interface ConnectionRepository extends JpaRepository<Connection, Long> {
     /** For accounts that have no creator card to key off. */
     Optional<Connection> findByRequesterIdAndTargetUserId(Long requesterId, Long targetUserId);
 
+    /** Every connection pointed at this user, whatever its state. */
+    List<Connection> findByTargetUserId(Long targetUserId);
+
     /** Requests waiting on this user. */
     List<Connection> findByTargetUserIdAndStatusOrderByCreatedAtDesc(Long targetUserId, String status);
 

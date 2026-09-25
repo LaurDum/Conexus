@@ -587,7 +587,8 @@ button:active {
     margin-bottom: 18px;
 }
 
-.search-box {
+.search-box,
+.search-bar {
     position: relative;
     display: flex;
     align-items: center;
@@ -596,6 +597,34 @@ button:active {
     border-radius: 14px;
     padding: 0 14px;
     height: 44px;
+    transition: border-color 0.15s ease;
+}
+
+.search-box:focus-within,
+.search-bar:focus-within {
+    border-color: var(--primary);
+}
+
+/* Jobs and Brand Deals: the search sits above the chips on its own. */
+.search-bar {
+    margin-bottom: 12px;
+}
+
+.search-bar input {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    color: var(--text);
+    font-size: 0.8rem;
+}
+
+.search-bar input:focus,
+.search-box input:focus {
+    outline: none;
+}
+
+.search-bar input::placeholder {
+    color: var(--muted);
 }
 
 .search-icon {
@@ -2310,119 +2339,6 @@ button:active {
 }
 
 
-/* =========================
-   POST COMMENTS MODAL
-========================= */
-
-.post-comments-modal {
-    max-width: 520px;
-    width: 100%;
-}
-
-.inspo-card-detail {
-    padding: 16px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    margin-bottom: 20px;
-}
-
-.inspo-card-detail .post-content {
-    margin: 12px 0;
-    font-size: 0.92rem;
-    line-height: 1.5;
-}
-
-.comments-section {
-    margin-bottom: 20px;
-}
-
-.comments-section h4 {
-    font-size: 0.82rem;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-bottom: 12px;
-}
-
-.comments-list {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    max-height: 240px;
-    overflow-y: auto;
-    padding-right: 4px;
-}
-
-.comment-item {
-    display: flex;
-    gap: 12px;
-    padding: 10px 12px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-}
-
-.comment-avatar {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.75rem;
-    font-weight: 700;
-    flex-shrink: 0;
-}
-
-.comment-body {
-    flex: 1;
-}
-
-.comment-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 4px;
-}
-
-.comment-header strong {
-    font-size: 0.82rem;
-    color: var(--text);
-}
-
-.comment-header span {
-    font-size: 0.72rem;
-    color: var(--muted);
-}
-
-.comment-body p {
-    font-size: 0.83rem;
-    color: var(--secondary);
-    line-height: 1.4;
-}
-
-.comment-input-form {
-    display: flex;
-    gap: 10px;
-    padding-top: 14px;
-    border-top: 1px solid var(--border);
-}
-
-.comment-input-form input {
-    flex: 1;
-    padding: 10px 14px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    color: var(--text);
-    font-size: 0.85rem;
-}
-
-.comment-input-form input:focus {
-    border-color: var(--primary);
-    outline: none;
-}
 
 .btn-primary-sm {
     padding: 10px 18px;
@@ -2583,93 +2499,6 @@ a.social-badge {
     cursor: default;
 }
 
-/* ==========================================================
-   COMMENT THREADS — likes and replies
-   ========================================================== */
-.comment-thread {
-    border-bottom: 1px solid var(--border-light);
-    padding-bottom: 6px;
-    margin-bottom: 6px;
-}
-
-.comment-thread:last-child {
-    border-bottom: none;
-}
-
-.comment-reply {
-    margin-left: 34px;
-    padding-left: 10px;
-    border-left: 2px solid var(--border);
-}
-
-.comment-actions {
-    display: flex;
-    gap: 14px;
-    margin-top: 5px;
-}
-
-.comment-actions button {
-    background: none;
-    border: none;
-    padding: 0;
-    color: var(--muted);
-    font-size: 0.72rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: color 0.15s ease;
-}
-
-.comment-actions button:hover {
-    color: var(--text);
-}
-
-.btn-comment-like.liked {
-    color: #ff6b81;
-}
-
-.comment-reply-form {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-    margin: 8px 0 10px 44px;
-}
-
-.comment-reply-input {
-    flex: 1;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 999px;
-    padding: 8px 14px;
-    color: var(--text);
-    font-size: 0.76rem;
-    font-family: inherit;
-}
-
-.comment-reply-input:focus {
-    outline: none;
-    border-color: var(--primary);
-}
-
-.btn-reply-send,
-.btn-reply-cancel {
-    border-radius: 999px;
-    padding: 7px 14px;
-    font-size: 0.72rem;
-    font-weight: 600;
-    cursor: pointer;
-    border: 1px solid var(--border);
-}
-
-.btn-reply-send {
-    background: var(--primary);
-    border-color: var(--primary);
-    color: #fff;
-}
-
-.btn-reply-cancel {
-    background: transparent;
-    color: var(--muted);
-}
 
 /* Notification drawer header actions */
 .popover-actions {
@@ -3231,9 +3060,22 @@ body.light-theme .btn-back-profile {
 
 .job-tags {
     display: flex;
+    align-items: center;
     gap: 6px;
     flex-wrap: wrap;
     margin-top: 10px;
+}
+
+/* The row owns the spacing; the type tag's own top margin (for when it sits
+   alone on a deal card) would push it down and stretch its neighbours. */
+.job-tags > span {
+    margin-top: 0;
+    line-height: 1.4;
+}
+
+.job-remote-tag,
+.job-creator-tag {
+    border: 1px solid transparent;
 }
 
 .job-remote-tag {
@@ -3699,135 +3541,421 @@ body.light-theme .match span {
     margin-top: 2px;
 }
 
+
 /* ==========================================================
-   COMMENTS — flat, no card outlines
-   Name and text run together on one line, actions underneath.
+   GLOBAL POLISH
    ========================================================== */
-.comment-item {
-    padding: 8px 0;
+
+/* Reserve the scrollbar's width on every view, so switching between a short
+   page and a long one does not nudge the whole layout sideways. */
+html {
+    scrollbar-gutter: stable;
+}
+
+/* Thin scrollbars in the palette, instead of the bright native ones. */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+}
+
+*::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+*::-webkit-scrollbar-track {
     background: transparent;
-    border: none;
-    border-radius: 0;
-    gap: 10px;
 }
 
-.comment-thread {
-    border-bottom: none;
-    padding-bottom: 0;
-    margin-bottom: 0;
+*::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 8px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
 }
 
-/* A reply is indented, with no rule down the side */
-.comment-reply {
-    margin-left: 42px;
-    padding-left: 0;
-    border-left: none;
+*::-webkit-scrollbar-thumb:hover {
+    background-color: var(--muted);
 }
 
-.comment-reply .comment-avatar {
-    width: 26px;
-    height: 26px;
-    font-size: 0.65rem;
+/* The page behind an open dialog stays put. */
+body:has(.modal-overlay:not(.hidden)) {
+    overflow: hidden;
 }
 
-/* Name sits inline before the text, as in a chat */
-.comment-header {
-    display: block;
-    margin-bottom: 0;
+/* Line icons (nav, bell) share one size and follow the text colour. */
+.icon {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
 }
 
-.comment-body p {
-    display: inline;
+.nav-item .icon {
+    width: 21px;
+    height: 21px;
+}
+
+.nav-item.active .icon {
+    color: var(--primary);
+}
+
+.notification .icon {
+    width: 19px;
+    height: 19px;
+}
+
+@media (min-width: 880px) {
+    /* Just outside the content column, not stranded at the far edge of a wide
+       screen and not covering the cards inside it. */
+    .create-button {
+        right: calc(50% - 350px - 76px);
+    }
+}
+
+/* Small destructive text action — delete a post or a comment. */
+.btn-delete {
+    color: var(--muted);
+    font-size: 0.68rem;
+    font-weight: 500;
+    padding: 0;
+}
+
+.btn-delete:hover,
+.btn-delete.confirming {
+    color: #ff6b81;
+}
+
+.post-footer .btn-delete {
+    margin-left: auto;
+}
+
+/* Social card actions: three matching square buttons. */
+.social-actions .btn-social-link,
+.social-actions .btn-social-edit,
+.social-actions .btn-social-delete {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: transparent;
+    color: var(--secondary);
+    font-size: 0.8rem;
+    text-decoration: none;
+    transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.social-actions .btn-social-link:hover,
+.social-actions .btn-social-edit:hover {
+    color: var(--primary);
+    border-color: var(--primary);
+}
+
+.social-actions .btn-social-delete:hover {
+    color: #ff6b81;
+    border-color: #ff6b81;
+}
+
+/* ==========================================================
+   POST & COMMENTS MODAL
+   One column: the post, a scrolling thread, and the composer
+   pinned at the bottom.
+   ========================================================== */
+.post-comments-modal {
+    max-width: 540px;
+    max-height: calc(100vh - 36px);
+    max-height: calc(100dvh - 36px);
+    display: flex;
+    flex-direction: column;
+    padding-bottom: 14px;
+}
+
+.post-comments-body {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    flex: 1;
+}
+
+.inspo-card-detail {
+    padding: 14px 16px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    margin-bottom: 16px;
+    flex-shrink: 0;
+}
+
+.inspo-card-detail .post-content {
+    margin: 12px 0;
+    font-size: 0.88rem;
+    line-height: 1.55;
     color: var(--text);
+    overflow-wrap: anywhere;
 }
 
-.comment-header strong {
-    margin-right: 6px;
-}
-
-.comment-header span {
-    display: none;   /* the timestamp moves down beside the actions */
-}
-
-.comment-actions {
-    gap: 16px;
-    margin-top: 4px;
+.inspo-card-detail .post-footer {
     align-items: center;
 }
 
-.comment-time {
+.post-detail-comment-total {
     color: var(--muted);
-    font-size: 0.7rem;
+    font-size: 0.68rem;
+    display: flex;
+    align-items: center;
+    gap: 4px;
 }
 
-/* Someone tagged in a reply */
+.comments-section {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    flex: 1;
+}
+
+.comments-section h4 {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 6px;
+}
+
+.comments-list {
+    flex: 1;
+    min-height: 80px;
+    max-height: 46vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 6px;
+}
+
+.comments-empty {
+    padding: 22px 8px;
+    color: var(--muted);
+    font-size: 0.78rem;
+    text-align: center;
+}
+
+.comment-thread + .comment-thread {
+    margin-top: 4px;
+}
+
+.comment-item {
+    display: flex;
+    gap: 10px;
+    padding: 8px 0;
+}
+
+.comment-reply {
+    margin-left: 42px;
+    padding: 6px 0;
+}
+
+.comment-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.68rem;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.comment-reply .comment-avatar {
+    width: 24px;
+    height: 24px;
+    font-size: 0.58rem;
+}
+
+.comment-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.comment-text {
+    font-size: 0.8rem;
+    line-height: 1.45;
+    color: var(--text);
+    overflow-wrap: anywhere;
+}
+
+.comment-text strong {
+    font-weight: 700;
+    margin-right: 6px;
+}
+
 .comment-mention {
     color: var(--primary);
     font-weight: 600;
 }
 
-/* The reply box, and the main comment box, without boxes */
-.comment-reply-form {
-    margin: 6px 0 10px 52px;
+.comment-actions {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-top: 4px;
 }
 
-.comment-reply-input {
-    background: transparent;
-    border: none;
-    border-bottom: 1px solid var(--border);
-    border-radius: 0;
-    padding: 6px 2px;
+.comment-time {
+    color: var(--muted);
+    font-size: 0.68rem;
 }
 
-.comment-reply-input:focus {
-    border-bottom-color: var(--primary);
+.comment-actions button {
+    padding: 0;
+    color: var(--muted);
+    font-size: 0.68rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
 }
 
-.btn-reply-send,
-.btn-reply-cancel {
-    border: none;
-    background: transparent;
-    padding: 6px 4px;
+.comment-actions button:hover {
+    color: var(--text);
 }
 
-.btn-reply-send {
-    color: var(--primary);
+.comment-actions .btn-comment-like.liked {
+    color: #ff6b81;
+}
+
+.comment-actions .btn-delete:hover,
+.comment-actions .btn-delete.confirming {
+    color: #ff6b81;
+}
+
+/* The comment being replied to is lightly marked while the composer is on it. */
+.comment-item.is-reply-target .comment-text {
+    background: var(--primary-soft);
+    border-radius: 6px;
+    box-shadow: 0 0 0 4px var(--primary-soft);
+}
+
+/* Composer — pinned under the thread, with a "Replying to" strip above it. */
+.comment-composer {
+    flex-shrink: 0;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border-light);
+}
+
+.reply-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 8px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    background: var(--primary-soft);
+    color: var(--secondary);
+    font-size: 0.7rem;
+}
+
+.reply-banner strong {
+    color: var(--text);
+}
+
+.reply-banner button {
+    color: var(--muted);
+    font-size: 0.9rem;
+    line-height: 1;
+    padding: 0 2px;
+}
+
+.reply-banner button:hover {
+    color: var(--text);
 }
 
 .comment-input-form {
-    border-top: 1px solid var(--border-light);
+    display: flex;
     align-items: center;
+    gap: 8px;
+    padding: 4px 4px 4px 14px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    transition: border-color 0.15s ease;
+}
+
+.comment-input-form:focus-within {
+    border-color: var(--primary);
 }
 
 .comment-input-form input {
-    background: transparent;
-    border: none;
-    border-radius: 0;
-    padding: 10px 2px;
+    flex: 1;
+    min-width: 0;
+    padding: 8px 0;
+    color: var(--text);
+    font-size: 0.8rem;
 }
 
 .comment-input-form input:focus {
-    border: none;
     outline: none;
 }
 
 .comment-input-form .btn-primary-sm {
-    background: transparent;
-    border: none;
-    color: var(--primary);
-    font-weight: 700;
+    padding: 8px 16px;
+    border-radius: 999px;
+    font-size: 0.75rem;
 }
 
-.comment-input-form .btn-primary-sm:hover {
-    color: var(--primary-hover);
+@media (max-width: 560px) {
+    /* A sheet from the bottom on phones, with room for the keyboard. */
+    #modal-post-comments {
+        align-items: flex-end;
+        padding: 0;
+    }
+
+    .post-comments-modal {
+        max-width: none;
+        max-height: 92vh;
+        max-height: 92dvh;
+        border-radius: var(--radius) var(--radius) 0 0;
+        border-bottom: none;
+    }
+
+    .comments-list {
+        max-height: none;
+    }
 }
 
-/* Comments only ever scroll vertically; a stray horizontal track here would be
-   a long word or a wide reply indent, neither worth a scrollbar. */
-.comments-list {
-    overflow-x: hidden;
+/* Empty states — one look everywhere a list has nothing in it yet. */
+.empty-card {
+    grid-column: 1 / -1;
+    padding: 26px 20px;
+    border: 1px dashed var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--muted);
+    font-size: 0.78rem;
+    line-height: 1.5;
+    text-align: center;
 }
 
-.comment-body p {
-    overflow-wrap: anywhere;
+.empty-inline {
+    padding: 24px 18px;
+    color: var(--muted);
+    font-size: 0.78rem;
+    text-align: center;
+}
+
+/* A ticked strategy step recedes. */
+.step-card.done {
+    opacity: 0.55;
+}
+
+.step-card.done h4 {
+    text-decoration: line-through;
 }

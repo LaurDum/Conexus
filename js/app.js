@@ -56,6 +56,9 @@ document.addEventListener("DOMContentLoaded", () => {
         notifications: [],
         unreadNotifications: 0,
 
+        // Top matches for the Home "Mingle" strip
+        homePeople: [],
+
         // Chat Conversations Database (Loaded dynamically per user)
         chats: {},
         activeThreadId: null
@@ -124,11 +127,45 @@ document.addEventListener("DOMContentLoaded", () => {
     /** Drops a token the server has rejected and returns to the sign-in screen. */
     function handleSessionExpired() {
         localStorage.removeItem("conexus_user");
+        resetSessionState();
+        showAuthScreen();
+    }
+
+    /**
+     * Forgets everything belonging to the account that just left, so the next
+     * person to sign in on this tab never sees it — not even for a frame — and
+     * starts on Home rather than wherever the last one was.
+     */
+    function resetSessionState() {
         state.currentUser = null;
+        state.profile = {};
         state.socials = [];
         state.chats = {};
         state.posts = [];
-        showAuthScreen();
+        state.homePeople = [];
+        state.discoverPeople = [];
+        state.connections = [];
+        state.connectionRequests = [];
+        state.connectedCreatorIds = new Set();
+        state.connectionStatus = {};
+        state.notifications = [];
+        state.unreadNotifications = 0;
+        state.activeThreadId = null;
+
+        document.querySelectorAll(".modal-overlay").forEach(m => m.classList.add("hidden"));
+        document.getElementById("drawer-chat")?.classList.add("hidden");
+        document.getElementById("drawer-notifications")?.classList.add("hidden");
+        ["inspo-feed", "inbox-list", "home-creator-scroll", "discover-creators-grid",
+         "user-posts-container", "socials-container", "notification-list"].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.innerHTML = "";
+        });
+
+        state.activeView = "view-home";
+        document.querySelectorAll(".main-content .view").forEach(v =>
+            v.classList.toggle("active-view", v.id === "view-home"));
+        document.querySelectorAll(".bottom-nav .nav-item").forEach(n =>
+            n.classList.toggle("active", n.getAttribute("data-target") === "view-home"));
     }
 
     /** Escapes user-supplied text before it goes into innerHTML. */
@@ -139,6 +176,52 @@ document.addEventListener("DOMContentLoaded", () => {
             .replace(/>/g, "&gt;")
             .replace(/"/g, "&quot;")
             .replace(/'/g, "&#39;");
+    }
+
+    /** "Alex Popescu" → "AP", "laur" → "LA" — the same rule the server uses. */
+    function initials(name) {
+        const words = String(name || "?").trim().split(/\s+/);
+        const letters = words.length > 1
+            ? words[0][0] + words[1][0]
+            : words[0].slice(0, 2);
+        return letters.toUpperCase();
+    }
+
+    /**
+     * Only http(s) links may become an href. A profile is shown to other
+     * people, so a javascript: link saved on it would run for whoever clicks.
+     */
+    function safeUrl(url) {
+        try {
+            const parsed = new URL(String(url || ""), window.location.href);
+            return parsed.protocol === "http:" || parsed.protocol === "https:" ? parsed.href : "#";
+        } catch (e) {
+            return "#";
+        }
+    }
+
+    /**
+     * Drops flag emoji from a location. Windows has no flag glyphs and shows
+     * them as bare letters ("ro Romania"), and accounts store plain names, so
+     * this keeps every card reading the same.
+     */
+    function plainLocation(text) {
+        return String(text || "").replace(/[\u{1F1E6}-\u{1F1FF}]/gu, "").trim();
+    }
+
+    function greetingFor(date) {
+        const h = date.getHours();
+        if (h < 5) return "Good evening";
+        if (h < 12) return "Good morning";
+        if (h < 18) return "Good afternoon";
+        return "Good evening";
+    }
+
+    /** "Posted 3d ago" / "Posted just now" for a listing. */
+    function postedLabel(isoDate) {
+        const age = timeAgo(isoDate);
+        return age === "Just now" ? "Posted just now"
+            : /^\d+[mhd]$/.test(age) ? `Posted ${age} ago` : `Posted ${age}`;
     }
 
     /** "32m", "3h", "5d" — compact age of a stored timestamp. */
@@ -344,11 +427,13 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!state.currentUser) return;
         const userId = state.currentUser.id;
 
-        // Update header greeting & profile UI
         const name = state.currentUser.displayName || state.currentUser.username;
-        if (document.getElementById("header-greeting")) {
-            document.getElementById("header-greeting").textContent = `Good evening, ${name} 👋`;
-        }
+        const greetingEl = document.getElementById("header-greeting");
+        if (greetingEl) greetingEl.textContent = `${greetingFor(new Date())}, ${name} 👋`;
+
+        // Preferences decide which home sections exist, so they go first —
+        // otherwise hidden sections render and then vanish.
+        await loadPreferences();
 
         // Everything below is persisted server-side. If a request fails we say so
         // rather than rendering stale placeholder data that looks saved.
@@ -409,18 +494,18 @@ document.addEventListener("DOMContentLoaded", () => {
         } catch (e) {
             failed.push("connections");
         }
-        renderHomeCreators();
+        await loadHomeCreators();
         await loadDiscover(true);
         loadRecommendedDeals();
-        await loadPreferences();
+        renderCollabStep();
+        restoreStepChecks();
 
         try {
             state.posts = await api(`/api/posts`);
         } catch (e) {
             failed.push("feed");
         }
-        renderFeed();
-        renderUserPosts();
+        renderAllPosts();
 
         // A shared link carries #post-<id>; open it now the feed exists.
         openPostFromHash();
@@ -436,25 +521,23 @@ document.addEventListener("DOMContentLoaded", () => {
         const p = state.profile || {};
 
         const dispName = p.displayName || u.displayName || u.username;
-        const handle = p.handle || ("@" + u.username);
-        const bio = p.bio || u.bio || "Welcome to my profile!";
-        const location = p.location || u.location || "Worldwide";
-        const reach = p.totalReach || u.totalReach || "0";
+        const set = (id, value) => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = value;
+        };
 
-        if (document.getElementById("profile-display-name")) document.getElementById("profile-display-name").textContent = dispName;
-        if (document.getElementById("profile-handle")) document.getElementById("profile-handle").textContent = handle;
-        if (document.getElementById("profile-bio")) document.getElementById("profile-bio").textContent = bio;
-        if (document.getElementById("profile-location")) document.getElementById("profile-location").textContent = location;
-        if (document.getElementById("stat-total-reach")) document.getElementById("stat-total-reach").textContent = reach;
-        if (document.getElementById("stat-engagement")) {
-            document.getElementById("stat-engagement").textContent = p.engagement || u.engagement || "0%";
-        }
+        set("profile-display-name", dispName);
+        set("profile-handle", p.handle || ("@" + u.username));
+        set("profile-bio", p.bio || u.bio || "Welcome to my profile!");
+        set("profile-location", plainLocation(p.location || u.location) || "Worldwide");
+        set("profile-niche", u.niche || "Creator");
+        set("stat-total-reach", p.totalReach || u.totalReach || "0");
+        set("stat-engagement", p.engagement || u.engagement || "0%");
 
-        // Avatar initials
-        const avatarEl = document.querySelector(".profile-avatar-lg");
-        if (avatarEl && dispName) {
-            const initials = dispName.substring(0, Math.min(2, dispName.length)).toUpperCase();
-            avatarEl.textContent = initials;
+        const avatarEl = document.getElementById("profile-avatar");
+        if (avatarEl) {
+            avatarEl.textContent = initials(dispName);
+            avatarEl.className = `creator-avatar ${u.bgClass || "avatar-purple"} profile-avatar-lg`;
         }
     }
 
@@ -594,10 +677,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 // Signing out locally matters more than the server round-trip.
             }
             localStorage.removeItem("conexus_user");
-            state.currentUser = null;
-            state.socials = [];
-            state.chats = {};
-            state.posts = [];
+            resetSessionState();
             if (splashScreen) splashScreen.classList.remove("fade-out");
             showAuthScreen();
             setTimeout(() => {
@@ -910,35 +990,50 @@ document.addEventListener("DOMContentLoaded", () => {
         // The server reports the status alongside the flag; fall back to what we
         // recorded locally for cards rendered outside Discover.
         const status = c.status || state.connectionStatus[key];
-        const label = !connected ? "Connect" : (status === "PENDING" ? "Requested" : "Connected");
+        // INCOMING: they asked you. Pressing the button answers yes.
+        const incoming = connected && status === "INCOMING";
+        const label = !connected ? "Connect"
+            : incoming ? "Accept"
+            : status === "PENDING" ? "Requested" : "Connected";
         return `
             <article class="creator-card discover-card" data-creator-id="${escapeHtml(c.id || "")}" data-owner-id="${escapeHtml(c.userId || "")}">
-                <div class="creator-avatar ${escapeHtml(c.bgClass)}">${escapeHtml(c.avatar)}</div>
-                <button class="creator-more" aria-label="More options">•••</button>
+                <div class="creator-avatar ${escapeHtml(c.bgClass)}">${escapeHtml(c.avatar || initials(c.name))}</div>
+                <button class="creator-more" aria-label="Open profile">•••</button>
                 <h3>${escapeHtml(c.name)}</h3>
                 <p class="creator-type">${escapeHtml(c.niche)}</p>
-                <div class="creator-info">${escapeHtml(c.location)}</div>
+                <div class="creator-info">${escapeHtml(plainLocation(c.location))}</div>
                 <div class="creator-followers">${escapeHtml(c.followers)} followers</div>
                 ${c.match ? `<div class="match"><span>${escapeHtml(c.match)}%</span> match</div>` : ""}
-                <button class="connect-button ${connected ? "connected" : ""}" data-name="${escapeHtml(c.name)}">${label}</button>
+                <button class="connect-button ${connected && !incoming ? "connected" : ""}" data-name="${escapeHtml(c.name)}">${label}</button>
             </article>
         `;
     }
 
     /**
-     * The Home "Mingle" strip — the best matches, from the database.
-     * These were four hardcoded cards, so their Connect buttons never showed
-     * the saved state and their stats never matched Discover.
+     * The Home "Mingle" strip — your best matches among real accounts.
+     *
+     * Read from the same endpoint as Discover, which leaves out your own
+     * account and knows connections made in either direction. The catalog it
+     * used to read listed you among your own suggestions.
      */
+    async function loadHomeCreators() {
+        try {
+            const data = await api("/api/users?page=0&size=4");
+            state.homePeople = data.items || [];
+        } catch (err) {
+            state.homePeople = [];
+        }
+        renderHomeCreators();
+    }
+
     function renderHomeCreators() {
         const strip = document.getElementById("home-creator-scroll");
         if (!strip) return;
 
-        const top = [...state.creators].sort((a, b) => (b.match || 0) - (a.match || 0)).slice(0, 4);
-
+        const top = state.homePeople || [];
         strip.innerHTML = top.length
             ? top.map(creatorCardHtml).join("")
-            : `<div style="padding: 20px; color: var(--muted); font-size: 0.78rem;">No creators to show yet.</div>`;
+            : `<div class="empty-inline">No creators to show yet.</div>`;
 
         bindConnectButtons();
     }
@@ -994,7 +1089,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (!people.length) {
             discoverGrid.innerHTML = `
-                <div style="grid-column: 1 / -1; text-align: center; padding: 30px; color: var(--muted); font-size: 0.8rem;">
+                <div class="empty-card">
                     No creators found matching your search criteria.
                 </div>
             `;
@@ -1068,6 +1163,40 @@ document.addEventListener("DOMContentLoaded", () => {
     // CONNECT BUTTON TOGGLE
     // =========================================================================
 
+    /**
+     * Records what a connect/disconnect did, in every list that shows it.
+     * "connected" can come back straight away when the other person had
+     * already asked — pressing Accept on their card answers that request.
+     */
+    function applyConnectionResult(data, targetId, creatorId, ownerId) {
+        const connected = data.status !== "disconnected";
+        const status = data.status === "requested" ? "PENDING" : connected ? "ACCEPTED" : null;
+
+        if (connected) {
+            state.connectedCreatorIds.add(targetId);
+            state.connectionStatus[targetId] = status;
+            showToast(data.status === "requested"
+                ? "Request sent — they'll see it in their messages"
+                : "You're connected");
+        } else {
+            state.connectedCreatorIds.delete(targetId);
+            delete state.connectionStatus[targetId];
+        }
+
+        const matches = p => (creatorId && p.id === creatorId)
+            || (ownerId && String(p.userId) === String(ownerId));
+        [state.discoverPeople, state.homePeople].forEach(list => (list || []).forEach(p => {
+            if (!matches(p)) return;
+            p.connected = connected;
+            p.status = status;
+        }));
+
+        renderDiscoverCreators();
+        renderHomeCreators();
+        loadConnections();
+        if (data.status === "connected") loadConnectionRequests();
+    }
+
     function bindConnectButtons() {
         document.querySelectorAll(".connect-button").forEach(button => {
             button.onclick = async (e) => {
@@ -1093,24 +1222,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 button.disabled = true;
                 try {
                     const data = await api("/api/connections/toggle", { method: "POST", body: reqBody });
-
-                    if (data.status === "disconnected") {
-                        state.connectedCreatorIds.delete(targetId);
-                        delete state.connectionStatus[targetId];
-                    } else {
-                        state.connectedCreatorIds.add(targetId);
-                        state.connectionStatus[targetId] = data.status === "requested" ? "PENDING" : "ACCEPTED";
-                        showToast(data.status === "requested"
-                            ? "Request sent — they'll see it in their messages"
-                            : "Connected");
-                    }
-                    // Keep the loaded page in step, then re-render both lists.
-                    const idx = (state.discoverPeople || []).findIndex(pp =>
-                        (pp.id && pp.id === creatorId) || (!creatorId && String(pp.userId) === String(ownerId)));
-                    if (idx !== -1) state.discoverPeople[idx].connected = data.status !== "disconnected";
-
-                    renderDiscoverCreators();
-                    renderHomeCreators();
+                    applyConnectionResult(data, targetId, creatorId, ownerId);
                 } catch (err) {
                     // Toggling the button locally on failure made an unsaved
                     // connection look saved until the next reload.
@@ -1238,7 +1350,7 @@ document.addEventListener("DOMContentLoaded", () => {
         // A control inside a person's row does its own job. stopPropagation in
         // those handlers cannot help: they are registered on document too, so
         // this listener would still run.
-        if (e.target.closest("button, a, input, textarea, select, .comment-actions, .comment-reply-form")) return;
+        if (e.target.closest("button, a, input, textarea, select, .comment-actions")) return;
 
         const personEl = e.target.closest("[data-user-id]");
         if (!personEl) return;
@@ -1289,8 +1401,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const idx = state.posts.findIndex(p => String(p.id) === String(updated.id));
             if (idx !== -1) state.posts[idx] = updated;
 
-            renderFeed();
-            renderUserPosts();
+            renderAllPosts();
             renderPostDetailLike(updated);
         } catch (err) {
             showToast(describeApiError(err, "Could not save your like."), "error");
@@ -1323,14 +1434,75 @@ document.addEventListener("DOMContentLoaded", () => {
         const pill = document.querySelector("#view-recommendations .status-pill");
         if (!pill) return;
 
-        // Only steps still unticked count as pending.
-        const cards = document.querySelectorAll("#view-recommendations .step-card");
-        const pending = [...cards].filter(card => {
-            const box = card.querySelector(".step-checkbox");
-            return !(box && (box.checked || box.classList.contains("checked")));
-        }).length;
+        // Only visible steps still unticked count as pending.
+        const cards = document.querySelectorAll("#view-recommendations .step-card:not(.hidden)");
+        const pending = [...cards].filter(card => !card.querySelector(".step-checkbox")?.checked).length;
 
-        pill.textContent = `${pending} Pending`;
+        pill.textContent = pending ? `${pending} Pending` : "All done";
+    }
+
+    /** Ticked steps are remembered per account on this device. */
+    function stepStorageKey() {
+        return `conexus_steps_${state.currentUser ? state.currentUser.id : "anon"}`;
+    }
+
+    function stepKey(card, i) {
+        return card.getAttribute("data-step") || `step-${i}`;
+    }
+
+    function restoreStepChecks() {
+        let done = [];
+        try { done = JSON.parse(localStorage.getItem(stepStorageKey()) || "[]"); } catch (e) { done = []; }
+
+        document.querySelectorAll("#view-recommendations .step-card").forEach((card, i) => {
+            const box = card.querySelector(".step-checkbox");
+            if (box) box.checked = done.includes(stepKey(card, i));
+            card.classList.toggle("done", !!box?.checked);
+        });
+        renderPendingSteps();
+    }
+
+    document.querySelectorAll("#view-recommendations .step-checkbox").forEach(box => {
+        box.addEventListener("change", () => {
+            const done = [];
+            document.querySelectorAll("#view-recommendations .step-card").forEach((card, i) => {
+                const checked = card.querySelector(".step-checkbox")?.checked;
+                card.classList.toggle("done", !!checked);
+                if (checked) done.push(stepKey(card, i));
+            });
+            try { localStorage.setItem(stepStorageKey(), JSON.stringify(done)); } catch (e) { /* private mode */ }
+            renderPendingSteps();
+        });
+    });
+
+    /**
+     * The first step names a real person: your strongest match you are not yet
+     * connected with. It used to name Alex Popescu for everyone — including
+     * Alex, who was advised to collaborate with himself.
+     */
+    function renderCollabStep() {
+        const card = document.getElementById("step-collab");
+        if (!card) return;
+
+        const pick = (state.homePeople || []).find(p => !p.connected) || (state.homePeople || [])[0];
+        card.classList.toggle("hidden", !pick);
+        if (!pick) { renderPendingSteps(); return; }
+
+        const title = document.getElementById("step-collab-title");
+        const desc = document.getElementById("step-collab-desc");
+        const action = document.getElementById("step-collab-action");
+        if (title) title.textContent = `Collaborate with ${pick.name}`;
+        if (desc) {
+            desc.textContent = pick.match
+                ? `${pick.match}% audience match in ${pick.niche || "your niche"}. A joint short could put you both in front of new viewers.`
+                : `A ${pick.niche || "creator"} whose audience could overlap with yours. A joint short is an easy first collab.`;
+        }
+        if (action) {
+            action.setAttribute("data-creator", pick.name);
+            action.setAttribute("data-user-id", pick.userId || "");
+        }
+        card.setAttribute("data-step", `collab-${pick.userId || pick.id}`);
+        renderPendingSteps();
     }
 
     /** Wording for each kind of notification. */
@@ -1373,7 +1545,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (!state.notifications.length) {
             list.innerHTML = `
-                <div style="text-align: center; padding: 28px 20px; color: var(--muted); font-size: 0.8rem;">
+                <div class="empty-inline">
                     Nothing yet. Likes, comments and messages will show up here.
                 </div>
             `;
@@ -1550,7 +1722,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             // The Discover and Home cards show connection state too.
             await loadDiscover(true);
-            renderHomeCreators();
+            loadHomeCreators();
             showToast(wasPending ? "Request withdrawn" : "Disconnected");
         } catch (err) {
             btn.disabled = false;
@@ -1625,6 +1797,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 renderChatRequestBar(state.chats[state.activeThreadId]);
             }
 
+            // Their card on Home and Discover changes either way.
+            loadHomeCreators();
+            loadDiscover(true);
+
             if (accept) {
                 showToast("Connection accepted");
                 loadConnections();
@@ -1652,11 +1828,15 @@ document.addEventListener("DOMContentLoaded", () => {
     function renderInbox() {
         if (!inboxList) return;
 
-        const threadIds = Object.keys(state.chats);
+        // Most recent conversation first. Threads from before timestamps were
+        // recorded have none and sink to the bottom.
+        const stamp = t => (t && t.updatedAt ? new Date(t.updatedAt).getTime() : 0);
+        const threadIds = Object.keys(state.chats)
+            .sort((a, b) => stamp(state.chats[b]) - stamp(state.chats[a]));
         if (threadIds.length === 0) {
             inboxList.innerHTML = `
-                <div style="text-align: center; padding: 40px 20px; color: var(--muted); font-size: 0.85rem;">
-                    No conversation threads yet. Connect with creators on Discover to start chatting!
+                <div class="empty-card">
+                    No conversations yet. Connect with creators on Discover to start chatting.
                 </div>
             `;
             return;
@@ -1670,7 +1850,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     <div class="thread-info">
                         <div class="thread-top">
                             <h4>${escapeHtml(thread.name)}</h4>
-                            <span class="thread-time">${escapeHtml(thread.time || '')}</span>
+                            <span class="thread-time">${escapeHtml(thread.updatedAt ? timeAgo(thread.updatedAt) : (thread.time || ""))}</span>
                         </div>
                         <p class="thread-snippet">${escapeHtml(thread.snippet || '')}</p>
                     </div>
@@ -1869,8 +2049,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (state.socials.length === 0) {
             socialsContainer.innerHTML = `
-                <div style="grid-column: 1 / -1; text-align: center; padding: 24px; background: var(--card); border: 1px dashed var(--border); border-radius: var(--radius-sm); color: var(--muted); font-size: 0.76rem;">
-                    No social accounts added yet. Click "+ Add Social Link" above to display your channels!
+                <div class="empty-card">
+                    No social accounts yet. Use "+ Add Social Link" to show your channels.
                 </div>
             `;
         } else {
@@ -1889,7 +2069,7 @@ document.addEventListener("DOMContentLoaded", () => {
                             </div>
                         </div>
                         <div class="social-actions">
-                            <a href="${escapeHtml(soc.url)}" target="_blank" rel="noopener" class="btn-social-link" title="Open Link">↗</a>
+                            <a href="${escapeHtml(safeUrl(soc.url))}" target="_blank" rel="noopener" class="btn-social-link" title="Open Link">↗</a>
                             <button class="btn-social-edit" data-id="${escapeHtml(soc.id)}" title="Edit Account">✎</button>
                             <button class="btn-social-delete" data-id="${escapeHtml(soc.id)}" title="Remove Account">&times;</button>
                         </div>
@@ -2097,46 +2277,49 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (!state.posts.length) {
             inspoFeed.innerHTML = `
-                <div style="text-align: center; padding: 32px 20px; color: var(--muted); font-size: 0.8rem;">
-                    No posts yet. Tap "+ New Post" to share the first one!
+                <div class="empty-card">
+                    No posts yet. Use "+ New Post" to share the first one.
                 </div>
             `;
             return;
         }
 
-        inspoFeed.innerHTML = state.posts.map(post => {
-            const author = post.authorName || "Creator";
-            const initials = author.substring(0, 2).toUpperCase();
-            const avatarClass = post.avatarClass || "avatar-purple";
-            const liked = post.liked === true;
-
-            return `
-                <article class="inspo-card" data-post-id="${escapeHtml(post.id)}">
-                    <div class="post-author${post.authorId ? " is-linked" : ""}"${post.authorId ? ` data-user-id="${escapeHtml(post.authorId)}"` : ""}>
-                        <div class="small-avatar ${escapeHtml(avatarClass)}">${escapeHtml(initials)}</div>
-                        <div>
-                            <strong>${escapeHtml(author)}</strong>
-                            <span>${escapeHtml(post.niche || "Creator")} · ${escapeHtml(timeAgo(post.createdAt))}</span>
-                        </div>
-                    </div>
-                    <p class="post-content">${escapeHtml(post.content)}</p>
-                    <div class="post-footer">
-                        <button class="btn-like ${liked ? "liked" : ""}" data-liked="${liked}">
-                            ${liked ? "❤️" : "♡"} <span class="like-count">${post.likesCount || 0}</span>
-                        </button>
-                        <button class="btn-comment">💬 <span class="comment-count">${post.commentsCount || 0}</span></button>
-                        <button class="btn-share">↗ Share</button>
-                    </div>
-                </article>
-            `;
-        }).join("");
+        inspoFeed.innerHTML = state.posts.map(postCardHtml).join("");
     }
 
     /**
-     * "Recent Posts" on the Profile tab — the logged-in user's own posts.
-     * This block used to be hardcoded markup showing one fixed author to
-     * everyone who signed in.
+     * One post, everywhere a post appears — the feed, your profile, someone
+     * else's. The profile copies used to be separate markup with inert
+     * buttons, so likes and comments only worked in the feed.
      */
+    function postCardHtml(post) {
+        const author = post.authorName || "Creator";
+        const liked = post.liked === true;
+        const mine = state.currentUser && String(post.authorId) === String(state.currentUser.id);
+
+        return `
+            <article class="inspo-card" data-post-id="${escapeHtml(post.id)}">
+                <div class="post-author${post.authorId ? " is-linked" : ""}"${post.authorId ? ` data-user-id="${escapeHtml(post.authorId)}"` : ""}>
+                    <div class="small-avatar ${escapeHtml(post.avatarClass || "avatar-purple")}">${escapeHtml(initials(author))}</div>
+                    <div>
+                        <strong>${escapeHtml(author)}</strong>
+                        <span>${escapeHtml(post.niche || "Creator")} · ${escapeHtml(timeAgo(post.createdAt))}</span>
+                    </div>
+                </div>
+                <p class="post-content">${escapeHtml(post.content)}</p>
+                <div class="post-footer">
+                    <button class="btn-like ${liked ? "liked" : ""}" data-liked="${liked}" aria-label="Like">
+                        ${liked ? "❤️" : "♡"} <span class="like-count">${post.likesCount || 0}</span>
+                    </button>
+                    <button class="btn-comment" aria-label="Comments">💬 <span class="comment-count">${post.commentsCount || 0}</span></button>
+                    <button class="btn-share">↗ Share</button>
+                    ${mine ? `<button class="btn-delete btn-delete-post" data-post-id="${escapeHtml(post.id)}">Delete</button>` : ""}
+                </div>
+            </article>
+        `;
+    }
+
+    /** "Recent Posts" on the Profile tab — the logged-in user's own posts. */
     function renderUserPosts() {
         const container = document.getElementById("user-posts-container");
         if (!container) return;
@@ -2147,38 +2330,78 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        const mine = state.posts.filter(post =>
-            post.authorId != null
-                ? String(post.authorId) === String(user.id)
-                : post.authorName === (user.displayName || user.username)
-        );
+        const mine = state.posts.filter(post => String(post.authorId) === String(user.id));
 
-        if (!mine.length) {
-            container.innerHTML = `
-                <div style="text-align: center; padding: 24px; background: var(--card); border: 1px dashed var(--border); border-radius: var(--radius-sm); color: var(--muted); font-size: 0.76rem;">
-                    You haven't posted yet. Share something from the "+ New Post" button!
-                </div>
-            `;
-            return;
+        container.innerHTML = mine.length
+            ? mine.map(postCardHtml).join("")
+            : `<div class="empty-card">You haven't posted yet. Share something with "+ New Post".</div>`;
+    }
+
+    /** Posts on someone else's profile page, from the feed we already hold. */
+    function renderProfilePosts() {
+        const postsEl = document.getElementById("up-posts");
+        if (!postsEl || !currentOpenUserId) return;
+
+        const theirs = state.posts.filter(post => String(post.authorId) === String(currentOpenUserId));
+        postsEl.innerHTML = theirs.length
+            ? theirs.map(postCardHtml).join("")
+            : `<div class="empty-card">No posts yet.</div>`;
+    }
+
+    /** Every place a post is drawn, after one of them changes. */
+    function renderAllPosts() {
+        renderFeed();
+        renderUserPosts();
+        renderProfilePosts();
+    }
+
+    // Deleting your own post asks once, the same way other removals do.
+    document.addEventListener("click", async (e) => {
+        const btn = e.target.closest(".btn-delete-post");
+        if (!btn) return;
+        e.stopPropagation();
+
+        if (!armConfirm(btn, "Delete?")) return;
+
+        const postId = btn.getAttribute("data-post-id");
+        btn.disabled = true;
+        try {
+            await api(`/api/posts/${postId}`, { method: "DELETE" });
+            state.posts = state.posts.filter(p => String(p.id) !== String(postId));
+            renderAllPosts();
+
+            const detail = document.getElementById("post-detail-card");
+            if (detail && detail.getAttribute("data-post-id") === String(postId)) {
+                modalPostComments?.classList.add("hidden");
+            }
+            showToast("Post deleted");
+        } catch (err) {
+            btn.disabled = false;
+            showToast(describeApiError(err, "Could not delete that post."), "error");
         }
+    });
 
-        container.innerHTML = mine.map(post => `
-            <div class="inspo-card">
-                <div class="post-author">
-                    <div class="small-avatar ${escapeHtml(post.avatarClass || "avatar-purple")}">${escapeHtml((post.authorName || "?").substring(0, 2).toUpperCase())}</div>
-                    <div>
-                        <strong>${escapeHtml(post.authorName)}</strong>
-                        <span>${escapeHtml(post.niche || "Creator")} · ${escapeHtml(timeAgo(post.createdAt))}</span>
-                    </div>
-                </div>
-                <p class="post-content">${escapeHtml(post.content)}</p>
-                <div class="post-footer">
-                    <button>${post.liked ? "❤️" : "♡"} ${post.likesCount || 0}</button>
-                    <button>💬 ${post.commentsCount || 0}</button>
-                    <button>↗ Share</button>
-                </div>
-            </div>
-        `).join("");
+    /**
+     * Two-step confirm for a small destructive button: the first press arms it
+     * and relabels it, the second within four seconds goes ahead. Returns true
+     * when it is armed and this press should proceed.
+     */
+    function armConfirm(btn, prompt) {
+        if (btn.getAttribute("data-confirming") === "true") {
+            clearTimeout(btn._revert);
+            return true;
+        }
+        const original = btn.textContent;
+        btn.setAttribute("data-confirming", "true");
+        btn.classList.add("confirming");
+        btn.textContent = prompt;
+        clearTimeout(btn._revert);
+        btn._revert = setTimeout(() => {
+            btn.setAttribute("data-confirming", "false");
+            btn.classList.remove("confirming");
+            btn.textContent = original;
+        }, 4000);
+        return false;
     }
 
     if (formCreatePost) {
@@ -2193,25 +2416,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
             if (!text) return;
 
-            const nameVal = state.currentUser.displayName || state.currentUser.username;
-
-            // Save first, then render what came back. The old version only injected
-            // HTML into the feed, so the post existed until the next refresh.
+            // Save first, then render what came back. The server fills in the
+            // author from the session.
             try {
                 const saved = await api("/api/posts", {
                     method: "POST",
-                    body: {
-                        authorId: state.currentUser.id,
-                        authorName: nameVal,
-                        niche: niche,
-                        content: text,
-                        avatarClass: state.currentUser.bgClass || "avatar-purple"
-                    }
+                    body: { niche: niche, content: text }
                 });
 
                 state.posts.unshift(saved);
-                renderFeed();
-                renderUserPosts();
+                renderAllPosts();
 
                 formCreatePost.reset();
                 closeCreateModal();
@@ -2328,7 +2542,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         ${applied ? "Applied ✓" : "Apply"}
                     </button>
                 </div>
-                <span class="job-meta">${escapeHtml(j.location || "")} · ${escapeHtml(j.postedAgo || "")}</span>
+                <span class="job-meta">${escapeHtml(plainLocation(j.location))} · ${escapeHtml(j.createdAt ? postedLabel(j.createdAt) : (j.postedAgo || ""))}</span>
             </div>
         `;
     }
@@ -2340,9 +2554,9 @@ document.addEventListener("DOMContentLoaded", () => {
             const data = await api("/api/jobs?size=2");
             grid.innerHTML = (data.items || []).length
                 ? data.items.map(jobCardHtml).join("")
-                : `<div style="color: var(--muted); font-size: 0.78rem;">No open roles right now.</div>`;
+                : `<div class="empty-card">No open roles right now.</div>`;
         } catch (err) {
-            grid.innerHTML = `<div style="color: var(--muted); font-size: 0.78rem;">Could not load jobs.</div>`;
+            grid.innerHTML = `<div class="empty-card">Could not load jobs.</div>`;
         }
     }
 
@@ -2369,7 +2583,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             grid.innerHTML = (data.items || []).length
                 ? data.items.map(jobCardHtml).join("")
-                : `<div style="grid-column: 1 / -1; text-align: center; padding: 30px; color: var(--muted); font-size: 0.8rem;">
+                : `<div class="empty-card">
                        No roles match that filter.
                    </div>`;
         } catch (err) {
@@ -2735,9 +2949,9 @@ document.addEventListener("DOMContentLoaded", () => {
             const data = await api("/api/brand-deals?size=2");
             grid.innerHTML = (data.items || []).length
                 ? data.items.map(brandDealHtml).join("")
-                : `<div style="color: var(--muted); font-size: 0.78rem;">No open campaigns right now.</div>`;
+                : `<div class="empty-card">No open campaigns right now.</div>`;
         } catch (err) {
-            grid.innerHTML = `<div style="color: var(--muted); font-size: 0.78rem;">Could not load brand matches.</div>`;
+            grid.innerHTML = `<div class="empty-card">Could not load brand matches.</div>`;
         }
     }
 
@@ -2749,9 +2963,9 @@ document.addEventListener("DOMContentLoaded", () => {
             const data = await api("/api/brand-deals?size=2");
             grid.innerHTML = (data.items || []).length
                 ? data.items.map(brandDealHtml).join("")
-                : `<div style="color: var(--muted); font-size: 0.78rem;">No open campaigns right now.</div>`;
+                : `<div class="empty-card">No open campaigns right now.</div>`;
         } catch (err) {
-            grid.innerHTML = `<div style="color: var(--muted); font-size: 0.78rem;">Could not load brand matches.</div>`;
+            grid.innerHTML = `<div class="empty-card">Could not load brand matches.</div>`;
         }
     }
 
@@ -2777,7 +2991,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             grid.innerHTML = (data.items || []).length
                 ? data.items.map(brandDealHtml).join("")
-                : `<div style="grid-column: 1 / -1; text-align: center; padding: 30px; color: var(--muted); font-size: 0.8rem;">
+                : `<div class="empty-card">
                        No campaigns match that filter.
                    </div>`;
         } catch (err) {
@@ -2814,7 +3028,9 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    document.getElementById("btn-see-all-deals")?.addEventListener("click", () => openDiscover("deals"));
+    // Home and Strategy both have one.
+    document.querySelectorAll(".btn-see-all-deals").forEach(btn =>
+        btn.addEventListener("click", () => openDiscover("deals")));
 
     document.getElementById("deals-search-input")?.addEventListener("input", () => {
         clearTimeout(dealsSearchTimer);
@@ -2832,30 +3048,38 @@ document.addEventListener("DOMContentLoaded", () => {
     const btnCopyOutreach = document.getElementById("btn-copy-outreach");
     const btnSendOutreachChat = document.getElementById("btn-send-outreach-chat");
 
-    // "Apply Now" on a brand card had no handler. Drafting an outreach message
-    // to that brand is the action the page implies, and that feature exists.
+    /** Who the open pitch is for, when they have an account to message. */
+    let outreachUserId = null;
+
+    function openOutreach(targetName, text, userId) {
+        outreachUserId = userId || null;
+        if (outreachTargetCreator) outreachTargetCreator.textContent = targetName;
+        if (outreachTextBox) outreachTextBox.textContent = text;
+        // Brands in the catalog have no inbox; offering "Send" would only open
+        // some unrelated conversation.
+        if (btnSendOutreachChat) btnSendOutreachChat.classList.toggle("hidden", !outreachUserId);
+        modalOutreach?.classList.remove("hidden");
+    }
+
+    // "Apply Now" on a brand card drafts a pitch to that brand.
     document.addEventListener("click", (e) => {
         const applyBtn = e.target.closest(".btn-apply-brand");
         if (!applyBtn) return;
 
-        const brandName = applyBtn.closest(".brand-card")?.querySelector("h4, h3, strong")?.textContent?.trim()
+        const brandName = applyBtn.closest(".brand-card")?.querySelector("h4")?.textContent?.trim()
             || "this brand";
 
-        if (outreachTargetCreator) outreachTargetCreator.textContent = brandName;
-        if (outreachTextBox) {
-            outreachTextBox.textContent = `"Hi ${brandName} team! I'd love to be considered for this campaign. My audience overlaps closely with the one you're targeting, and I can put together a hands-on review that fits your brief. Happy to share my full media kit."`;
-        }
-        if (modalOutreach) modalOutreach.classList.remove("hidden");
+        openOutreach(brandName,
+            `Hi ${brandName} team! I'd love to be considered for this campaign. My audience overlaps closely with the one you're targeting, and I can put together a hands-on review that fits your brief. Happy to share my full media kit.`,
+            null);
     });
 
     document.querySelectorAll(".btn-open-outreach").forEach(btn => {
         btn.addEventListener("click", () => {
-            const target = btn.getAttribute("data-creator") || "Alex Popescu";
-            if (outreachTargetCreator) outreachTargetCreator.textContent = target;
-            if (outreachTextBox) {
-                outreachTextBox.textContent = `"Hey ${target.split(" ")[0]}! Loved your recent content. Based on our audience overlap, I think a joint video or dual stream would perform amazingly for both our channels. Let me know if you'd be down to chat!"`;
-            }
-            if (modalOutreach) modalOutreach.classList.remove("hidden");
+            const target = btn.getAttribute("data-creator") || "there";
+            openOutreach(target,
+                `Hey ${target.split(" ")[0]}! Loved your recent content. Based on our audience overlap, I think a joint video or dual stream would work really well for both our channels. Would you be up for a chat?`,
+                btn.getAttribute("data-user-id"));
         });
     });
 
@@ -2873,17 +3097,26 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    if (btnSendOutreachChat) {
-        btnSendOutreachChat.addEventListener("click", () => {
-            if (modalOutreach) modalOutreach.classList.add("hidden");
+    // Opens the conversation with that person, pitch in the box ready to
+    // edit — it is a draft, so it is not sent on their behalf.
+    btnSendOutreachChat?.addEventListener("click", async () => {
+        if (!outreachUserId) return;
+        try {
+            const thread = await api(`/api/chats/with-user?otherUserId=${encodeURIComponent(outreachUserId)}`,
+                                     { method: "POST" });
+            state.chats[thread.id] = thread;
+            modalOutreach?.classList.add("hidden");
+            renderInbox();
             switchView("view-messages");
-
-            // Open the user's most recent thread rather than a hardcoded id that
-            // may not belong to this account.
-            const firstThreadId = Object.keys(state.chats)[0];
-            if (firstThreadId) openChatThread(firstThreadId);
-        });
-    }
+            openChatThread(thread.id);
+            if (chatInputText) {
+                chatInputText.value = outreachTextBox ? outreachTextBox.textContent : "";
+                chatInputText.focus();
+            }
+        } catch (err) {
+            showToast(describeApiError(err, "Could not open that conversation."), "error");
+        }
+    });
 
 
     // =========================================================================
@@ -2975,29 +3208,18 @@ document.addEventListener("DOMContentLoaded", () => {
                                 </div>
                             </div>
                             <div class="social-actions">
-                                <a href="${escapeHtml(soc.url || "#")}" target="_blank" rel="noopener" class="btn-social-link" title="Open Link">↗</a>
+                                <a href="${escapeHtml(safeUrl(soc.url))}" target="_blank" rel="noopener" class="btn-social-link" title="Open Link">↗</a>
                             </div>
                         </div>`;
                 }).join("")
-                : `<div style="grid-column: 1 / -1; padding: 20px; color: var(--muted); font-size: 0.78rem;">No linked accounts yet.</div>`;
+                : `<div class="empty-card">No linked accounts yet.</div>`;
         }
 
-        // Their posts, from the feed we already hold.
         const postsEl = document.getElementById("up-posts");
-        if (postsEl) {
-            const theirs = state.posts.filter(post => String(post.authorId) === String(profile.id));
-            postsEl.innerHTML = theirs.length
-                ? theirs.map(post => `
-                    <div class="inspo-card" data-post-id="${escapeHtml(post.id)}">
-                        <p class="post-content">${escapeHtml(post.content)}</p>
-                        <div class="post-footer">
-                            <button>${post.liked ? "❤️" : "♡"} ${post.likesCount || 0}</button>
-                            <button>💬 ${post.commentsCount || 0}</button>
-                            <span style="color: var(--muted); font-size: 0.72rem;">${escapeHtml(timeAgo(post.createdAt))}</span>
-                        </div>
-                    </div>`).join("")
-                : `<div style="padding: 20px; color: var(--muted); font-size: 0.78rem;">No posts yet.</div>`;
+        if (postsEl && !profile.id) {
+            postsEl.innerHTML = `<div class="empty-card">No posts yet.</div>`;
         }
+        renderProfilePosts();
 
         // Connect works for anyone with an account, whether or not they have a
         // discover card — a connection can be keyed by either.
@@ -3005,9 +3227,8 @@ document.addEventListener("DOMContentLoaded", () => {
         if (connectBtn) {
             const canConnect = !!(profile.id || profile.creatorId);
             connectBtn.style.display = canConnect ? "" : "none";
-            connectBtn.classList.toggle("connected", profile.connected);
-            connectBtn.textContent = !profile.connected ? "Connect"
-                : (profile.connectionStatus === "PENDING" ? "Requested" : "Connected");
+            setProfileConnectButton(connectBtn,
+                profile.connected ? (profile.connectionStatus || "ACCEPTED") : null);
             connectBtn.setAttribute("data-creator-id", profile.creatorId || "");
             connectBtn.setAttribute("data-owner-id", profile.id || "");
         }
@@ -3017,6 +3238,14 @@ document.addEventListener("DOMContentLoaded", () => {
         if (messageBtn) messageBtn.style.display = profile.id ? "" : "none";
 
         switchView("view-user-profile");
+    }
+
+    /** The profile page's Connect button, for a status of null / PENDING / INCOMING / ACCEPTED. */
+    function setProfileConnectButton(btn, status) {
+        btn.classList.toggle("connected", status === "PENDING" || status === "ACCEPTED");
+        btn.textContent = !status ? "Connect"
+            : status === "INCOMING" ? "Accept request"
+            : status === "PENDING" ? "Requested" : "Connected";
     }
 
     /**
@@ -3071,25 +3300,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 method: "POST",
                 body: creatorId ? { targetCreatorId: creatorId } : { targetUserId: parseInt(ownerId, 10) }
             });
-            const connected = data.status !== "disconnected";
-            if (connected) {
-                state.connectedCreatorIds.add(targetId);
-                state.connectionStatus[targetId] = data.status === "requested" ? "PENDING" : "ACCEPTED";
-                showToast(data.status === "requested"
-                    ? "Request sent — they'll see it in their messages"
-                    : "Connected");
-            } else {
-                state.connectedCreatorIds.delete(targetId);
-                delete state.connectionStatus[targetId];
-            }
-
-            btn.classList.toggle("connected", connected);
-            btn.textContent = !connected ? "Connect"
-                : (state.connectionStatus[targetId] === "PENDING" ? "Requested" : "Connected");
-            // Every list that shows connection state.
-            await loadDiscover(true);
-            renderHomeCreators();
-            loadConnections();
+            applyConnectionResult(data, targetId, creatorId, ownerId);
+            setProfileConnectButton(btn, state.connectionStatus[targetId] || null);
         } catch (err) {
             showToast(describeApiError(err, "Could not update this connection."), "error");
         } finally {
@@ -3168,63 +3380,69 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const modalPostComments = document.getElementById("modal-post-comments");
     const btnClosePostComments = document.getElementById("btn-close-post-comments");
-    const postDetailAvatar = document.getElementById("post-detail-avatar");
-    const postDetailAuthor = document.getElementById("post-detail-author");
-    const postDetailNiche = document.getElementById("post-detail-niche");
-    const postDetailContent = document.getElementById("post-detail-content");
-    const postDetailCommentCount = document.getElementById("post-detail-comment-count");
     const postCommentsList = document.getElementById("post-comments-list");
     const formAddComment = document.getElementById("form-add-comment");
     const inputCommentText = document.getElementById("input-comment-text");
 
-    let currentOpenPostCard = null;
-
-    const postCommentsStore = {
-        default: [
-            { author: "Alex Popescu", avatar: "AP", bgClass: "avatar-purple", time: "15m ago", text: "Great insights! Definitely trying this format strategy." },
-            { author: "Elena M.", avatar: "EM", bgClass: "avatar-green", time: "1h ago", text: "Loved the breakdown! Would love to see a follow up post." }
-        ]
-    };
+    /** The post the modal is showing. */
+    let openPostId = null;
+    /** The thread currently shown in the post modal, flat as the API returns it. */
+    let currentComments = [];
+    /**
+     * What the composer is replying to, or null for a new top-level comment.
+     * { threadId, targetId, name } — a reply attaches to the top-level comment
+     * (threadId) but names whoever was actually answered.
+     */
+    let replyTarget = null;
 
     async function openPostCommentsModal(postCard) {
-        currentOpenPostCard = postCard;
-
-        const authorName = postCard.querySelector(".post-author strong")?.textContent || "Creator";
-        const authorMeta = postCard.querySelector(".post-author span")?.textContent || "Creator · Recent";
-        const avatarEl = postCard.querySelector(".small-avatar");
-        const avatarText = avatarEl?.textContent || "CR";
-        const avatarClass = avatarEl?.className || "small-avatar avatar-purple";
-        const content = postCard.querySelector(".post-content")?.textContent || "";
-        const commentCountSpan = postCard.querySelector(".comment-count");
-        const commentCount = commentCountSpan ? commentCountSpan.textContent : "0";
-
-        if (postDetailAvatar) {
-            postDetailAvatar.textContent = avatarText;
-            postDetailAvatar.className = avatarClass;
-        }
-        if (postDetailAuthor) postDetailAuthor.textContent = authorName;
-        if (postDetailNiche) postDetailNiche.textContent = authorMeta;
-        if (postDetailContent) postDetailContent.textContent = content;
-        if (postDetailCommentCount) postDetailCommentCount.textContent = commentCount;
-
         const postId = postCard.getAttribute("data-post-id");
         if (!postId) return;
 
-        // Tag the modal so the shared like handler knows which post it is on.
-        const detailCard = document.getElementById("post-detail-card");
-        if (detailCard) detailCard.setAttribute("data-post-id", postId);
-        renderPostDetailLike(state.posts.find(p => String(p.id) === String(postId)));
+        const post = state.posts.find(p => String(p.id) === String(postId));
+        if (!post) return;
+
+        openPostId = String(postId);
+        setReplyTarget(null);
+        if (inputCommentText) inputCommentText.value = "";
+
+        const author = post.authorName || "Creator";
+        const avatar = document.getElementById("post-detail-avatar");
+        if (avatar) {
+            avatar.textContent = initials(author);
+            avatar.className = `small-avatar ${post.avatarClass || "avatar-purple"}`;
+        }
+
+        // The byline opens the author's profile, as it does in the feed.
+        const authorRow = document.getElementById("post-detail-author-row");
+        if (authorRow) {
+            authorRow.classList.toggle("is-linked", !!post.authorId);
+            if (post.authorId) authorRow.setAttribute("data-user-id", post.authorId);
+            else authorRow.removeAttribute("data-user-id");
+        }
+
+        const set = (id, value) => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = value;
+        };
+        set("post-detail-author", author);
+        set("post-detail-niche", `${post.niche || "Creator"} · ${timeAgo(post.createdAt)}`);
+        set("post-detail-content", post.content);
+        set("post-detail-comment-count", post.commentsCount || 0);
+
+        document.getElementById("post-detail-card")?.setAttribute("data-post-id", postId);
+        renderPostDetailLike(post);
+
+        if (postCommentsList) postCommentsList.innerHTML = `<div class="comments-empty">Loading…</div>`;
+        modalPostComments?.classList.remove("hidden");
 
         try {
             currentComments = await api(`/api/comments?postId=${postId}`);
-            renderCommentsList(currentComments);
         } catch (e) {
             currentComments = [];
-            renderCommentsList([]);
             showToast(describeApiError(e, "Could not load comments."), "error");
         }
-
-        if (modalPostComments) modalPostComments.classList.remove("hidden");
+        renderCommentsList();
     }
 
     /** Keeps the like button inside the post detail modal in step with the feed. */
@@ -3246,15 +3464,13 @@ document.addEventListener("DOMContentLoaded", () => {
      *
      * Matched against the names actually present rather than a general pattern:
      * display names contain spaces ("Laur Swat"), so a pattern permissive enough
-     * to catch those also swallows the words after the name. A literal
-     * split/join avoids escaping names like "Elena M." into a regex.
+     * to catch those also swallows the words after the name.
      */
     function withMentions(text) {
         const safe = escapeHtml(text);
 
         const names = [...new Set((currentComments || []).map(c => c.authorName).filter(Boolean))]
-            // Longest first, so "@Laur Swat" wins over "@Laur".
-            .sort((a, b) => b.length - a.length);
+            .sort((a, b) => b.length - a.length);   // "@Laur Swat" before "@Laur"
 
         return names.reduce((out, name) => {
             const tag = "@" + escapeHtml(name);
@@ -3262,92 +3478,72 @@ document.addEventListener("DOMContentLoaded", () => {
         }, safe);
     }
 
-    /** The thread currently shown in the post modal, flat as the API returns it. */
-    let currentComments = [];
-    /** Which comment the reply box is currently attached to. */
-    let replyingToId = null;
-    /** Who that reply tags — the person whose Reply button was pressed. */
-    let replyToName = null;
-
-    /**
-     * Renders one comment. Replies reuse the same markup, indented, so a reply
-     * can be liked and replied to exactly like a top-level comment.
-     */
+    /** One comment. Replies reuse the markup, indented, so they work the same. */
     function commentHtml(c, isReply) {
         const liked = c.liked === true;
-        const count = c.likesCount || 0;
+        const mine = state.currentUser && String(c.authorId) === String(state.currentUser.id);
+        const isTarget = replyTarget && String(replyTarget.targetId) === String(c.id);
 
         return `
-            <div class="comment-item${isReply ? " comment-reply" : ""}${c.authorId ? " is-linked" : ""}" data-comment-id="${escapeHtml(c.id)}"${c.authorId ? ` data-user-id="${escapeHtml(c.authorId)}"` : ""}>
-                <div class="comment-avatar ${escapeHtml(c.bgClass)}">${escapeHtml(c.avatar)}</div>
+            <div class="comment-item${isReply ? " comment-reply" : ""}${c.authorId ? " is-linked" : ""}${isTarget ? " is-reply-target" : ""}" data-comment-id="${escapeHtml(c.id)}"${c.authorId ? ` data-user-id="${escapeHtml(c.authorId)}"` : ""}>
+                <div class="comment-avatar ${escapeHtml(c.bgClass || "avatar-purple")}">${escapeHtml(c.avatar || initials(c.authorName))}</div>
                 <div class="comment-body">
-                    <div class="comment-header">
-                        <strong>${escapeHtml(c.authorName)}</strong>
-                    </div>
-                    <p>${withMentions(c.text)}</p>
+                    <p class="comment-text"><strong>${escapeHtml(c.authorName)}</strong>${withMentions(c.text)}</p>
                     <div class="comment-actions">
                         <span class="comment-time">${escapeHtml(timeAgo(c.createdAt))}</span>
-                        <button class="btn-comment-like${liked ? " liked" : ""}" data-comment-id="${escapeHtml(c.id)}" data-liked="${liked}">
-                            ${liked ? "❤️" : "♡"} <span class="comment-like-count">${count}</span>
+                        <button class="btn-comment-like${liked ? " liked" : ""}" data-comment-id="${escapeHtml(c.id)}" aria-label="Like comment">
+                            ${liked ? "❤️" : "♡"} ${c.likesCount || ""}
                         </button>
                         <button class="btn-comment-reply" data-comment-id="${escapeHtml(c.id)}" data-author="${escapeHtml(c.authorName)}">Reply</button>
+                        ${mine ? `<button class="btn-delete btn-delete-comment" data-comment-id="${escapeHtml(c.id)}">Delete</button>` : ""}
                     </div>
                 </div>
             </div>
         `;
     }
 
-    function renderCommentsList(comments) {
+    function renderCommentsList() {
         if (!postCommentsList) return;
 
-        if (!comments.length) {
-            postCommentsList.innerHTML = `
-                <div style="padding: 18px; color: var(--muted); font-size: 0.78rem; text-align: center;">
-                    No comments yet. Be the first to reply.
-                </div>
-            `;
+        if (!currentComments.length) {
+            postCommentsList.innerHTML = `<div class="comments-empty">No comments yet. Start the conversation.</div>`;
             return;
         }
 
-        const topLevel = comments.filter(c => !c.parentId);
-        const repliesBy = comments.reduce((map, c) => {
+        const topLevel = currentComments.filter(c => !c.parentId);
+        const repliesBy = currentComments.reduce((map, c) => {
             if (c.parentId) (map[c.parentId] = map[c.parentId] || []).push(c);
             return map;
         }, {});
 
-        postCommentsList.innerHTML = topLevel.map(c => {
-            const replies = repliesBy[c.id] || [];
-            return `
-                <div class="comment-thread">
-                    ${commentHtml(c, false)}
-                    ${replies.map(rep => commentHtml(rep, true)).join("")}
-                    ${replyingToId === String(c.id) ? replyBoxHtml(c) : ""}
-                </div>
-            `;
-        }).join("");
+        postCommentsList.innerHTML = topLevel.map(c => `
+            <div class="comment-thread">
+                ${commentHtml(c, false)}
+                ${(repliesBy[c.id] || []).map(rep => commentHtml(rep, true)).join("")}
+            </div>
+        `).join("");
     }
 
-    function replyBoxHtml(parent) {
-        // Prefilled with the tag, the way a reply reads on Instagram. replyToName
-        // is set when Reply is pressed, so replying to a reply tags that person
-        // rather than the top-level author.
-        const tag = `@${replyToName || parent.authorName} `;
-        return `
-            <form class="comment-reply-form" data-parent-id="${escapeHtml(parent.id)}">
-                <input type="text" class="comment-reply-input" value="${escapeHtml(tag)}" placeholder="Reply to ${escapeHtml(replyToName || parent.authorName)}..." autocomplete="off" required>
-                <button type="submit" class="btn-reply-send">Reply</button>
-                <button type="button" class="btn-reply-cancel">Cancel</button>
-            </form>
-        `;
+    /** Points the composer at a comment, or back at the post when null. */
+    function setReplyTarget(target) {
+        replyTarget = target;
+
+        const banner = document.getElementById("reply-banner");
+        const nameEl = document.getElementById("reply-banner-name");
+        if (banner) banner.classList.toggle("hidden", !target);
+        if (nameEl) nameEl.textContent = target ? target.name : "";
+        if (inputCommentText) {
+            inputCommentText.placeholder = target ? `Reply to ${target.name}…` : "Add a comment…";
+        }
     }
 
-    // ── Comment likes and replies ──────────────────────────────────────────
+    // ── Comment likes, replies and deletes ─────────────────────────────────
     // Delegated, because the thread is re-rendered after every change.
 
     document.addEventListener("click", async (e) => {
         const likeBtn = e.target.closest(".btn-comment-like");
         if (!likeBtn) return;
-        e.stopPropagation();          // do not open the author's profile
+        e.stopPropagation();
 
         if (!state.currentUser) { showAuthScreen(); return; }
 
@@ -3355,13 +3551,12 @@ document.addEventListener("DOMContentLoaded", () => {
         likeBtn.disabled = true;
         try {
             const updated = await api(`/api/comments/${commentId}/like`, { method: "PUT" });
-
-            const idx = currentComments.findIndex(c => String(c.id) === String(updated.id));
-            if (idx !== -1) {
-                currentComments[idx].liked = updated.liked;
-                currentComments[idx].likesCount = updated.likesCount;
+            const c = currentComments.find(x => String(x.id) === String(updated.id));
+            if (c) {
+                c.liked = updated.liked;
+                c.likesCount = updated.likesCount;
             }
-            renderCommentsList(currentComments);
+            renderCommentsList();
         } catch (err) {
             showToast(describeApiError(err, "Could not save your like."), "error");
             likeBtn.disabled = false;
@@ -3370,132 +3565,119 @@ document.addEventListener("DOMContentLoaded", () => {
 
     document.addEventListener("click", (e) => {
         const replyBtn = e.target.closest(".btn-comment-reply");
-        if (replyBtn) {
-            e.stopPropagation();
-            const id = replyBtn.getAttribute("data-comment-id");
-            const author = replyBtn.getAttribute("data-author");
-
-            // A reply attaches to the top-level comment, but tags whoever was
-            // actually replied to.
-            const target = currentComments.find(c => String(c.id) === String(id));
-            const threadId = target && target.parentId ? String(target.parentId) : id;
-
-            const closing = replyingToId === threadId && replyToName === author;
-            replyingToId = closing ? null : threadId;
-            replyToName = closing ? null : author;
-
-            renderCommentsList(currentComments);
-
-            // Put the caret after the tag rather than before it.
-            const input = postCommentsList?.querySelector(".comment-reply-input");
-            if (input) {
-                input.focus();
-                input.setSelectionRange(input.value.length, input.value.length);
-            }
-            return;
-        }
-
-        if (e.target.closest(".btn-reply-cancel")) {
-            e.stopPropagation();
-            replyingToId = null;
-            replyToName = null;
-            renderCommentsList(currentComments);
-        }
-    });
-
-    document.addEventListener("submit", async (e) => {
-        const form = e.target.closest(".comment-reply-form");
-        if (!form) return;
-        e.preventDefault();
+        if (!replyBtn) return;
         e.stopPropagation();
 
-        if (!state.currentUser) { showAuthScreen(); return; }
+        const id = replyBtn.getAttribute("data-comment-id");
+        const name = replyBtn.getAttribute("data-author");
+        const target = currentComments.find(c => String(c.id) === String(id));
+        const threadId = target && target.parentId ? String(target.parentId) : String(id);
 
-        const input = form.querySelector(".comment-reply-input");
-        const text = input ? input.value.trim() : "";
-        const parentId = form.getAttribute("data-parent-id");
-        const postId = currentOpenPostCard?.getAttribute("data-post-id");
-        if (!text || !postId) return;
+        // Pressing Reply on the comment already targeted goes back to a comment.
+        const same = replyTarget && String(replyTarget.targetId) === String(id);
+        setReplyTarget(same ? null : { threadId, targetId: String(id), name });
+        renderCommentsList();
 
+        if (!inputCommentText) return;
+        // Prefilled with the tag, the way a reply reads on Instagram.
+        const tag = `@${name} `;
+        if (same) {
+            if (inputCommentText.value.startsWith(tag)) inputCommentText.value = inputCommentText.value.slice(tag.length);
+        } else if (!inputCommentText.value.startsWith(tag)) {
+            inputCommentText.value = tag + inputCommentText.value.replace(/^@\S+(\s\S+)?\s/, "");
+        }
+        inputCommentText.focus();
+        inputCommentText.setSelectionRange(inputCommentText.value.length, inputCommentText.value.length);
+    });
+
+    document.getElementById("btn-cancel-reply")?.addEventListener("click", () => {
+        if (replyTarget && inputCommentText) {
+            const tag = `@${replyTarget.name} `;
+            if (inputCommentText.value.startsWith(tag)) inputCommentText.value = inputCommentText.value.slice(tag.length);
+        }
+        setReplyTarget(null);
+        renderCommentsList();
+        inputCommentText?.focus();
+    });
+
+    document.addEventListener("click", async (e) => {
+        const btn = e.target.closest(".btn-delete-comment");
+        if (!btn) return;
+        e.stopPropagation();
+
+        if (!armConfirm(btn, "Delete?")) return;
+
+        const commentId = btn.getAttribute("data-comment-id");
+        btn.disabled = true;
         try {
-            await api("/api/comments", {
-                method: "POST",
-                body: { postId: parseInt(postId, 10), parentId: parseInt(parentId, 10), text: text }
-            });
-
-            replyingToId = null;
-            replyToName = null;
-            currentComments = await api(`/api/comments?postId=${postId}`);
-            renderCommentsList(currentComments);
-            bumpCommentCount(postId, currentComments.length);
+            await api(`/api/comments/${commentId}`, { method: "DELETE" });
+            if (replyTarget && (replyTarget.targetId === String(commentId) || replyTarget.threadId === String(commentId))) {
+                setReplyTarget(null);
+            }
+            await refreshComments();
         } catch (err) {
-            showToast(describeApiError(err, "Could not post your reply."), "error");
+            btn.disabled = false;
+            showToast(describeApiError(err, "Could not delete that comment."), "error");
         }
     });
 
-    /** Keeps the count on the feed card and the modal header in step. */
-    function bumpCommentCount(postId, total) {
-        const idx = state.posts.findIndex(p => String(p.id) === String(postId));
-        if (idx !== -1) {
-            state.posts[idx].commentsCount = total;
-            renderFeed();
-            renderUserPosts();
-            currentOpenPostCard = document.querySelector(`.inspo-card[data-post-id="${postId}"]`) || currentOpenPostCard;
+    /** Re-reads the open thread, so the count and order come from the server. */
+    async function refreshComments() {
+        if (!openPostId) return;
+        currentComments = await api(`/api/comments?postId=${openPostId}`);
+        renderCommentsList();
+
+        const post = state.posts.find(p => String(p.id) === openPostId);
+        if (post) {
+            post.commentsCount = currentComments.length;
+            renderAllPosts();
         }
-        if (postDetailCommentCount) postDetailCommentCount.textContent = total;
+        const countEl = document.getElementById("post-detail-comment-count");
+        if (countEl) countEl.textContent = currentComments.length;
     }
 
-    if (btnClosePostComments && modalPostComments) {
-        btnClosePostComments.addEventListener("click", () => modalPostComments.classList.add("hidden"));
-    }
+    btnClosePostComments?.addEventListener("click", () => modalPostComments?.classList.add("hidden"));
 
-    if (formAddComment) {
-        formAddComment.addEventListener("submit", async (e) => {
-            e.preventDefault();
-            const text = inputCommentText ? inputCommentText.value.trim() : "";
-            if (!text || !currentOpenPostCard) return;
+    formAddComment?.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const text = inputCommentText ? inputCommentText.value.trim() : "";
+        if (!text || !openPostId) return;
 
-            if (!state.currentUser) {
-                showAuthScreen();
-                return;
-            }
-
-            // Defaulting to user 1 / post 1 used to attach comments to whatever
-            // happened to be row 1 in the database.
-            const postId = currentOpenPostCard.getAttribute("data-post-id");
-            if (!postId) return;
-
-            try {
-                await api("/api/comments", {
-                    method: "POST",
-                    body: { postId: parseInt(postId, 10), text: text }
-                });
-
-                inputCommentText.value = "";
-
-                // Re-read the thread so the new comment, and the count, come
-                // from the server rather than being guessed at locally.
-                currentComments = await api(`/api/comments?postId=${postId}`);
-                renderCommentsList(currentComments);
-                bumpCommentCount(postId, currentComments.length);
-            } catch (e) {
-                showToast(describeApiError(e, "Could not post your comment."), "error");
-            }
-        });
-    }
-
-    document.addEventListener("click", (e) => {
-        const commentBtn = e.target.closest(".btn-comment");
-        if (commentBtn) {
-            const inspoCard = commentBtn.closest(".inspo-card");
-            if (inspoCard) openPostCommentsModal(inspoCard);
+        if (!state.currentUser) {
+            showAuthScreen();
             return;
         }
 
-        const inspoCard = e.target.closest(".inspo-card");
-        if (inspoCard && !e.target.closest(".btn-like") && !e.target.closest(".btn-share")) {
-            openPostCommentsModal(inspoCard);
+        const body = { postId: parseInt(openPostId, 10), text: text };
+        if (replyTarget) body.parentId = parseInt(replyTarget.threadId, 10);
+
+        const submit = formAddComment.querySelector("button[type=submit]");
+        if (submit) submit.disabled = true;
+        try {
+            await api("/api/comments", { method: "POST", body });
+            inputCommentText.value = "";
+            setReplyTarget(null);
+            await refreshComments();
+            postCommentsList.scrollTop = postCommentsList.scrollHeight;
+        } catch (err) {
+            showToast(describeApiError(err, "Could not post your comment."), "error");
+        } finally {
+            if (submit) submit.disabled = false;
         }
+    });
+
+    // Opening a post: its comment button, or anywhere on the card that is not
+    // a control or a person. Names have their own handler that opens the
+    // profile; letting this one run too stacked the post on top of it.
+    document.addEventListener("click", (e) => {
+        const card = e.target.closest(".inspo-card");
+        if (!card) return;
+        if (e.target.closest(".btn-comment")) {
+            openPostCommentsModal(card);
+            return;
+        }
+        if (e.target.closest("button, a, [data-user-id]")) return;
+        openPostCommentsModal(card);
     });
 
     // =========================================================================

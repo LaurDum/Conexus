@@ -8,6 +8,10 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * The creator catalog is read-only over the API: it is seeded by DataSeeder and
+ * shared by everyone, so no single account may rewrite or delete it.
+ */
 @RestController
 @RequestMapping("/api/creators")
 @RequiredArgsConstructor
@@ -38,25 +42,5 @@ public class CreatorController {
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();
         }
-    }
-
-    /** POST /api/creators */
-    @PostMapping
-    public Creator create(@RequestBody Creator creator) {
-        return creatorService.save(creator);
-    }
-
-    /** PUT /api/creators/{id} */
-    @PutMapping("/{id}")
-    public Creator update(@PathVariable String id, @RequestBody Creator creator) {
-        creator.setId(id);
-        return creatorService.save(creator);
-    }
-
-    /** DELETE /api/creators/{id} */
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable String id) {
-        creatorService.delete(id);
-        return ResponseEntity.noContent().build();
     }
 }

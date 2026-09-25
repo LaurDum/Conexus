@@ -52,12 +52,18 @@ public class ProfileInfoService {
         ProfileInfo existing = profileInfoRepository.findByUserId(userId)
                 .orElseGet(() -> ProfileInfo.builder().userId(userId).build());
 
-        if (updated.getDisplayName() != null) existing.setDisplayName(updated.getDisplayName());
-        if (updated.getHandle() != null)      existing.setHandle(updated.getHandle());
-        if (updated.getBio() != null)         existing.setBio(updated.getBio());
-        if (updated.getLocation() != null)    existing.setLocation(updated.getLocation());
-        if (updated.getTotalReach() != null)  existing.setTotalReach(updated.getTotalReach());
-        if (updated.getEngagement() != null)  existing.setEngagement(updated.getEngagement());
+        // A blank name would leave the byline empty everywhere it is shown.
+        if (updated.getDisplayName() != null && !updated.getDisplayName().isBlank()) {
+            existing.setDisplayName(updated.getDisplayName().trim());
+        }
+        if (updated.getHandle() != null && !updated.getHandle().isBlank()) {
+            String handle = updated.getHandle().trim();
+            existing.setHandle(handle.startsWith("@") ? handle : "@" + handle);
+        }
+        if (updated.getBio() != null)      existing.setBio(updated.getBio().trim());
+        if (updated.getLocation() != null) existing.setLocation(updated.getLocation().trim());
+        // Reach and engagement are shown to other people as metrics, so they
+        // are not something a profile edit can type in.
 
         return profileInfoRepository.save(existing);
     }

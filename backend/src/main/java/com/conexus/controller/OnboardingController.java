@@ -8,6 +8,7 @@ import com.conexus.repository.ProfileInfoRepository;
 import com.conexus.repository.SocialAccountRepository;
 import com.conexus.repository.UserRepository;
 import com.conexus.security.CurrentUser;
+import com.conexus.service.SocialAccountService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
@@ -57,26 +58,24 @@ public class OnboardingController {
         // Save Social Accounts if provided
         if (req.getSocials() != null) {
             for (AuthDTOs.SocialAccountDTO soc : req.getSocials()) {
-                if (soc.getPlatform() == null || soc.getHandle() == null) continue;
-                
-                String icon = getPlatformIcon(soc.getPlatform());
-                String cssClass = "platform-" + soc.getPlatform().toLowerCase();
-                String name = capitalize(soc.getPlatform());
-                String url = soc.getUrl() != null && !soc.getUrl().isBlank() 
-                        ? soc.getUrl() 
-                        : "https://" + soc.getPlatform().toLowerCase() + ".com/" + soc.getHandle().replace("@", "");
+                if (!SocialAccountService.isKnownPlatform(soc.getPlatform())
+                        || soc.getHandle() == null || soc.getHandle().isBlank()) continue;
+
+                String platform = soc.getPlatform().toLowerCase();
+                String handle = soc.getHandle().trim();
+                String url = SocialAccountService.normalizeUrl(soc.getUrl());
+                if (url == null) url = defaultUrl(platform, handle);
+                if (url == null) continue;
 
                 SocialAccount sa = SocialAccount.builder()
                         .id("soc_" + UUID.randomUUID().toString().substring(0, 8))
                         .userId(user.getId())
-                        .platform(soc.getPlatform().toLowerCase())
-                        .name(name)
-                        .handle(soc.getHandle())
+                        .platform(platform)
+                        .handle(handle)
                         .url(url)
                         .followers(soc.getFollowers() != null ? soc.getFollowers() : "0")
-                        .icon(icon)
-                        .cssClass(cssClass)
                         .build();
+                SocialAccountService.applyPlatformMeta(sa);
 
                 socialAccountRepository.save(sa);
             }
@@ -100,23 +99,17 @@ public class OnboardingController {
         return ResponseEntity.ok(response);
     }
 
-    private String getPlatformIcon(String platform) {
-        switch (platform.toLowerCase()) {
-            case "youtube": return "▶";
-            case "tiktok": return "🎵";
-            case "instagram": return "📷";
-            case "twitch": return "👾";
-            case "twitter": return "𝕏";
-            case "discord": return "💬";
-            case "spotify": return "🎧";
-            case "substack": return "📰";
-            case "linkedin": return "💼";
-            default: return "🌐";
+    /** The profile link a handle implies, when onboarding gave no URL. */
+    private String defaultUrl(String platform, String handle) {
+        String name = handle.replaceFirst("^@", "");
+        switch (platform) {
+            case "youtube":   return SocialAccountService.normalizeUrl("https://youtube.com/@" + name);
+            case "tiktok":    return SocialAccountService.normalizeUrl("https://tiktok.com/@" + name);
+            case "instagram": return SocialAccountService.normalizeUrl("https://instagram.com/" + name);
+            case "twitch":    return SocialAccountService.normalizeUrl("https://twitch.tv/" + name);
+            case "twitter":   return SocialAccountService.normalizeUrl("https://x.com/" + name);
+            case "website":   return SocialAccountService.normalizeUrl(name);
+            default:          return null;
         }
-    }
-
-    private String capitalize(String str) {
-        if (str == null || str.isEmpty()) return str;
-        return str.substring(0, 1).toUpperCase() + str.substring(1);
     }
 }

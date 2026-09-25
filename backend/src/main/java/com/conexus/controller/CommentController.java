@@ -73,6 +73,10 @@ public class CommentController {
         if (comment.getText() == null || comment.getText().isBlank()) {
             return ResponseEntity.badRequest().body(Collections.singletonMap("message", "Comment text is required"));
         }
+        if (comment.getText().length() > 1000) {
+            return ResponseEntity.badRequest().body(Collections.singletonMap("message", "Keep comments under 1,000 characters"));
+        }
+        comment.setText(comment.getText().trim());
 
         Post post = postRepository.findById(comment.getPostId()).orElse(null);
         if (post == null) {
