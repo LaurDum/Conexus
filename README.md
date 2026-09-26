@@ -22,5 +22,3 @@ The first start fills the database with demo people, posts and jobs.
 ## Built with
 
 Plain HTML, CSS and JavaScript, with Spring Boot and PostgreSQL behind it. No build step.
-
-Putting it online? See [DEPLOYMENT.md](DEPLOYMENT.md).
