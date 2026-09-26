@@ -24,16 +24,18 @@ public class PreferencesController {
 
     private final UserRepository userRepository;
 
-    /** Sections that may appear on the home screen, in their default order. */
+    /**
+     * Optional sections under the Home overview, in their default order. The
+     * overview itself and the feed have their own tabs and are always there.
+     */
     private static final List<String> ALLOWED_SECTIONS =
-            Arrays.asList("recommendations", "mingle", "inspo", "jobs", "deals");
+            Arrays.asList("mingle", "jobs", "deals");
 
     /** What a new account sees. */
     private static final List<String> DEFAULT_SECTIONS =
-            Arrays.asList("recommendations", "mingle", "inspo");
+            Arrays.asList("mingle");
 
-    /** The home screen holds four at most, so it stays a summary. */
-    private static final int MAX_SECTIONS = 4;
+    private static final int MAX_SECTIONS = 3;
 
     @GetMapping
     public Map<String, Object> get(@CurrentUser Long userId) {
@@ -64,11 +66,9 @@ public class PreferencesController {
                     .limit(MAX_SECTIONS)
                     .collect(Collectors.toList());
 
-            if (cleaned.isEmpty()) {
-                return ResponseEntity.badRequest()
-                        .body(Collections.singletonMap("message", "Keep at least one section on your home screen"));
-            }
-            user.setHomeSections(String.join(",", cleaned));
+            // Empty is allowed: the overview on its own is a complete Home.
+            // Stored as "none" so it is not mistaken for "never chosen".
+            user.setHomeSections(cleaned.isEmpty() ? "none" : String.join(",", cleaned));
         }
 
         if (req.getTheme() != null) {
@@ -81,7 +81,10 @@ public class PreferencesController {
 
     private List<String> parseSections(String stored) {
         if (stored == null || stored.isBlank()) return DEFAULT_SECTIONS;
+        if ("none".equals(stored)) return List.of();
 
+        // Choices saved before the overview existed can name sections that
+        // are gone ("recommendations", "inspo"); those are dropped quietly.
         List<String> parsed = Arrays.stream(stored.split(","))
                 .map(String::trim)
                 .filter(ALLOWED_SECTIONS::contains)

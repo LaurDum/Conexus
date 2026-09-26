@@ -66,16 +66,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Platform Metadata Helper
     const platformMeta = {
-        youtube:   { name: "YouTube", icon: "▶", class: "platform-youtube" },
-        tiktok:    { name: "TikTok", icon: "🎵", class: "platform-tiktok" },
-        instagram: { name: "Instagram", icon: "📷", class: "platform-instagram" },
-        twitch:    { name: "Twitch", icon: "👾", class: "platform-twitch" },
-        twitter:   { name: "X (Twitter)", icon: "𝕏", class: "platform-twitter" },
-        discord:   { name: "Discord", icon: "💬", class: "platform-discord" },
-        spotify:   { name: "Spotify", icon: "🎧", class: "platform-spotify" },
-        substack:  { name: "Substack", icon: "📰", class: "platform-substack" },
-        linkedin:  { name: "LinkedIn", icon: "💼", class: "platform-linkedin" },
-        website:   { name: "Website", icon: "🌐", class: "platform-website" }
+        youtube:   { name: "YouTube", icon: "youtube", class: "platform-youtube" },
+        tiktok:    { name: "TikTok", icon: "tiktok", class: "platform-tiktok" },
+        instagram: { name: "Instagram", icon: "instagram", class: "platform-instagram" },
+        twitch:    { name: "Twitch", icon: "twitch", class: "platform-twitch" },
+        twitter:   { name: "X (Twitter)", icon: "x-logo", class: "platform-twitter" },
+        discord:   { name: "Discord", icon: "discord", class: "platform-discord" },
+        spotify:   { name: "Spotify", icon: "spotify", class: "platform-spotify" },
+        substack:  { name: "Substack", icon: "substack", class: "platform-substack" },
+        linkedin:  { name: "LinkedIn", icon: "linkedin", class: "platform-linkedin" },
+        website:   { name: "Website", icon: "globe", class: "platform-website" }
     };
 
 
@@ -151,12 +151,22 @@ document.addEventListener("DOMContentLoaded", () => {
         state.notifications = [];
         state.unreadNotifications = 0;
         state.activeThreadId = null;
+        forgetPostImages();
+        setPendingPhoto(null);
+        feedMode = readSetting("conexus_feed_mode", ["friends", "everyone"], "friends");
+        feedAuthorFilter = null;
+        skippedSteps.clear();
+        document.querySelectorAll(".feed-modes .chip").forEach(c =>
+            c.classList.toggle("active", c.getAttribute("data-feed-mode") === feedMode));
+        showHomePane("overview");
 
         document.querySelectorAll(".modal-overlay").forEach(m => m.classList.add("hidden"));
         document.getElementById("drawer-chat")?.classList.add("hidden");
         document.getElementById("drawer-notifications")?.classList.add("hidden");
         ["inspo-feed", "inbox-list", "home-creator-scroll", "discover-creators-grid",
-         "user-posts-container", "socials-container", "notification-list"].forEach(id => {
+         "user-posts-container", "socials-container", "notification-list",
+         "rail-people", "rail-requests", "rail-jobs", "pulse-activity", "pulse-platforms",
+         "pulse-progress", "feed-people"].forEach(id => {
             const el = document.getElementById(id);
             if (el) el.innerHTML = "";
         });
@@ -185,6 +195,35 @@ document.addEventListener("DOMContentLoaded", () => {
             ? words[0][0] + words[1][0]
             : words[0].slice(0, 2);
         return letters.toUpperCase();
+    }
+
+    /** A line icon from the sprite at the top of index.html. */
+    function icon(name, extra) {
+        return `<svg class="icon${extra ? " " + extra : ""}" aria-hidden="true"><use href="#i-${name}"></use></svg>`;
+    }
+
+    /**
+     * Each person gets a colour of their own, worked out from who they are,
+     * so a thread of initials is no longer a wall of identical purple circles.
+     * Keyed by account where there is one, so it follows them everywhere.
+     */
+    const TONE_HUES = [232, 262, 290, 328, 8, 32, 150, 176, 200];
+
+    function hueFor(userId, name) {
+        const key = userId != null && userId !== "" ? `u${userId}` : String(name || "?");
+        let h = 7;
+        for (const ch of key) h = (h * 31 + ch.codePointAt(0)) >>> 0;
+        return TONE_HUES[h % TONE_HUES.length];
+    }
+
+    /** The style attribute for an avatar with class "tone" in a template. */
+    function toneAttrs(userId, name) {
+        return `style="--hue:${hueFor(userId, name)}"`;
+    }
+
+    function applyTone(el, userId, name) {
+        el.classList.add("tone");
+        el.style.setProperty("--hue", hueFor(userId, name));
     }
 
     /**
@@ -409,11 +448,58 @@ document.addEventListener("DOMContentLoaded", () => {
             bubble.classList.add("no-animation");
             requestAnimationFrame(() => {
                 moveNavBubble();
+                moveHomeUnderline();
                 requestAnimationFrame(() => bubble.classList.remove("no-animation"));
             });
         }
 
+        showSkeletons();
+        showHomePane(readSetting("conexus_home_tab", ["overview", "feed"], "overview"));
         loadUserData();
+    }
+
+    /**
+     * Grey stand-ins shaped like the content that is on its way, so the page
+     * has its structure from the first frame instead of blank space that
+     * jumps when data lands. Each list replaces its own when it renders.
+     */
+    function showSkeletons() {
+        const repeat = (html, n) => Array.from({ length: n }, () => html).join("");
+
+        const post = `
+            <div class="inspo-card skel-card" aria-hidden="true">
+                <div class="skel-row">
+                    <span class="skel skel-circle"></span>
+                    <span class="skel-col"><span class="skel skel-line w40"></span><span class="skel skel-line w25"></span></span>
+                </div>
+                <span class="skel skel-line w90"></span>
+                <span class="skel skel-line w70"></span>
+            </div>`;
+        const person = `
+            <div class="creator-card skel-card" aria-hidden="true">
+                <span class="skel skel-circle lg"></span>
+                <span class="skel skel-line w70"></span>
+                <span class="skel skel-line w50"></span>
+                <span class="skel skel-line w40"></span>
+                <span class="skel skel-block"></span>
+            </div>`;
+        const row = `
+            <div class="skel-row skel-list-row" aria-hidden="true">
+                <span class="skel skel-circle"></span>
+                <span class="skel-col"><span class="skel skel-line w50"></span><span class="skel skel-line w80"></span></span>
+            </div>`;
+
+        const fill = (id, html) => {
+            const el = document.getElementById(id);
+            if (el) el.innerHTML = html;
+        };
+        fill("inspo-feed", repeat(post, 3));
+        fill("user-posts-container", post);
+        fill("home-creator-scroll", repeat(person, 4));
+        fill("discover-creators-grid", repeat(person, 4));
+        fill("inbox-list", repeat(row, 4));
+        fill("rail-people", repeat(row, 3));
+        fill("rail-jobs", repeat(row, 3));
     }
 
     initAppFlow();
@@ -429,7 +515,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const name = state.currentUser.displayName || state.currentUser.username;
         const greetingEl = document.getElementById("header-greeting");
-        if (greetingEl) greetingEl.textContent = `${greetingFor(new Date())}, ${name} 👋`;
+        if (greetingEl) greetingEl.textContent = `${greetingFor(new Date())}, ${name}`;
 
         // Preferences decide which home sections exist, so they go first —
         // otherwise hidden sections render and then vanish.
@@ -495,6 +581,7 @@ document.addEventListener("DOMContentLoaded", () => {
             failed.push("connections");
         }
         await loadHomeCreators();
+        loadRailJobs();
         await loadDiscover(true);
         loadRecommendedDeals();
         renderCollabStep();
@@ -506,6 +593,8 @@ document.addEventListener("DOMContentLoaded", () => {
             failed.push("feed");
         }
         renderAllPosts();
+
+        renderPulse();
 
         // A shared link carries #post-<id>; open it now the feed exists.
         openPostFromHash();
@@ -537,7 +626,21 @@ document.addEventListener("DOMContentLoaded", () => {
         const avatarEl = document.getElementById("profile-avatar");
         if (avatarEl) {
             avatarEl.textContent = initials(dispName);
-            avatarEl.className = `creator-avatar ${u.bgClass || "avatar-purple"} profile-avatar-lg`;
+            avatarEl.className = "creator-avatar pf-avatar";
+            applyTone(avatarEl, u.id, dispName);
+        }
+        document.getElementById("profile-cover")?.style.setProperty("--hue", hueFor(u.id, dispName));
+
+        renderPulseHero();
+
+        // The account chip at the foot of the desktop sidebar.
+        set("side-me-name", dispName);
+        set("side-me-handle", p.handle || ("@" + u.username));
+        const sideAvatar = document.getElementById("side-me-avatar");
+        if (sideAvatar) {
+            sideAvatar.textContent = initials(dispName);
+            sideAvatar.className = "small-avatar";
+            applyTone(sideAvatar, u.id, dispName);
         }
     }
 
@@ -838,7 +941,8 @@ document.addEventListener("DOMContentLoaded", () => {
     /** The view to return to when leaving someone's profile. */
     let previousView = "view-home";
 
-    const navItems = document.querySelectorAll(".bottom-nav .nav-item");
+    // The bottom nav on phones and the sidebar on desktop mark the same tab.
+    const navItems = document.querySelectorAll(".bottom-nav .nav-item, .side-nav .side-link");
     const views = document.querySelectorAll(".main-content .view");
 
     function switchView(targetViewId) {
@@ -873,6 +977,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         moveNavBubble();
         if (targetViewId === "view-discover") requestAnimationFrame(moveDiscoverUnderline);
+        if (targetViewId === "view-home") requestAnimationFrame(moveHomeUnderline);
         window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
@@ -892,6 +997,10 @@ document.addEventListener("DOMContentLoaded", () => {
             bubble.style.opacity = "0";
             return;
         }
+
+        // On desktop the bottom nav is not shown at all; there is nothing to
+        // measure until a resize brings it back.
+        if (getComputedStyle(active.parentElement).display === "none") return;
 
         const navRect = active.parentElement.getBoundingClientRect();
         const itemRect = active.getBoundingClientRect();
@@ -997,7 +1106,7 @@ document.addEventListener("DOMContentLoaded", () => {
             : status === "PENDING" ? "Requested" : "Connected";
         return `
             <article class="creator-card discover-card" data-creator-id="${escapeHtml(c.id || "")}" data-owner-id="${escapeHtml(c.userId || "")}">
-                <div class="creator-avatar ${escapeHtml(c.bgClass)}">${escapeHtml(c.avatar || initials(c.name))}</div>
+                <div class="creator-avatar tone" ${toneAttrs(c.userId, c.name)}>${escapeHtml(c.avatar || initials(c.name))}</div>
                 <button class="creator-more" aria-label="Open profile">•••</button>
                 <h3>${escapeHtml(c.name)}</h3>
                 <p class="creator-type">${escapeHtml(c.niche)}</p>
@@ -1035,8 +1144,82 @@ document.addEventListener("DOMContentLoaded", () => {
             ? top.map(creatorCardHtml).join("")
             : `<div class="empty-inline">No creators to show yet.</div>`;
 
+        renderRailPeople();
         bindConnectButtons();
     }
+
+    // =========================================================================
+    // DESKTOP RIGHT COLUMN — suggestions, requests and roles beside any view
+    // =========================================================================
+
+    function renderRailPeople() {
+        const el = document.getElementById("rail-people");
+        if (!el) return;
+
+        const people = state.homePeople || [];
+        el.innerHTML = people.length ? people.map(c => {
+            const status = c.status || null;
+            const incoming = c.connected && status === "INCOMING";
+            const label = !c.connected ? "Connect"
+                : incoming ? "Accept"
+                : status === "PENDING" ? "Requested" : "Connected";
+            return `
+                <div class="rail-person" data-creator-id="${escapeHtml(c.id || "")}" data-owner-id="${escapeHtml(c.userId || "")}">
+                    <div class="creator-avatar tone" ${toneAttrs(c.userId, c.name)}>${escapeHtml(c.avatar || initials(c.name))}</div>
+                    <div class="rail-person-info">
+                        <strong>${escapeHtml(c.name)}</strong>
+                        <span>${escapeHtml(c.niche)}${c.match ? ` · ${escapeHtml(c.match)}% match` : ""}</span>
+                    </div>
+                    <button class="connect-button ${c.connected && !incoming ? "connected" : ""}">${label}</button>
+                </div>
+            `;
+        }).join("") : `<div class="rail-empty">No suggestions right now.</div>`;
+    }
+
+    function renderRailRequests() {
+        const card = document.getElementById("rail-requests-card");
+        const el = document.getElementById("rail-requests");
+        if (!card || !el) return;
+
+        const requests = state.connectionRequests || [];
+        card.classList.toggle("hidden", requests.length === 0);
+        el.innerHTML = requests.map(req => `
+            <div class="rail-request">
+                <div class="creator-avatar tone" ${toneAttrs(req.requesterId, req.name)}${req.requesterId ? ` data-user-id="${escapeHtml(req.requesterId)}"` : ""}>${escapeHtml(req.avatar || initials(req.name))}</div>
+                <div class="rail-person-info">
+                    <strong>${escapeHtml(req.name)}</strong>
+                    <span>${escapeHtml(req.niche || "Conexus Creator")}</span>
+                </div>
+                <div class="rail-request-actions">
+                    <button class="btn-accept-request" data-request-id="${escapeHtml(req.id)}">Accept</button>
+                    <button class="btn-decline-request" data-request-id="${escapeHtml(req.id)}" aria-label="Decline">✕</button>
+                </div>
+            </div>
+        `).join("");
+    }
+
+    /** A few open roles you could apply to — your own listings are left out. */
+    async function loadRailJobs() {
+        const el = document.getElementById("rail-jobs");
+        if (!el) return;
+        try {
+            const data = await api("/api/jobs?size=8");
+            const jobs = (data.items || []).filter(j => !j.mine).slice(0, 3);
+            el.innerHTML = jobs.length ? jobs.map(j => `
+                <button class="rail-job">
+                    <strong>${escapeHtml(j.title)}</strong>
+                    <span>${escapeHtml(j.company || "")}${j.pay ? ` · <b class="rail-job-pay">${escapeHtml(j.pay)}</b>` : ""}</span>
+                </button>
+            `).join("") : `<div class="rail-empty">No open roles right now.</div>`;
+        } catch (err) {
+            el.innerHTML = `<div class="rail-empty">Could not load roles.</div>`;
+        }
+    }
+
+    document.getElementById("rail-see-jobs")?.addEventListener("click", () => openDiscover("jobs"));
+    document.addEventListener("click", (e) => {
+        if (e.target.closest(".rail-job")) openDiscover("jobs");
+    });
 
     /** Everyone loaded into Discover so far, and whether there is more. */
     let discoverPage = 0;
@@ -1206,7 +1389,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     return;
                 }
 
-                const creatorCard = button.closest(".creator-card");
+                const creatorCard = button.closest(".creator-card, .rail-person");
                 if (!creatorCard) return;
 
                 const creatorId = creatorCard.getAttribute("data-creator-id") || null;
@@ -1372,11 +1555,20 @@ document.addEventListener("DOMContentLoaded", () => {
         const match = /^#post-(\w+)$/.exec(location.hash || "");
         if (!match) return;
 
-        const card = document.querySelector(`.inspo-card[data-post-id="${match[1]}"]`);
-        if (!card) return;
+        showPostInFeed(match[1]);
+    }
 
-        card.scrollIntoView({ behavior: "smooth", block: "center" });
-        openPostCommentsModal(card);
+    /**
+     * Brings a post into view on the Home feed and opens it. The feed may be
+     * narrowed to friends, so the post opens even when its card is not shown.
+     */
+    function showPostInFeed(postId) {
+        if (!state.posts.some(p => String(p.id) === String(postId))) return;
+        switchView("view-home");
+        showHomePane("feed");
+        document.querySelector(`#inspo-feed .inspo-card[data-post-id="${postId}"]`)
+            ?.scrollIntoView({ behavior: "smooth", block: "center" });
+        openPostCommentsModal(postId);
     }
 
     document.addEventListener("click", async (e) => {
@@ -1431,6 +1623,7 @@ document.addEventListener("DOMContentLoaded", () => {
      * actually rendered underneath it instead.
      */
     function renderPendingSteps() {
+        renderPulseNext();
         const pill = document.querySelector("#view-recommendations .status-pill");
         if (!pill) return;
 
@@ -1507,13 +1700,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
     /** Wording for each kind of notification. */
     const NOTIFICATION_TEXT = {
-        POST_LIKE:     { icon: "❤️", verb: "liked your post" },
-        POST_COMMENT:  { icon: "💬", verb: "commented on your post" },
-        COMMENT_REPLY: { icon: "↩️", verb: "replied to your comment" },
-        COMMENT_LIKE:  { icon: "❤️", verb: "liked your comment" },
-        CONNECTION:    { icon: "🤝", verb: "connected with you" },
-        MESSAGE:       { icon: "✉️", verb: "sent you a message" },
-        JOB_APPLICATION: { icon: "📄", verb: "applied to your listing" }
+        POST_LIKE:     { icon: "heart", tone: "like", verb: "liked your post" },
+        POST_COMMENT:  { icon: "comment", tone: "info", verb: "commented on your post" },
+        COMMENT_REPLY: { icon: "reply", tone: "info", verb: "replied to your comment" },
+        COMMENT_LIKE:  { icon: "heart", tone: "like", verb: "liked your comment" },
+        CONNECTION:    { icon: "user-plus", tone: "good", verb: "connected with you" },
+        MESSAGE:       { icon: "mail", tone: "info", verb: "sent you a message" },
+        JOB_APPLICATION: { icon: "file", tone: "work", verb: "applied to your listing" }
     };
 
     async function loadNotifications() {
@@ -1533,6 +1726,7 @@ document.addEventListener("DOMContentLoaded", () => {
      * unread conversations. These are real records of what other people did.
      */
     function renderNotifications() {
+        renderPulseActivity();
         const list = document.getElementById("notification-list");
         const badge = document.getElementById("notification-count");
 
@@ -1553,13 +1747,13 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         list.innerHTML = state.notifications.map(n => {
-            const meta = NOTIFICATION_TEXT[n.type] || { icon: "✦", verb: "interacted with you" };
+            const meta = NOTIFICATION_TEXT[n.type] || { icon: "bell", tone: "info", verb: "interacted with you" };
             return `
                 <div class="notification-item${n.read ? "" : " unread"}" data-notification-id="${escapeHtml(n.id)}">
-                    <div class="noti-icon">${meta.icon}</div>
+                    <div class="noti-icon noti-${meta.tone}">${icon(meta.icon)}</div>
                     <div class="noti-content">
-                        <p><strong>${escapeHtml(n.actorName || "Someone")}</strong> ${meta.verb}.</p>
-                        ${n.excerpt ? `<p class="noti-excerpt">${escapeHtml(n.excerpt)}</p>` : ""}
+                        <p><strong>${escapeHtml(n.actorName || "Someone")}</strong> ${n.type === "CONNECTION" && n.excerpt ? escapeHtml(n.excerpt) : meta.verb}.</p>
+                        ${n.excerpt && n.type !== "CONNECTION" ? `<p class="noti-excerpt">${escapeHtml(n.excerpt)}</p>` : ""}
                         <span>${escapeHtml(timeAgo(n.createdAt))}</span>
                     </div>
                 </div>
@@ -1593,12 +1787,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         if (n.postId) {
-            switchView("view-home");
-            const card = document.querySelector(`.inspo-card[data-post-id="${n.postId}"]`);
-            if (card) {
-                card.scrollIntoView({ behavior: "smooth", block: "center" });
-                openPostCommentsModal(card);
-            }
+            showPostInFeed(n.postId);
             return;
         }
 
@@ -1632,6 +1821,8 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function renderConnections() {
+        scheduleProgressRefresh();
+        renderFeed();
         const list = document.getElementById("connections-list");
         const count = document.getElementById("connections-count");
         if (!list) return;
@@ -1663,7 +1854,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             return `
                 <div class="connection-row" data-connection-id="${escapeHtml(c.id)}">
-                    <div class="creator-avatar ${escapeHtml(c.bgClass)}"${c.userId ? ` data-user-id="${escapeHtml(c.userId)}"` : ""}>${escapeHtml(c.avatar)}</div>
+                    <div class="creator-avatar tone" ${toneAttrs(c.userId, c.name)}${c.userId ? ` data-user-id="${escapeHtml(c.userId)}"` : ""}>${escapeHtml(c.avatar)}</div>
                     <div class="connection-info"${c.userId ? ` data-user-id="${escapeHtml(c.userId)}"` : ""}>
                         <h4>${escapeHtml(c.name)}${pending ? ` <span class="connection-pending">Pending</span>` : ""}</h4>
                         <p>${escapeHtml(c.niche || "Conexus Creator")}</p>
@@ -1749,6 +1940,8 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function renderConnectionRequests() {
+        renderRailRequests();
+
         const wrap = document.getElementById("connection-requests");
         const list = document.getElementById("connection-requests-list");
         if (!wrap || !list) return;
@@ -1762,7 +1955,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         list.innerHTML = requests.map(req => `
             <div class="request-card" data-request-id="${escapeHtml(req.id)}">
-                <div class="creator-avatar ${escapeHtml(req.bgClass)}"${req.requesterId ? ` data-user-id="${escapeHtml(req.requesterId)}"` : ""}>${escapeHtml(req.avatar)}</div>
+                <div class="creator-avatar tone" ${toneAttrs(req.requesterId, req.name)}${req.requesterId ? ` data-user-id="${escapeHtml(req.requesterId)}"` : ""}>${escapeHtml(req.avatar)}</div>
                 <div class="request-info">
                     <h4>${escapeHtml(req.name)}</h4>
                     <p>${escapeHtml(req.niche || "Conexus Creator")} wants to connect</p>
@@ -1846,7 +2039,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const thread = state.chats[id];
             return `
                 <div class="chat-thread ${thread.unread ? 'unread' : ''}" data-thread-id="${escapeHtml(id)}">
-                    <div class="creator-avatar ${escapeHtml(thread.bgClass)}">${escapeHtml(thread.avatar)}</div>
+                    <div class="creator-avatar tone" ${toneAttrs(thread.partnerUserId, thread.name)}>${escapeHtml(thread.avatar)}</div>
                     <div class="thread-info">
                         <div class="thread-top">
                             <h4>${escapeHtml(thread.name)}</h4>
@@ -1896,7 +2089,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (chatHeaderAvatar) {
             chatHeaderAvatar.textContent = threadData.avatar;
-            chatHeaderAvatar.className = `small-avatar ${threadData.bgClass}`;
+            chatHeaderAvatar.className = "small-avatar";
+            applyTone(chatHeaderAvatar, threadData.partnerUserId, threadData.name);
         }
         if (chatHeaderName) chatHeaderName.textContent = threadData.name;
         if (chatHeaderStatus) chatHeaderStatus.textContent = threadData.status;
@@ -2037,7 +2231,6 @@ document.addEventListener("DOMContentLoaded", () => {
     // =========================================================================
 
     const socialsContainer = document.getElementById("socials-container");
-    const statPlatformsCount = document.getElementById("stat-platforms-count");
     const modalAddSocial = document.getElementById("modal-add-social");
     const btnOpenAddSocial = document.getElementById("btn-open-add-social");
     const btnCloseSocialModal = document.getElementById("btn-close-social-modal");
@@ -2045,42 +2238,15 @@ document.addEventListener("DOMContentLoaded", () => {
     const formAddSocial = document.getElementById("form-add-social");
 
     function renderSocials() {
+        renderPulseHero();
+        scheduleProgressRefresh();
         if (!socialsContainer) return;
 
-        if (state.socials.length === 0) {
-            socialsContainer.innerHTML = `
-                <div class="empty-card">
-                    No social accounts yet. Use "+ Add Social Link" to show your channels.
-                </div>
-            `;
-        } else {
-            socialsContainer.innerHTML = state.socials.map(soc => {
-                const meta = platformMeta[soc.platform] || { name: soc.platform, icon: "🌐", class: "platform-website" };
-                return `
-                    <div class="social-card" data-social-id="${escapeHtml(soc.id)}">
-                        <div class="social-left">
-                            <div class="social-icon-badge ${meta.class}">
-                                ${meta.icon}
-                            </div>
-                            <div class="social-info">
-                                <div class="social-platform-name">${escapeHtml(meta.name)}</div>
-                                <div class="social-handle-text">${escapeHtml(soc.handle)}</div>
-                                <div class="social-count-badge">${escapeHtml(soc.followers)}</div>
-                            </div>
-                        </div>
-                        <div class="social-actions">
-                            <a href="${escapeHtml(safeUrl(soc.url))}" target="_blank" rel="noopener" class="btn-social-link" title="Open Link">↗</a>
-                            <button class="btn-social-edit" data-id="${escapeHtml(soc.id)}" title="Edit Account">✎</button>
-                            <button class="btn-social-delete" data-id="${escapeHtml(soc.id)}" title="Remove Account">&times;</button>
-                        </div>
-                    </div>
-                `;
-            }).join("");
-        }
+        socialsContainer.innerHTML = channelRowsHtml(state.socials, true)
+            || `<div class="empty-card">No channels yet. Add the platforms you post on to show your reach.</div>`;
+        const totalEl = document.getElementById("channels-total");
+        if (totalEl) totalEl.textContent = channelsSummary(state.socials);
 
-        if (statPlatformsCount) {
-            statPlatformsCount.textContent = state.socials.length;
-        }
 
         // index.html has always had #social-modal-title and a hidden
         // #social-edit-id for this, but nothing ever used them.
@@ -2140,7 +2306,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const url = document.getElementById("social-url-input").value.trim();
             const followers = document.getElementById("social-followers-input").value.trim();
 
-            const meta = platformMeta[platform] || { name: platform, icon: "🌐" };
+            const meta = platformMeta[platform] || { name: platform, icon: "globe" };
 
             if (!state.currentUser) {
                 showAuthScreen();
@@ -2256,8 +2422,58 @@ document.addEventListener("DOMContentLoaded", () => {
             showAuthScreen();
             return;
         }
+        prepareComposer();
         if (modalCreate) modalCreate.classList.remove("hidden");
+        document.getElementById("create-post-text")?.focus();
     }
+
+    /** Who is posting, and the topic they usually post about, picked for them. */
+    function prepareComposer() {
+        const u = state.currentUser;
+        const name = (state.profile && state.profile.displayName) || u.displayName || u.username;
+
+        const avatar = document.getElementById("composer-avatar");
+        if (avatar) {
+            avatar.textContent = initials(name);
+            avatar.className = "small-avatar";
+            applyTone(avatar, u.id, name);
+        }
+        const nameEl = document.getElementById("composer-name");
+        if (nameEl) nameEl.textContent = name;
+
+        // Preselect the topic that matches their niche, unless they already chose.
+        const text = document.getElementById("create-post-text");
+        if (text && !text.value) {
+            const niche = String(u.niche || "").toLowerCase();
+            const match = ["gaming", "travel", "music", "lifestyle"].find(t => niche.includes(t))
+                || (niche.includes("food") || niche.includes("fashion") ? "lifestyle" : "tech");
+            const radio = document.querySelector(`input[name="create-post-niche"][value^="${match[0].toUpperCase() + match.slice(1)}"]`);
+            if (radio) radio.checked = true;
+        }
+        updateComposer();
+    }
+
+    /** Counter, Post button and height follow what has been written. */
+    function updateComposer() {
+        const text = document.getElementById("create-post-text");
+        const count = document.getElementById("composer-count");
+        const submit = document.getElementById("btn-submit-post");
+        if (!text) return;
+
+        const length = text.value.length;
+        if (count) {
+            count.textContent = length > 1800 ? `${2000 - length} left` : "";
+            count.classList.toggle("warn", length > 1900);
+        }
+        if (submit && submit.textContent === "Post") {
+            submit.disabled = !text.value.trim() && !pendingPhoto;
+        }
+
+        text.style.height = "auto";
+        text.style.height = `${Math.min(text.scrollHeight, window.innerHeight * 0.4)}px`;
+    }
+
+    document.getElementById("create-post-text")?.addEventListener("input", updateComposer);
     function closeCreateModal() {
         if (modalCreate) modalCreate.classList.add("hidden");
     }
@@ -2274,18 +2490,477 @@ document.addEventListener("DOMContentLoaded", () => {
      */
     function renderFeed() {
         if (!inspoFeed) return;
+        document.querySelectorAll(".feed-modes .chip").forEach(c =>
+            c.classList.toggle("active", c.getAttribute("data-feed-mode") === feedMode));
+        renderFeedPeople();
 
-        if (!state.posts.length) {
-            inspoFeed.innerHTML = `
-                <div class="empty-card">
-                    No posts yet. Use "+ New Post" to share the first one.
-                </div>
-            `;
+        const posts = visibleFeedPosts();
+        const filterBar = document.getElementById("feed-filter");
+        const author = feedAuthorFilter && state.posts.find(p => postAuthorKey(p) === feedAuthorFilter);
+        filterBar?.classList.toggle("hidden", !author);
+        if (author) document.getElementById("feed-filter-name").textContent = author.authorName;
+
+        if (!posts.length) {
+            inspoFeed.innerHTML = feedMode === "friends" && !feedAuthorFilter && state.posts.length
+                ? `<div class="empty-card">
+                       Nobody you're connected with has posted yet.
+                       <button class="feed-empty-action" data-feed-mode="everyone">See posts from everyone</button>
+                   </div>`
+                : `<div class="empty-card">No posts yet. Use "+ New Post" to share the first one.</div>`;
             return;
         }
 
-        inspoFeed.innerHTML = state.posts.map(postCardHtml).join("");
+        inspoFeed.innerHTML = posts.map(postCardHtml).join("");
+        hydratePostImages(inspoFeed);
     }
+
+    // =========================================================================
+    // HOME OVERVIEW — reach, this week, the next move, recent activity
+    // =========================================================================
+
+    /** "18.2K" → 18200, "1.2M" → 1200000, "950" → 950. */
+    function parseCount(text) {
+        const m = /^([\d.,]+)\s*([kKmM]?)/.exec(String(text || "").trim());
+        if (!m) return 0;
+        const n = parseFloat(m[1].replace(/,/g, ""));
+        return n * (/k/i.test(m[2]) ? 1e3 : /m/i.test(m[2]) ? 1e6 : 1);
+    }
+
+    function formatCount(n) {
+        if (n >= 1e6) return `${(n / 1e6).toFixed(1).replace(/\.0$/, "")}M`;
+        if (n >= 1e3) return `${(n / 1e3).toFixed(1).replace(/\.0$/, "")}K`;
+        return String(Math.round(n));
+    }
+
+    const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+
+    function renderPulse() {
+        renderPulseHero();
+        loadProgress();
+        loadReach();
+        renderPulseNext();
+        renderPulseActivity();
+    }
+
+    /**
+     * Reach is the sum of the follower counts on your linked platforms, shown
+     * per platform so the headline number is never unexplained.
+     */
+    function renderPulseHero() {
+        const reachEl = document.getElementById("pulse-reach");
+        const labelEl = document.getElementById("pulse-reach-label");
+        const chipEl = document.getElementById("pulse-engagement");
+        const barsEl = document.getElementById("pulse-platforms");
+        if (!reachEl || !barsEl) return;
+
+        const socials = (state.socials || []).map(s => ({ ...s, n: parseCount(s.followers) }));
+        const total = socials.reduce((sum, s) => sum + s.n, 0);
+        const fallback = (state.profile && state.profile.totalReach) || "0";
+
+        reachEl.textContent = socials.length ? formatCount(total) : fallback;
+        labelEl.textContent = socials.length
+            ? `Total reach · ${socials.length} platform${socials.length === 1 ? "" : "s"}`
+            : "Total reach";
+
+        const engagement = (state.profile && state.profile.engagement) || "";
+        chipEl.textContent = engagement && engagement !== "0%" ? `${engagement} avg. engagement` : "";
+        chipEl.classList.toggle("hidden", !chipEl.textContent);
+        document.getElementById("pulse-graph")?.classList.toggle("hidden", !socials.length);
+
+        if (!socials.length) {
+            barsEl.innerHTML = `<button class="pulse-link-platform" id="btn-pulse-add-social">${icon("plus")} Link a platform to track your reach</button>`;
+            return;
+        }
+
+        // Where the reach comes from, as plain numbers. Four rows at most, so
+        // the block stays a summary; the rest are one tap away on the profile.
+        const sorted = socials.sort((a, b) => b.n - a.n);
+        const shown = sorted.slice(0, 4);
+        const hidden = sorted.length - shown.length;
+        barsEl.innerHTML = shown
+            .map(s => {
+                const meta = platformMeta[s.platform] || { name: s.platform, icon: "globe", class: "platform-website" };
+                return `<span class="pulse-platform"><span class="pulse-platform-icon ${meta.class}">${icon(meta.icon)}</span>${escapeHtml(meta.name)} <b>${escapeHtml(s.followers || "0")}</b></span>`;
+            }).join("")
+            + (hidden > 0
+                ? `<button class="pulse-platform-more nav-switch-trigger" data-target="view-profile">+ ${hidden} more platform${hidden === 1 ? "" : "s"}</button>`
+                : "");
+    }
+
+    /**
+     * Recent progress: likes, comments, connections and posts in the chosen
+     * period, each next to the period before it. Counted on the server from
+     * when things actually happened, so nothing here is estimated.
+     */
+    let progressDays = 30;
+    try { progressDays = Number(localStorage.getItem("conexus_progress_days")) || 30; } catch (e) { /* storage off */ }
+    let progressData = null;
+    let progressTimer = null;
+
+    async function loadProgress() {
+        try {
+            progressData = await api(`/api/stats/progress?days=${progressDays}`);
+        } catch (err) {
+            progressData = null;
+        }
+        renderPulseProgress();
+    }
+
+    /** Several things can change at once (a post, then a like); fetch once after. */
+    function scheduleProgressRefresh() {
+        if (!state.currentUser) return;
+        clearTimeout(progressTimer);
+        progressTimer = setTimeout(() => { loadProgress(); loadReach(); }, 400);
+    }
+
+    // ── Followers over time, beside the big number ─────────────────────────
+
+    let reachData = null;
+
+    async function loadReach() {
+        try {
+            reachData = await api(`/api/stats/reach?days=${progressDays}`);
+        } catch (err) {
+            reachData = null;
+        }
+        renderReachGraph();
+    }
+
+    function shortDate(iso) {
+        return new Date(`${iso}T00:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+    }
+
+    /**
+     * A small area chart of total followers for the chosen period, with the
+     * change written above it. Scaled to its own range so a gain of a few
+     * hundred on 24K is still visible; the caption carries the real size.
+     */
+    function renderReachGraph() {
+        const svg = document.getElementById("pulse-graph-svg");
+        const caption = document.getElementById("pulse-graph-change");
+        const figure = document.getElementById("pulse-graph");
+        if (!svg || !caption) return;
+
+        const points = (reachData && reachData.points) || [];
+        figure.classList.toggle("hidden", !(state.socials || []).length);
+
+        const dot = document.getElementById("pulse-graph-dot");
+
+        if (points.length < 2) {
+            figure.className = "pulse-graph same";
+            caption.textContent = "Tracking from today";
+            svg.innerHTML = `<line x1="0" y1="40" x2="160" y2="40" class="pulse-graph-flat"/>`;
+            if (dot) dot.hidden = true;
+            return;
+        }
+
+        const W = 160, H = 56, top = 6, bottom = 4;
+        const values = points.map(p => p.total);
+        const min = Math.min(...values), max = Math.max(...values);
+        const span = max - min || 1;
+        const xy = points.map((p, i) => [
+            (i / (points.length - 1)) * W,
+            max === min ? H / 2 : top + (1 - (p.total - min) / span) * (H - top - bottom)
+        ]);
+        const line = xy.map(([x, y], i) => `${i ? "L" : "M"}${x.toFixed(1)},${y.toFixed(1)}`).join(" ");
+        const [ex, ey] = xy[xy.length - 1];
+
+        const change = reachData.change || 0;
+        const trend = change > 0 ? "up" : change < 0 ? "down" : "same";
+        figure.className = `pulse-graph ${trend}`;
+        caption.textContent = change === 0
+            ? `No change in ${progressDays} days`
+            : `${change > 0 ? "▲" : "▼"} ${formatCount(Math.abs(change))} in ${progressDays} days`;
+
+        svg.setAttribute("aria-label",
+            `Followers from ${shortDate(points[0].day)} (${formatCount(points[0].total)}) to ${shortDate(points[points.length - 1].day)} (${formatCount(points[points.length - 1].total)})`);
+        svg.innerHTML = `
+            <defs>
+                <linearGradient id="pulse-graph-fill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0" class="pulse-graph-stop-top"/>
+                    <stop offset="1" class="pulse-graph-stop-bottom"/>
+                </linearGradient>
+            </defs>
+            <path d="${line} L${W},${H} L0,${H} Z" fill="url(#pulse-graph-fill)"/>
+            <path d="${line}" class="pulse-graph-line"/>`;
+
+        // The chart stretches to its box, which would squash a circle, so the
+        // latest point is marked with an element placed over it instead.
+        if (dot) {
+            dot.hidden = false;
+            dot.style.left = `${(ex / W * 100).toFixed(2)}%`;
+            dot.style.top = `${(ey / H * 100).toFixed(2)}%`;
+        }
+    }
+
+    const PROGRESS_ITEMS = [
+        { key: "likes", label: "Likes", icon: "heart" },
+        { key: "comments", label: "Comments", icon: "comment" },
+        { key: "connections", label: "Connections", icon: "user-plus" },
+        { key: "posts", label: "Posts", icon: "grid" }
+    ];
+
+    function renderPulseProgress() {
+        const el = document.getElementById("pulse-progress");
+        const note = document.getElementById("pulse-progress-note");
+        if (!el) return;
+
+        document.querySelectorAll(".pulse-range button").forEach(b => {
+            const on = Number(b.getAttribute("data-range")) === progressDays;
+            b.classList.toggle("on", on);
+            b.setAttribute("aria-pressed", String(on));
+        });
+
+        if (!progressData) {
+            el.innerHTML = `<div class="empty-inline">Progress could not be loaded right now.</div>`;
+            if (note) note.textContent = "";
+            return;
+        }
+
+        el.innerHTML = PROGRESS_ITEMS.map(item => {
+            const now = progressData.current[item.key] || 0;
+            const before = progressData.previous[item.key] || 0;
+            const diff = now - before;
+            const trend = diff > 0 ? "up" : diff < 0 ? "down" : "same";
+            const change = diff > 0 ? `▲ ${diff}` : diff < 0 ? `▼ ${Math.abs(diff)}` : "Same";
+            return `
+                <div class="pulse-stat" data-tone="${item.key}">
+                    <span class="pulse-stat-top">${icon(item.icon)}<b>${now}</b></span>
+                    <span class="pulse-stat-label" title="${item.label}">${item.label}</span>
+                    <span class="pulse-trend ${trend}" title="${before} in the ${progressData.days} days before">${change}</span>
+                </div>`;
+        }).join("");
+
+        if (note) note.textContent = `Compared with the ${progressData.days} days before.`;
+    }
+
+    document.addEventListener("click", (e) => {
+        const btn = e.target.closest(".pulse-range button");
+        if (!btn) return;
+        progressDays = Number(btn.getAttribute("data-range")) || 30;
+        try { localStorage.setItem("conexus_progress_days", String(progressDays)); } catch (err) { /* storage off */ }
+        loadProgress();
+        loadReach();
+    });
+
+    /** Steps skipped from the overview this session; they stay open in Strategy. */
+    const skippedSteps = new Set();
+
+    /**
+     * One Strategy step at a time. The steps are the same cards the Strategy
+     * page shows, so finishing one here ticks it there too.
+     */
+    function renderPulseNext() {
+        const el = document.getElementById("pulse-next");
+        if (!el) return;
+
+        const all = [...document.querySelectorAll("#view-recommendations .step-card")];
+        const visible = all.map((card, i) => ({ card, key: stepKey(card, i) }))
+            .filter(s => !s.card.classList.contains("hidden"));
+        const open = visible.filter(s => !s.card.querySelector(".step-checkbox")?.checked);
+        const queue = open.filter(s => !skippedSteps.has(s.key));
+        const doneCount = visible.length - open.length;
+
+        const dots = visible.map(s => {
+            const checked = s.card.querySelector(".step-checkbox")?.checked;
+            const current = queue[0] && queue[0].key === s.key;
+            return `<i class="${checked ? "done" : current ? "on" : ""}"></i>`;
+        }).join("");
+
+        if (!queue.length) {
+            const allDone = !open.length;
+            el.innerHTML = `
+                <span class="pulse-next-label">Next move</span>
+                <h3>${allDone ? "You're all caught up" : "You skipped the rest"}</h3>
+                <p>${allDone
+                    ? `All ${visible.length} Strategy steps are done. New ones arrive as your channels grow.`
+                    : `${open.length} step${open.length === 1 ? " is" : "s are"} still open in Strategy.`}</p>
+                <div class="pulse-next-row">
+                    <button class="pulse-go" data-act="${allDone ? "strategy" : "unskip"}">${allDone ? "Open Strategy" : "Show them again"}</button>
+                    <span class="pulse-dots">${dots}</span>
+                </div>`;
+            return;
+        }
+
+        const step = queue[0].card;
+        const action = step.querySelector(".btn-step-action");
+        const label = action ? action.textContent.replace("→", "").trim() : "Mark done";
+        const position = visible.findIndex(s => s.key === queue[0].key) + 1;
+
+        el.setAttribute("data-step-key", queue[0].key);
+        el.innerHTML = `
+            <span class="pulse-next-label">Next move · ${position} of ${visible.length}${doneCount ? ` · ${doneCount} done` : ""}</span>
+            <h3>${escapeHtml(step.querySelector("h4")?.textContent || "")}</h3>
+            <p>${escapeHtml(step.querySelector(".step-content > p")?.textContent || "")}</p>
+            <div class="pulse-next-row">
+                <button class="pulse-go" data-act="do">${escapeHtml(label)}</button>
+                <button class="pulse-skip" data-act="skip">Skip</button>
+                <span class="pulse-dots">${dots}</span>
+            </div>`;
+    }
+
+    document.getElementById("pulse-next")?.addEventListener("click", (e) => {
+        const act = e.target.closest("[data-act]")?.getAttribute("data-act");
+        if (!act) return;
+        const el = e.currentTarget;
+
+        if (act === "strategy") { switchView("view-recommendations"); return; }
+        if (act === "unskip") { skippedSteps.clear(); renderPulseNext(); return; }
+
+        const key = el.getAttribute("data-step-key");
+        const all = [...document.querySelectorAll("#view-recommendations .step-card")];
+        const card = all.find((c, i) => stepKey(c, i) === key);
+        if (!card) return;
+
+        if (act === "skip") {
+            skippedSteps.add(key);
+            renderPulseNext();
+            return;
+        }
+
+        // Do it: run the step's own action where it has one, then tick it,
+        // which saves it and moves the overview on.
+        card.querySelector(".btn-step-action")?.click();
+        const box = card.querySelector(".step-checkbox");
+        if (box && !box.checked) {
+            box.checked = true;
+            box.dispatchEvent(new Event("change"));
+        }
+        showToast("Done — ticked off in Strategy");
+    });
+
+    /** The latest few notifications, each opening what it is about. */
+    function renderPulseActivity() {
+        const el = document.getElementById("pulse-activity");
+        if (!el) return;
+
+        const items = (state.notifications || []).slice(0, 3);
+        if (!items.length) {
+            el.innerHTML = `<div class="empty-inline">Nothing new yet. Likes, comments and requests show up here.</div>`;
+            return;
+        }
+
+        el.innerHTML = items.map(n => {
+            const meta = NOTIFICATION_TEXT[n.type] || { verb: "interacted with you" };
+            // A request and its acceptance are both CONNECTION; the excerpt says which.
+            const verb = n.type === "CONNECTION" && n.excerpt ? escapeHtml(n.excerpt) : meta.verb;
+            return `
+                <button class="pulse-item${n.read ? "" : " unread"}" data-notification-id="${escapeHtml(n.id)}">
+                    <span class="small-avatar tone" ${toneAttrs(n.actorId, n.actorName)}>${escapeHtml(initials(n.actorName || "?"))}</span>
+                    <span class="pulse-item-text"><b>${escapeHtml(n.actorName || "Someone")}</b> ${verb}${n.excerpt && n.type !== "CONNECTION" ? `<small>${escapeHtml(n.excerpt)}</small>` : ""}</span>
+                    <time>${escapeHtml(timeAgo(n.createdAt))}</time>
+                </button>`;
+        }).join("");
+    }
+
+    document.getElementById("pulse-activity")?.addEventListener("click", (e) => {
+        const item = e.target.closest(".pulse-item");
+        if (item) openNotification(item.getAttribute("data-notification-id"));
+    });
+
+    document.getElementById("btn-pulse-activity")?.addEventListener("click", (e) => {
+        // The page-wide handler closes the drawer on outside clicks; this
+        // click is the one that opens it.
+        e.stopPropagation();
+        document.getElementById("drawer-notifications")?.classList.remove("hidden");
+        loadNotifications();
+    });
+
+    document.addEventListener("click", (e) => {
+        if (e.target.closest("#btn-pulse-add-social")) {
+            switchView("view-profile");
+            document.getElementById("btn-open-add-social")?.click();
+        }
+    });
+
+    // ── Who the Home feed shows ────────────────────────────────────────────
+
+    /** "friends" (you and the people you're connected with) or "everyone". */
+    let feedMode = readSetting("conexus_feed_mode", ["friends", "everyone"], "friends");
+    /** A single author picked from the row of people, or null. */
+    let feedAuthorFilter = null;
+
+    /** Accounts you're connected with, in either direction. */
+    function friendIds() {
+        return new Set((state.connections || [])
+            .filter(c => c.status !== "PENDING" && c.userId != null)
+            .map(c => String(c.userId)));
+    }
+
+    /** Who wrote a post: their account where there is one, else their name. */
+    function postAuthorKey(p) {
+        return p.authorId != null ? String(p.authorId) : `name:${p.authorName || ""}`;
+    }
+
+    function visibleFeedPosts() {
+        if (feedAuthorFilter) return state.posts.filter(p => postAuthorKey(p) === feedAuthorFilter);
+        if (feedMode === "everyone") return state.posts;
+
+        const friends = friendIds();
+        const me = state.currentUser ? String(state.currentUser.id) : "";
+        return state.posts.filter(p => String(p.authorId) === me || friends.has(String(p.authorId)));
+    }
+
+    /**
+     * The row of people above the feed: everyone who has posted, friends
+     * first, most recent first. A ring marks a post in the last week; tapping
+     * someone narrows the feed to them.
+     */
+    function renderFeedPeople() {
+        const row = document.getElementById("feed-people");
+        if (!row) return;
+
+        const me = state.currentUser ? String(state.currentUser.id) : "";
+        const friends = friendIds();
+        const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+        const people = new Map();
+
+        state.posts.forEach(p => {
+            const id = postAuthorKey(p);
+            if (id === me || people.has(id)) return;   // posts arrive newest first
+            people.set(id, {
+                id,
+                userId: p.authorId,
+                name: p.authorName || "Creator",
+                friend: friends.has(id),
+                fresh: p.createdAt && new Date(p.createdAt).getTime() > weekAgo
+            });
+        });
+
+        const list = [...people.values()].sort((a, b) => (b.friend - a.friend) || (b.fresh - a.fresh));
+        row.classList.toggle("hidden", list.length === 0);
+        row.innerHTML = list.map(p => `
+            <button class="feed-person${p.fresh ? " fresh" : ""}${feedAuthorFilter === p.id ? " on" : ""}" data-author="${escapeHtml(p.id)}" aria-pressed="${feedAuthorFilter === p.id}">
+                <span class="feed-ring"><span class="small-avatar tone" ${toneAttrs(p.userId, p.name)}>${escapeHtml(initials(p.name))}</span></span>
+                <span class="feed-person-name">${escapeHtml(p.name.split(" ")[0])}</span>
+            </button>
+        `).join("");
+    }
+
+    document.addEventListener("click", (e) => {
+        const modeBtn = e.target.closest("[data-feed-mode]");
+        if (modeBtn) {
+            feedMode = modeBtn.getAttribute("data-feed-mode");
+            feedAuthorFilter = null;
+            document.querySelectorAll(".feed-modes .chip").forEach(c =>
+                c.classList.toggle("active", c.getAttribute("data-feed-mode") === feedMode));
+            renderFeed();
+            return;
+        }
+
+        const person = e.target.closest(".feed-person");
+        if (person) {
+            const id = person.getAttribute("data-author");
+            feedAuthorFilter = feedAuthorFilter === id ? null : id;
+            renderFeed();
+            return;
+        }
+
+        if (e.target.closest("#btn-clear-feed-filter")) {
+            feedAuthorFilter = null;
+            renderFeed();
+        }
+    });
 
     /**
      * One post, everywhere a post appears — the feed, your profile, someone
@@ -2300,23 +2975,140 @@ document.addEventListener("DOMContentLoaded", () => {
         return `
             <article class="inspo-card" data-post-id="${escapeHtml(post.id)}">
                 <div class="post-author${post.authorId ? " is-linked" : ""}"${post.authorId ? ` data-user-id="${escapeHtml(post.authorId)}"` : ""}>
-                    <div class="small-avatar ${escapeHtml(post.avatarClass || "avatar-purple")}">${escapeHtml(initials(author))}</div>
+                    <div class="small-avatar tone" ${toneAttrs(post.authorId, author)}>${escapeHtml(initials(author))}</div>
                     <div>
                         <strong>${escapeHtml(author)}</strong>
                         <span>${escapeHtml(post.niche || "Creator")} · ${escapeHtml(timeAgo(post.createdAt))}</span>
                     </div>
                 </div>
-                <p class="post-content">${escapeHtml(post.content)}</p>
+                ${post.content ? `<p class="post-content">${escapeHtml(post.content)}</p>` : ""}
+                ${postImageHtml(post)}
                 <div class="post-footer">
                     <button class="btn-like ${liked ? "liked" : ""}" data-liked="${liked}" aria-label="Like">
-                        ${liked ? "❤️" : "♡"} <span class="like-count">${post.likesCount || 0}</span>
+                        ${icon("heart", liked ? "icon-fill" : "")} <span class="like-count">${post.likesCount || 0}</span>
                     </button>
-                    <button class="btn-comment" aria-label="Comments">💬 <span class="comment-count">${post.commentsCount || 0}</span></button>
-                    <button class="btn-share">↗ Share</button>
+                    <button class="btn-comment" aria-label="Comments">${icon("comment")} <span class="comment-count">${post.commentsCount || 0}</span></button>
+                    <button class="btn-share">${icon("share")} Share</button>
                     ${mine ? `<button class="btn-delete btn-delete-post" data-post-id="${escapeHtml(post.id)}">Delete</button>` : ""}
                 </div>
             </article>
         `;
+    }
+
+    /**
+     * The photo on a post. Its box is sized from the stored dimensions, so the
+     * feed does not jump as images arrive.
+     */
+    function postImageHtml(post) {
+        const w = Number(post.imageWidth);
+        const h = Number(post.imageHeight);
+        if (!w || !h) return "";
+        return `
+            <div class="post-image" style="aspect-ratio:${w} / ${h}">
+                <img data-post-image="${escapeHtml(post.id)}" alt="Photo shared by ${escapeHtml(post.authorName || "a creator")}">
+            </div>`;
+    }
+
+    /**
+     * Post photos sit behind sign-in like the rest of the API, and an <img> tag
+     * cannot send a bearer token — so each one is fetched with the token and
+     * shown from a local object URL, fetched once per session.
+     */
+    const postImageUrls = new Map();
+
+    function postImageUrl(postId) {
+        if (!postImageUrls.has(postId)) {
+            const request = fetch(`${API_BASE}/api/posts/${encodeURIComponent(postId)}/image`, {
+                headers: { Authorization: `Bearer ${state.currentUser ? state.currentUser.token : ""}` }
+            })
+                .then(res => {
+                    if (!res.ok) throw new Error(`Image ${res.status}`);
+                    return res.blob();
+                })
+                .then(blob => URL.createObjectURL(blob));
+            request.catch(() => postImageUrls.delete(postId));   // allow a retry later
+            postImageUrls.set(postId, request);
+        }
+        return postImageUrls.get(postId);
+    }
+
+    function hydratePostImages(root) {
+        (root || document).querySelectorAll("img[data-post-image]:not([src])").forEach(img => {
+            const box = img.closest(".post-image");
+            postImageUrl(img.getAttribute("data-post-image"))
+                .then(url => {
+                    img.src = url;
+                    box?.classList.add("loaded");
+                })
+                .catch(() => box?.classList.add("failed"));
+        });
+    }
+
+    function forgetPostImages() {
+        postImageUrls.forEach(request => request.then(url => URL.revokeObjectURL(url)).catch(() => {}));
+        postImageUrls.clear();
+    }
+
+    /**
+     * A post as a square tile on a profile: the photo when there is one,
+     * otherwise the words, set large on the author's colour. Opens the post.
+     */
+    function postTileHtml(post) {
+        const hasImage = post.imageWidth && post.imageHeight;
+        const counts = `
+            <span class="pf-tile-counts">
+                <span>${icon("heart", post.liked ? "icon-fill" : "")} ${post.likesCount || 0}</span>
+                <span>${icon("comment")} ${post.commentsCount || 0}</span>
+            </span>`;
+        return hasImage
+            ? `<button class="pf-tile pf-tile-photo" data-post-id="${escapeHtml(post.id)}" aria-label="Open post">
+                   <img data-post-image="${escapeHtml(post.id)}" alt="Photo shared by ${escapeHtml(post.authorName || "a creator")}">
+                   ${counts}
+               </button>`
+            : `<button class="pf-tile pf-tile-text" data-post-id="${escapeHtml(post.id)}" ${toneAttrs(post.authorId, post.authorName)} aria-label="Open post">
+                   <span class="pf-tile-quote">${escapeHtml(post.content || "")}</span>
+                   ${counts}
+               </button>`;
+    }
+
+    document.addEventListener("click", (e) => {
+        const tile = e.target.closest(".pf-tile");
+        if (tile) { openPostCommentsModal(tile.getAttribute("data-post-id")); return; }
+        if (e.target.closest(".js-open-create")) openCreateModal();
+    });
+
+    /** Profile channels: one row per platform, with a bar against the largest. */
+    function channelRowsHtml(socials, editable) {
+        if (!socials.length) return "";
+        const rows = socials.map(s => ({ s, n: parseCount(s.followers) })).sort((a, b) => b.n - a.n);
+        const max = Math.max(...rows.map(r => r.n), 1);
+
+        return rows.map(({ s, n }) => {
+            const meta = platformMeta[s.platform] || { name: s.platform, icon: "globe", class: "platform-website" };
+            return `
+                <div class="pf-channel" data-social-id="${escapeHtml(s.id)}">
+                    <span class="pf-channel-icon ${meta.class}">${icon(meta.icon)}</span>
+                    <div class="pf-channel-body">
+                        <div class="pf-channel-top">
+                            <span class="pf-channel-name">${escapeHtml(meta.name)} <small>${escapeHtml(s.handle || "")}</small></span>
+                            <b>${escapeHtml(s.followers || "0")}</b>
+                        </div>
+                        <span class="pulse-bar"><i class="${meta.class}" style="width:${Math.max(4, n / max * 100).toFixed(1)}%"></i></span>
+                    </div>
+                    <div class="social-actions">
+                        <a href="${escapeHtml(safeUrl(s.url))}" target="_blank" rel="noopener" class="btn-social-link" title="Open link" aria-label="Open ${escapeHtml(meta.name)}">${icon("link-out")}</a>
+                        ${editable ? `
+                        <button class="btn-social-edit" data-id="${escapeHtml(s.id)}" title="Edit" aria-label="Edit ${escapeHtml(meta.name)}">${icon("edit")}</button>
+                        <button class="btn-social-delete" data-id="${escapeHtml(s.id)}" title="Remove" aria-label="Remove ${escapeHtml(meta.name)}">${icon("x")}</button>` : ""}
+                    </div>
+                </div>`;
+        }).join("");
+    }
+
+    function channelsSummary(socials) {
+        if (!socials.length) return "";
+        const total = socials.reduce((sum, s) => sum + parseCount(s.followers), 0);
+        return `${formatCount(total)} followers across ${socials.length} platform${socials.length === 1 ? "" : "s"}`;
     }
 
     /** "Recent Posts" on the Profile tab — the logged-in user's own posts. */
@@ -2332,9 +3124,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const mine = state.posts.filter(post => String(post.authorId) === String(user.id));
 
+        const countEl = document.getElementById("stat-posts-count");
+        if (countEl) countEl.textContent = mine.length;
+
         container.innerHTML = mine.length
-            ? mine.map(postCardHtml).join("")
-            : `<div class="empty-card">You haven't posted yet. Share something with "+ New Post".</div>`;
+            ? mine.map(postTileHtml).join("")
+            : `<div class="empty-card">You haven't posted yet. <button class="pf-empty-action js-open-create">Share your first post</button></div>`;
+        hydratePostImages(container);
     }
 
     /** Posts on someone else's profile page, from the feed we already hold. */
@@ -2343,9 +3139,13 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!postsEl || !currentOpenUserId) return;
 
         const theirs = state.posts.filter(post => String(post.authorId) === String(currentOpenUserId));
+        const countEl = document.getElementById("up-posts-count");
+        if (countEl) countEl.textContent = theirs.length;
+
         postsEl.innerHTML = theirs.length
-            ? theirs.map(postCardHtml).join("")
+            ? theirs.map(postTileHtml).join("")
             : `<div class="empty-card">No posts yet.</div>`;
+        hydratePostImages(postsEl);
     }
 
     /** Every place a post is drawn, after one of them changes. */
@@ -2353,6 +3153,7 @@ document.addEventListener("DOMContentLoaded", () => {
         renderFeed();
         renderUserPosts();
         renderProfilePosts();
+        scheduleProgressRefresh();
     }
 
     // Deleting your own post asks once, the same way other removals do.
@@ -2412,27 +3213,114 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
             }
             const text = document.getElementById("create-post-text").value.trim();
-            const niche = document.getElementById("create-post-niche").value;
+            const niche = formCreatePost.querySelector('input[name="create-post-niche"]:checked')?.value || "";
 
-            if (!text) return;
+            if (!text && !pendingPhoto) {
+                showToast("Write something or add a photo.", "error");
+                return;
+            }
+
+            const submit = formCreatePost.querySelector("button[type=submit]");
+            const label = submit ? submit.textContent : "";
+            if (submit) { submit.disabled = true; submit.textContent = "Posting…"; }
 
             // Save first, then render what came back. The server fills in the
             // author from the session.
             try {
-                const saved = await api("/api/posts", {
-                    method: "POST",
-                    body: { niche: niche, content: text }
-                });
+                const body = { niche: niche, content: text };
+                if (pendingPhoto) body.image = pendingPhoto.dataUrl;
+                const saved = await api("/api/posts", { method: "POST", body });
 
                 state.posts.unshift(saved);
                 renderAllPosts();
 
                 formCreatePost.reset();
+                setPendingPhoto(null);
                 closeCreateModal();
                 switchView("view-home");
             } catch (err) {
                 showToast(describeApiError(err, "Could not publish your post."), "error");
+            } finally {
+                if (submit) { submit.textContent = label; }
+                updateComposer();
             }
+        });
+    }
+
+    // ── A photo on a new post ──────────────────────────────────────────────
+    // Scaled down to at most 1600px and re-encoded as JPEG in the browser, so
+    // a 12 MB phone photo uploads as a few hundred KB and no camera metadata
+    // (location included) leaves the device.
+
+    /** The photo waiting to be posted: { dataUrl, width, height }, or null. */
+    let pendingPhoto = null;
+    const MAX_PHOTO_SIDE = 1600;
+
+    const photoInput = document.getElementById("create-post-image");
+
+    document.getElementById("btn-add-photo")?.addEventListener("click", () => photoInput?.click());
+    document.getElementById("btn-remove-photo")?.addEventListener("click", () => setPendingPhoto(null));
+
+    photoInput?.addEventListener("change", async () => {
+        const file = photoInput.files && photoInput.files[0];
+        photoInput.value = "";   // choosing the same file again should still fire
+        if (!file) return;
+
+        try {
+            setPendingPhoto(await preparePhoto(file));
+        } catch (err) {
+            showToast(err.message || "Could not use that photo.", "error");
+        }
+    });
+
+    function setPendingPhoto(photo) {
+        pendingPhoto = photo;
+        document.getElementById("create-photo-preview")?.classList.toggle("hidden", !photo);
+        document.getElementById("btn-add-photo")?.classList.toggle("hidden", !!photo);
+        const img = document.getElementById("create-photo-img");
+        if (img) {
+            if (photo) img.src = photo.dataUrl;
+            else img.removeAttribute("src");
+        }
+        updateComposer();
+    }
+
+    async function preparePhoto(file) {
+        if (!file.type.startsWith("image/")) throw new Error("Choose an image file.");
+        if (file.size > 25 * 1024 * 1024) throw new Error("That photo is over 25 MB.");
+
+        let source;
+        try {
+            source = await createImageBitmap(file, { imageOrientation: "from-image" });
+        } catch (e) {
+            source = await loadImageElement(file);
+        }
+
+        const scale = Math.min(1, MAX_PHOTO_SIDE / Math.max(source.width, source.height));
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.max(1, Math.round(source.width * scale));
+        canvas.height = Math.max(1, Math.round(source.height * scale));
+
+        const ctx = canvas.getContext("2d");
+        ctx.fillStyle = "#ffffff";   // transparent PNGs would otherwise turn black as JPEG
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(source, 0, 0, canvas.width, canvas.height);
+        if (source.close) source.close();
+
+        return {
+            dataUrl: canvas.toDataURL("image/jpeg", 0.85),
+            width: canvas.width,
+            height: canvas.height
+        };
+    }
+
+    function loadImageElement(file) {
+        return new Promise((resolve, reject) => {
+            const url = URL.createObjectURL(file);
+            const img = new Image();
+            img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
+            img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("That photo could not be opened.")); };
+            img.src = url;
         });
     }
 
@@ -2454,7 +3342,7 @@ document.addEventListener("DOMContentLoaded", () => {
         document.querySelectorAll(".discover-pane").forEach(p => {
             p.classList.toggle("hidden", p.id !== `pane-${pane}`);
         });
-        document.querySelectorAll(".discover-tab").forEach(t => {
+        document.querySelectorAll("#discover-tabs .discover-tab").forEach(t => {
             const on = t.getAttribute("data-pane") === pane;
             t.classList.toggle("active", on);
             t.setAttribute("aria-selected", String(on));
@@ -2466,10 +3354,10 @@ document.addEventListener("DOMContentLoaded", () => {
         if (pane === "deals" && !paneLoaded.deals) { paneLoaded.deals = true; loadAllDeals(); }
     }
 
-    /** Slides the underline to the active tab, measured from the tab itself. */
-    function moveDiscoverUnderline() {
-        const bar = document.getElementById("discover-tabs");
-        const line = document.getElementById("discover-tab-underline");
+    /** Slides a tab bar's underline to its active tab, measured from the tab itself. */
+    function moveTabUnderline(barId, lineId) {
+        const bar = document.getElementById(barId);
+        const line = document.getElementById(lineId);
         const active = bar?.querySelector(".discover-tab.active");
         if (!bar || !line || !active) return;
 
@@ -2481,11 +3369,31 @@ document.addEventListener("DOMContentLoaded", () => {
         line.style.transform = `translateX(${tabRect.left - barRect.left}px)`;
     }
 
-    document.querySelectorAll(".discover-tab").forEach(tab => {
+    const moveDiscoverUnderline = () => moveTabUnderline("discover-tabs", "discover-tab-underline");
+    const moveHomeUnderline = () => moveTabUnderline("home-tabs", "home-tab-underline");
+
+    document.querySelectorAll("#discover-tabs .discover-tab").forEach(tab => {
         tab.addEventListener("click", () => showDiscoverPane(tab.getAttribute("data-pane")));
     });
 
-    window.addEventListener("resize", moveDiscoverUnderline);
+    /** Home has two panes: the overview and the feed. */
+    function showHomePane(pane) {
+        document.querySelectorAll("#view-home .home-pane").forEach(p => {
+            p.classList.toggle("hidden", p.id !== `home-pane-${pane}`);
+        });
+        document.querySelectorAll("#home-tabs .discover-tab").forEach(t => {
+            const on = t.getAttribute("data-pane") === pane;
+            t.classList.toggle("active", on);
+            t.setAttribute("aria-selected", String(on));
+        });
+        moveHomeUnderline();
+    }
+
+    document.querySelectorAll("#home-tabs .discover-tab").forEach(tab => {
+        tab.addEventListener("click", () => showHomePane(tab.getAttribute("data-pane")));
+    });
+
+    window.addEventListener("resize", () => { moveDiscoverUnderline(); moveHomeUnderline(); });
 
     /** Opens Discover on a particular pane — used by the home "See all" links. */
     function openDiscover(pane) {
@@ -2647,6 +3555,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }
             await loadAllJobs();
             loadHomeJobs();
+            loadRailJobs();
         } catch (err) {
             btn.disabled = false;
             showToast(describeApiError(err, "Could not send your application."), "error");
@@ -2671,7 +3580,7 @@ document.addEventListener("DOMContentLoaded", () => {
             list.innerHTML = (data.items || []).length
                 ? data.items.map(a => `
                     <div class="applicant-row">
-                        <div class="creator-avatar ${escapeHtml(a.bgClass)}" data-user-id="${escapeHtml(a.userId)}">${escapeHtml(a.avatar)}</div>
+                        <div class="creator-avatar tone" ${toneAttrs(a.userId, a.name)} data-user-id="${escapeHtml(a.userId)}">${escapeHtml(a.avatar)}</div>
                         <div class="applicant-info" data-user-id="${escapeHtml(a.userId)}">
                             <h4>${escapeHtml(a.name)}</h4>
                             <p>${escapeHtml(a.niche || "Conexus Creator")}</p>
@@ -2727,6 +3636,7 @@ document.addEventListener("DOMContentLoaded", () => {
             openDiscover("jobs");
             await loadAllJobs();
             loadHomeJobs();
+            loadRailJobs();
         } catch (err) {
             showToast(describeApiError(err, "Could not post your request."), "error");
         }
@@ -2755,6 +3665,7 @@ document.addEventListener("DOMContentLoaded", () => {
             await api(`/api/jobs/${btn.getAttribute("data-job-id")}`, { method: "DELETE" });
             await loadAllJobs();
             loadHomeJobs();
+            loadRailJobs();
             showToast("Listing removed");
         } catch (err) {
             btn.disabled = false;
@@ -2769,20 +3680,75 @@ document.addEventListener("DOMContentLoaded", () => {
     // SETTINGS — appearance, home screen, account
     // =========================================================================
 
+    /** Reads a per-device setting, falling back when unset, unknown or unavailable. */
+    function readSetting(key, allowed, fallback) {
+        try {
+            const value = localStorage.getItem(key);
+            return allowed.includes(value) ? value : fallback;
+        } catch (e) {
+            return fallback;
+        }
+    }
+
+    function writeSetting(key, value) {
+        try { localStorage.setItem(key, value); } catch (e) { /* storage off */ }
+    }
+
+    /** Marks the current choice in each of the Home settings. */
+    function renderHomeSettings() {
+        const current = {
+            "home-tab": readSetting("conexus_home_tab", ["overview", "feed"], "overview"),
+            "progress-days": String(progressDays),
+            "feed-mode": readSetting("conexus_feed_mode", ["friends", "everyone"], "friends")
+        };
+        document.querySelectorAll(".settings-segment").forEach(group => {
+            const value = current[group.getAttribute("data-setting")];
+            group.querySelectorAll("button").forEach(b => {
+                const on = b.getAttribute("data-value") === value;
+                b.classList.toggle("on", on);
+                b.setAttribute("aria-pressed", String(on));
+            });
+        });
+    }
+
+    document.addEventListener("click", (e) => {
+        const btn = e.target.closest(".settings-segment button");
+        if (!btn) return;
+        const setting = btn.closest(".settings-segment").getAttribute("data-setting");
+        const value = btn.getAttribute("data-value");
+
+        if (setting === "home-tab") {
+            writeSetting("conexus_home_tab", value);
+        } else if (setting === "progress-days") {
+            progressDays = Number(value);
+            writeSetting("conexus_progress_days", value);
+            loadProgress();
+            loadReach();
+        } else if (setting === "feed-mode") {
+            writeSetting("conexus_feed_mode", value);
+            feedMode = value;
+            feedAuthorFilter = null;
+            document.querySelectorAll(".feed-modes .chip").forEach(c =>
+                c.classList.toggle("active", c.getAttribute("data-feed-mode") === feedMode));
+            renderFeed();
+        }
+        renderHomeSettings();
+        showToast("Saved");
+    });
+
+    /** Optional sections under the Home overview. */
     const SECTION_LABELS = {
-        recommendations: { name: "Recommendations", hint: "Conexus AI suggestions" },
-        mingle:          { name: "Mingle", hint: "Creators you might click with" },
-        inspo:           { name: "Inspo", hint: "Posts from your network" },
-        jobs:            { name: "Jobs", hint: "Paid roles for creators" },
-        deals:           { name: "Brand Deals", hint: "Open campaigns" }
+        mingle: { name: "Mingle", hint: "Creators you might click with" },
+        jobs:   { name: "Jobs", hint: "Paid roles for creators" },
+        deals:  { name: "Brand Deals", hint: "Open campaigns" }
     };
 
     async function loadPreferences() {
         try {
             state.preferences = await api("/api/preferences");
         } catch (err) {
-            state.preferences = { homeSections: ["recommendations", "mingle", "inspo"], theme: "dark",
-                                  available: Object.keys(SECTION_LABELS), maxSections: 4 };
+            state.preferences = { homeSections: ["mingle"], theme: "dark",
+                                  available: Object.keys(SECTION_LABELS), maxSections: 3 };
         }
         applyTheme(state.preferences.theme);
         applyHomeSections();
@@ -2792,7 +3758,7 @@ document.addEventListener("DOMContentLoaded", () => {
     /** Shows only the chosen sections, in the order they were chosen. */
     function applyHomeSections() {
         const chosen = state.preferences?.homeSections || [];
-        const home = document.getElementById("view-home");
+        const home = document.getElementById("home-pane-overview");
         if (!home) return;
 
         document.querySelectorAll("#view-home .home-section").forEach(sec => {
@@ -2815,7 +3781,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!picker || !state.preferences) return;
 
         const chosen = state.preferences.homeSections || [];
-        const max = state.preferences.maxSections || 4;
+        const max = state.preferences.maxSections || 3;
 
         picker.innerHTML = (state.preferences.available || []).map(name => {
             const meta = SECTION_LABELS[name] || { name: name, hint: "" };
@@ -2835,12 +3801,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }).join("");
 
         const remaining = Math.max(0, max - chosen.length);
-        const hint = document.querySelector(".settings-hint");
-        if (hint) {
-            hint.innerHTML = remaining
-                ? `Choose which sections appear, up to <strong>${max}</strong>. ${remaining} slot${remaining === 1 ? "" : "s"} left.`
-                : `Choose which sections appear, up to <strong>${max}</strong>. Uncheck one to swap it out.`;
-        }
+
 
         picker.querySelectorAll("input[type=checkbox]").forEach(box => {
             box.addEventListener("change", () => saveSections(box));
@@ -2850,12 +3811,6 @@ document.addEventListener("DOMContentLoaded", () => {
     async function saveSections(changedBox) {
         const picked = [...document.querySelectorAll("#section-picker input:checked")]
             .map(b => b.getAttribute("data-section"));
-
-        if (!picked.length) {
-            changedBox.checked = true;   // never leave home empty
-            showToast("Keep at least one section on your home screen", "error");
-            return;
-        }
 
         try {
             state.preferences = await api("/api/preferences", { method: "PUT", body: { homeSections: picked } });
@@ -2904,6 +3859,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (mailEl) mailEl.textContent = u.email || "";
 
         renderSectionPicker();
+        renderHomeSettings();
     });
 
     document.getElementById("btn-back-from-settings")?.addEventListener("click", () => {
@@ -3177,8 +4133,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const avatarEl = document.getElementById("up-avatar");
         if (avatarEl) {
-            avatarEl.textContent = profile.avatar || name.substring(0, 2).toUpperCase();
-            avatarEl.className = `creator-avatar ${profile.bgClass || "avatar-purple"} profile-avatar-lg`;
+            avatarEl.textContent = profile.avatar || initials(name);
+            avatarEl.className = "creator-avatar pf-avatar";
+            applyTone(avatarEl, profile.id, name);
         }
 
         set("up-display-name", name);
@@ -3188,32 +4145,16 @@ document.addEventListener("DOMContentLoaded", () => {
         set("up-niche", profile.niche || "Creator");
         set("up-reach", profile.totalReach || "0");
         set("up-engagement", profile.engagement || "0%");
-        set("up-platforms", (profile.socials || []).length);
         set("up-match", currentOpenCreator ? `${currentOpenCreator.match}%` : "—");
 
-        // Their linked accounts, rendered like the ones on your own profile.
+        // Their linked accounts, laid out like the ones on your own profile.
         const socialsEl = document.getElementById("up-socials");
         if (socialsEl) {
-            socialsEl.innerHTML = (profile.socials || []).length
-                ? profile.socials.map(soc => {
-                    const meta = platformMeta[soc.platform] || { name: soc.platform, icon: "🌐", class: "platform-website" };
-                    return `
-                        <div class="social-card">
-                            <div class="social-left">
-                                <div class="social-icon-badge ${meta.class}">${meta.icon}</div>
-                                <div class="social-info">
-                                    <div class="social-platform-name">${escapeHtml(meta.name)}</div>
-                                    <div class="social-handle-text">${escapeHtml(soc.handle || "")}</div>
-                                    <div class="social-count-badge">${escapeHtml(soc.followers || "0")}</div>
-                                </div>
-                            </div>
-                            <div class="social-actions">
-                                <a href="${escapeHtml(safeUrl(soc.url))}" target="_blank" rel="noopener" class="btn-social-link" title="Open Link">↗</a>
-                            </div>
-                        </div>`;
-                }).join("")
-                : `<div class="empty-card">No linked accounts yet.</div>`;
+            socialsEl.innerHTML = channelRowsHtml(profile.socials || [], false)
+                || `<div class="empty-card">No channels linked yet.</div>`;
         }
+        set("up-channels-total", channelsSummary(profile.socials || []));
+        document.getElementById("up-cover")?.style.setProperty("--hue", hueFor(profile.id, name));
 
         const postsEl = document.getElementById("up-posts");
         if (postsEl && !profile.id) {
@@ -3337,7 +4278,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     document.addEventListener("click", (e) => {
-        const creatorCard = e.target.closest(".creator-card");
+        const creatorCard = e.target.closest(".creator-card, .rail-person");
         if (creatorCard && !e.target.closest(".connect-button") && !e.target.closest(".creator-more")) {
             const creatorId = creatorCard.getAttribute("data-creator-id");
             // Discover cards carry the account directly.
@@ -3395,8 +4336,11 @@ document.addEventListener("DOMContentLoaded", () => {
      */
     let replyTarget = null;
 
-    async function openPostCommentsModal(postCard) {
-        const postId = postCard.getAttribute("data-post-id");
+    /** Opens a post's detail and comments, from its card or its id. */
+    async function openPostCommentsModal(postCardOrId) {
+        const postId = typeof postCardOrId === "object"
+            ? postCardOrId.getAttribute("data-post-id")
+            : String(postCardOrId);
         if (!postId) return;
 
         const post = state.posts.find(p => String(p.id) === String(postId));
@@ -3410,7 +4354,8 @@ document.addEventListener("DOMContentLoaded", () => {
         const avatar = document.getElementById("post-detail-avatar");
         if (avatar) {
             avatar.textContent = initials(author);
-            avatar.className = `small-avatar ${post.avatarClass || "avatar-purple"}`;
+            avatar.className = "small-avatar";
+            applyTone(avatar, post.authorId, author);
         }
 
         // The byline opens the author's profile, as it does in the feed.
@@ -3427,13 +4372,48 @@ document.addEventListener("DOMContentLoaded", () => {
         };
         set("post-detail-author", author);
         set("post-detail-niche", `${post.niche || "Creator"} · ${timeAgo(post.createdAt)}`);
-        set("post-detail-content", post.content);
+        set("post-detail-content", post.content || "");
+        document.getElementById("post-detail-content")?.classList.toggle("hidden", !post.content);
+
+        // Your own post can be deleted from here; profile tiles have no room for it.
+        const deleteBtn = document.getElementById("post-detail-delete");
+        if (deleteBtn) {
+            const mine = state.currentUser && String(post.authorId) === String(state.currentUser.id);
+            deleteBtn.classList.toggle("hidden", !mine);
+            deleteBtn.setAttribute("data-post-id", post.id);
+            deleteBtn.setAttribute("data-confirming", "false");
+            deleteBtn.classList.remove("confirming");
+            deleteBtn.textContent = "Delete";
+            deleteBtn.disabled = false;
+        }
         set("post-detail-comment-count", post.commentsCount || 0);
+
+        const imageBox = document.getElementById("post-detail-image");
+        if (imageBox) {
+            const img = imageBox.querySelector("img");
+            const hasImage = !!(post.imageWidth && post.imageHeight);
+            imageBox.classList.toggle("hidden", !hasImage);
+            imageBox.classList.remove("loaded", "failed");
+            img.removeAttribute("src");
+            img.removeAttribute("data-post-image");
+            if (hasImage) {
+                imageBox.style.aspectRatio = `${Number(post.imageWidth)} / ${Number(post.imageHeight)}`;
+                img.alt = `Photo shared by ${author}`;
+                img.setAttribute("data-post-image", post.id);
+                hydratePostImages(imageBox);
+            }
+        }
 
         document.getElementById("post-detail-card")?.setAttribute("data-post-id", postId);
         renderPostDetailLike(post);
 
-        if (postCommentsList) postCommentsList.innerHTML = `<div class="comments-empty">Loading…</div>`;
+        if (postCommentsList) {
+            postCommentsList.innerHTML = Array.from({ length: 3 }, () => `
+                <div class="skel-row skel-list-row" aria-hidden="true">
+                    <span class="skel skel-circle sm"></span>
+                    <span class="skel-col"><span class="skel skel-line w70"></span><span class="skel skel-line w25"></span></span>
+                </div>`).join("");
+        }
         modalPostComments?.classList.remove("hidden");
 
         try {
@@ -3456,7 +4436,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         btn.classList.toggle("liked", post.liked === true);
         btn.setAttribute("data-liked", post.liked === true);
-        btn.innerHTML = `${post.liked ? "❤️" : "♡"} <span id="post-detail-like-count">${post.likesCount || 0}</span>`;
+        btn.innerHTML = `${icon("heart", post.liked ? "icon-fill" : "")} <span id="post-detail-like-count">${post.likesCount || 0}</span>`;
     }
 
     /**
@@ -3486,13 +4466,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
         return `
             <div class="comment-item${isReply ? " comment-reply" : ""}${c.authorId ? " is-linked" : ""}${isTarget ? " is-reply-target" : ""}" data-comment-id="${escapeHtml(c.id)}"${c.authorId ? ` data-user-id="${escapeHtml(c.authorId)}"` : ""}>
-                <div class="comment-avatar ${escapeHtml(c.bgClass || "avatar-purple")}">${escapeHtml(c.avatar || initials(c.authorName))}</div>
+                <div class="comment-avatar tone" ${toneAttrs(c.authorId, c.authorName)}>${escapeHtml(c.avatar || initials(c.authorName))}</div>
                 <div class="comment-body">
                     <p class="comment-text"><strong>${escapeHtml(c.authorName)}</strong>${withMentions(c.text)}</p>
                     <div class="comment-actions">
                         <span class="comment-time">${escapeHtml(timeAgo(c.createdAt))}</span>
                         <button class="btn-comment-like${liked ? " liked" : ""}" data-comment-id="${escapeHtml(c.id)}" aria-label="Like comment">
-                            ${liked ? "❤️" : "♡"} ${c.likesCount || ""}
+                            ${icon("heart", liked ? "icon-fill" : "")} ${c.likesCount || ""}
                         </button>
                         <button class="btn-comment-reply" data-comment-id="${escapeHtml(c.id)}" data-author="${escapeHtml(c.authorName)}">Reply</button>
                         ${mine ? `<button class="btn-delete btn-delete-comment" data-comment-id="${escapeHtml(c.id)}">Delete</button>` : ""}

@@ -16,6 +16,50 @@
 
 <body>
 
+<!-- Icon set. Referenced as <svg class="icon"><use href="#i-name"/></svg>. -->
+<svg class="icon-sprite" width="0" height="0" aria-hidden="true" focusable="false">
+    <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 20.5s-7.5-4.4-9.3-9.2C1.5 8 3.6 4.5 7 4.5c2 0 3.5 1.1 5 3 1.5-1.9 3-3 5-3 3.4 0 5.5 3.5 4.3 6.8-1.8 4.8-9.3 9.2-9.3 9.2z"/></symbol>
+    <symbol id="i-comment" viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.7 7.1L4 20.5l1.4-4.6A8 8 0 1 1 21 12z"/></symbol>
+    <symbol id="i-share" viewBox="0 0 24 24"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><path d="M12 3v12"/><path d="m7 8 5-5 5 5"/></symbol>
+    <symbol id="i-reply" viewBox="0 0 24 24"><path d="m9 14-5-5 5-5"/><path d="M4 9h10a6 6 0 0 1 6 6v4"/></symbol>
+    <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-12a7 7 0 0 1 14 0c0 5.8-7 12-7 12z"/><circle cx="12" cy="9" r="2.5"/></symbol>
+    <symbol id="i-sparkle" viewBox="0 0 24 24"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8"/><path d="M18.5 14.2a6.5 6.5 0 0 1 3 5.8"/></symbol>
+    <symbol id="i-user-plus" viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M2 21a7 7 0 0 1 14 0"/><path d="M19 8v6M16 11h6"/></symbol>
+    <symbol id="i-briefcase" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/><path d="M3 13h18"/></symbol>
+    <symbol id="i-gem" viewBox="0 0 24 24"><path d="M6 3h12l4 6-10 12L2 9z"/><path d="M2 9h20"/><path d="m12 21-4-12 4-6 4 6z"/></symbol>
+    <symbol id="i-bulb" viewBox="0 0 24 24"><path d="M9 18h6"/><path d="M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/></symbol>
+    <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a14 14 0 0 1 0 18 14 14 0 0 1 0-18z"/></symbol>
+    <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></symbol>
+    <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></symbol>
+    <symbol id="i-map" viewBox="0 0 24 24"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14"/><path d="M15 6v14"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+    <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="m21 16-5-5-9 9"/></symbol>
+    <symbol id="i-edit" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></symbol>
+    <symbol id="i-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></symbol>
+    <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></symbol>
+    <symbol id="i-link-out" viewBox="0 0 24 24"><path d="M14 4h6v6"/><path d="M20 4 10 14"/><path d="M19 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+    <symbol id="i-video" viewBox="0 0 24 24"><rect x="2.5" y="6" width="13" height="12" rx="2"/><path d="m15.5 10 6-3.5v11l-6-3.5z"/></symbol>
+    <symbol id="i-building" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="1.5"/><path d="M9 21v-4h6v4"/><path d="M8 7h2M14 7h2M8 11h2M14 11h2"/></symbol>
+    <symbol id="i-trending" viewBox="0 0 24 24"><path d="m3 17 6-6 4 4 8-8"/><path d="M15 7h6v6"/></symbol>
+    <symbol id="i-coins" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15 9.2c-.6-.8-1.7-1.2-3-1.2-1.8 0-3 .9-3 2s1.2 1.7 3 2 3 .9 3 2-1.2 2-3 2c-1.3 0-2.4-.4-3-1.2"/><path d="M12 6v2M12 16v2"/></symbol>
+    <symbol id="i-tag" viewBox="0 0 24 24"><path d="M3 12V4a1 1 0 0 1 1-1h8l9 9-9 9z"/><circle cx="7.5" cy="7.5" r="1.5"/></symbol>
+    <!-- Platforms, drawn in white on each brand's colour -->
+    <symbol id="i-youtube" viewBox="0 0 24 24"><rect x="2.5" y="5.5" width="19" height="13" rx="4"/><path d="m10 9 5 3-5 3z" fill="currentColor"/></symbol>
+    <symbol id="i-instagram" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.2" cy="6.8" r=".8" fill="currentColor"/></symbol>
+    <symbol id="i-tiktok" viewBox="0 0 24 24"><path d="M14 3v11.5a3.5 3.5 0 1 1-3.5-3.5"/><path d="M14 3c.4 2.6 2.2 4.4 5 4.6"/></symbol>
+    <symbol id="i-twitch" viewBox="0 0 24 24"><path d="M4 3h16v11l-4 4h-4l-3 3v-3H4z"/><path d="M11 8v4M15 8v4"/></symbol>
+    <symbol id="i-x-logo" viewBox="0 0 24 24"><path d="M4 4h4l12 16h-4z"/><path d="M20 4l-6.5 7M4 20l6.5-7"/></symbol>
+    <symbol id="i-discord" viewBox="0 0 24 24"><path d="M7.5 7.5c3-1.3 6-1.3 9 0"/><path d="M7 16.5c3.2 1.4 6.8 1.4 10 0"/><path d="M6.5 7.5 4 15c1 1.2 2.5 2 3.5 2.3l1-1.8M17.5 7.5 20 15c-1 1.2-2.5 2-3.5 2.3l-1-1.8"/><circle cx="9.5" cy="12" r="1" fill="currentColor"/><circle cx="14.5" cy="12" r="1" fill="currentColor"/></symbol>
+    <symbol id="i-spotify" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M7.5 9.5c3-1 6.5-.8 9 .7"/><path d="M8 12.6c2.5-.7 5.2-.5 7.3.7"/><path d="M8.6 15.5c1.9-.5 3.9-.3 5.5.5"/></symbol>
+    <symbol id="i-substack" viewBox="0 0 24 24"><path d="M5 4h14M5 8h14"/><path d="M5 12h14v9l-7-4-7 4z"/></symbol>
+    <symbol id="i-linkedin" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8 10v7M8 7v.01M12 17v-4a2 2 0 0 1 4 0v4M12 10v7"/></symbol>
+</svg>
+
     <!-- ==========================================
          1. SPLASH SCREEN
     =========================================== -->
@@ -66,14 +110,14 @@
                     <span class="trial-label">Or Sign In with Demo Account:</span>
                     <div class="trial-buttons">
                         <button type="button" class="btn-trial" id="btn-trial-creator">
-                            <span>🎮</span>
+                            <span class="trial-icon"><svg class="icon"><use href="#i-video"/></svg></span>
                             <div>
                                 <strong>Alex Popescu</strong>
                                 <small>Creator Account</small>
                             </div>
                         </button>
                         <button type="button" class="btn-trial" id="btn-trial-brand">
-                            <span>🏷️</span>
+                            <span class="trial-icon"><svg class="icon"><use href="#i-building"/></svg></span>
                             <div>
                                 <strong>TechGear Pro</strong>
                                 <small>Business Account</small>
@@ -145,19 +189,19 @@
 
             <!-- STEP 1: Account Type -->
             <div class="onboarding-step" id="onboard-step-1">
-                <h2>Welcome to Conexus! 👋</h2>
+                <h2>Welcome to Conexus</h2>
                 <p class="onboarding-desc">How do you plan to use the platform?</p>
 
                 <div class="account-type-grid">
                     <div class="account-type-card selected" data-type="creator" id="card-type-creator">
-                        <div class="account-type-icon">🎬</div>
+                        <div class="account-type-icon"><svg class="icon"><use href="#i-video"/></svg></div>
                         <h3>Content Creator</h3>
                         <p>I build content, grow my audience, network with other creators, and discover brand sponsorships.</p>
                         <span class="type-check">✓</span>
                     </div>
 
                     <div class="account-type-card" data-type="business" id="card-type-business">
-                        <div class="account-type-icon">🏢</div>
+                        <div class="account-type-icon"><svg class="icon"><use href="#i-building"/></svg></div>
                         <h3>Business / Brand</h3>
                         <p>I represent a brand, company or agency looking to discover creators and run collab campaigns.</p>
                         <span class="type-check">✓</span>
@@ -166,7 +210,7 @@
 
                 <div class="onboarding-actions">
                     <div></div>
-                    <button type="button" class="btn-primary" id="btn-onboard-next-1">Next: Choose Goals →</button>
+                    <button type="button" class="btn-primary" id="btn-onboard-next-1">Next<span class="step-next-detail">: Choose Goals</span> →</button>
                 </div>
             </div>
 
@@ -176,17 +220,17 @@
                 <p class="onboarding-desc">Select all that apply so Conexus AI can personalize your strategy feed.</p>
 
                 <div class="goals-grid" id="goals-grid">
-                    <button type="button" class="goal-chip selected" data-goal="Grow my audience">📈 Grow my audience</button>
-                    <button type="button" class="goal-chip selected" data-goal="Find collaborations">🤝 Find collaborations</button>
-                    <button type="button" class="goal-chip" data-goal="Get brand sponsorships">💰 Get brand sponsorships</button>
-                    <button type="button" class="goal-chip" data-goal="Improve content strategy">💡 Improve content strategy</button>
-                    <button type="button" class="goal-chip" data-goal="Promote my brand/product">🏷️ Promote my brand/product</button>
-                    <button type="button" class="goal-chip" data-goal="Discover talented creators">🔍 Discover talented creators</button>
+                    <button type="button" class="goal-chip selected" data-goal="Grow my audience"><svg class="icon"><use href="#i-trending"/></svg> Grow my audience</button>
+                    <button type="button" class="goal-chip selected" data-goal="Find collaborations"><svg class="icon"><use href="#i-users"/></svg> Find collaborations</button>
+                    <button type="button" class="goal-chip" data-goal="Get brand sponsorships"><svg class="icon"><use href="#i-coins"/></svg> Get brand sponsorships</button>
+                    <button type="button" class="goal-chip" data-goal="Improve content strategy"><svg class="icon"><use href="#i-bulb"/></svg> Improve content strategy</button>
+                    <button type="button" class="goal-chip" data-goal="Promote my brand/product"><svg class="icon"><use href="#i-tag"/></svg> Promote my brand/product</button>
+                    <button type="button" class="goal-chip" data-goal="Discover talented creators"><svg class="icon"><use href="#i-search"/></svg> Discover talented creators</button>
                 </div>
 
                 <div class="onboarding-actions">
                     <button type="button" class="btn-secondary" id="btn-onboard-back-2">← Back</button>
-                    <button type="button" class="btn-primary" id="btn-onboard-next-2">Next: Connect Socials →</button>
+                    <button type="button" class="btn-primary" id="btn-onboard-next-2">Next<span class="step-next-detail">: Connect Socials</span> →</button>
                 </div>
             </div>
 
@@ -214,7 +258,7 @@
 
                 <div class="onboarding-actions">
                     <button type="button" class="btn-secondary" id="btn-onboard-back-3">← Back</button>
-                    <button type="button" class="btn-primary" id="btn-onboard-next-3">Next: Bio & Location →</button>
+                    <button type="button" class="btn-primary" id="btn-onboard-next-3">Next<span class="step-next-detail">: Bio & Location</span> →</button>
                 </div>
             </div>
 
@@ -235,7 +279,7 @@
 
                 <div class="onboarding-actions">
                     <button type="button" class="btn-secondary" id="btn-onboard-back-4">← Back</button>
-                    <button type="button" class="btn-primary" id="btn-onboard-submit">Finish & Launch App 🚀</button>
+                    <button type="button" class="btn-primary" id="btn-onboard-submit">Finish & Launch App →</button>
                 </div>
             </div>
 
@@ -243,6 +287,47 @@
     </div>
 
 <div class="app hidden">
+
+    <!-- Desktop sidebar — replaces the bottom nav on wide screens -->
+    <aside class="side-nav" aria-label="Main navigation">
+        <div class="logo side-logo">conexus</div>
+
+        <nav class="side-links">
+            <button class="side-link active" data-target="view-home">
+                <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V9.5"/></svg>
+                <span>Home</span>
+            </button>
+            <button class="side-link" data-target="view-discover">
+                <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+                <span>Discover</span>
+            </button>
+            <button class="side-link" data-target="view-messages">
+                <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.7 7.1L4 20.5l1.4-4.6A8 8 0 1 1 21 12z"/></svg>
+                <span>Messages</span>
+            </button>
+            <button class="side-link" data-target="view-recommendations">
+                <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z"/></svg>
+                <span>Strategy</span>
+            </button>
+            <button class="side-link" data-target="view-profile">
+                <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+                <span>Profile</span>
+            </button>
+        </nav>
+
+        <button class="side-create btn-open-create">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+            <span>New post</span>
+        </button>
+
+        <button class="side-me nav-switch-trigger" data-target="view-profile">
+            <span class="small-avatar avatar-purple" id="side-me-avatar"></span>
+            <span class="side-me-text">
+                <strong id="side-me-name"></strong>
+                <small id="side-me-handle"></small>
+            </span>
+        </button>
+    </aside>
 
     <!-- Header -->
     <header class="header">
@@ -284,100 +369,116 @@
         ========================== -->
         <section id="view-home" class="view active-view">
 
-            <!-- AI RECOMMENDATIONS BANNER -->
-            <section class="section ai-section home-section" data-section="recommendations">
-                <div class="section-heading">
-                    <div>
-                        <span class="section-eyebrow">✦ Conexus AI</span>
-                        <h2>Recommendations</h2>
-                    </div>
-                    <button class="see-all nav-switch-trigger" data-target="view-recommendations">
-                        See all →
-                    </button>
-                </div>
+            <!-- Two panes, switched like Discover's tabs -->
+            <div class="discover-tabs" id="home-tabs" role="tablist">
+                <button class="discover-tab home-tab active" data-pane="overview" role="tab" aria-selected="true">Overview</button>
+                <button class="discover-tab home-tab" data-pane="feed" role="tab" aria-selected="false">Feed</button>
+                <span class="discover-tab-underline" id="home-tab-underline" aria-hidden="true"></span>
+            </div>
 
-                <div class="ai-card">
-                    <div class="ai-card-glow"></div>
-                    <div class="ai-content">
-                        <div class="ai-icon">✦</div>
-                        <div class="ai-text">
-                            <h3>4 creators you should meet & 3 growth actions</h3>
-                            <p>Based on your tech & gaming content, audience overlap, and channel velocity.</p>
+            <!-- ── OVERVIEW: how you're doing, and what to do next ── -->
+            <div class="home-pane" id="home-pane-overview">
+
+                <section class="pulse-hero">
+                    <div class="pulse-hero-head">
+                        <span class="pulse-label" id="pulse-reach-label">Total reach</span>
+                        <div class="pulse-range" role="group" aria-label="Period">
+                            <button data-range="7" aria-pressed="false">7 days</button>
+                            <button data-range="30" class="on" aria-pressed="true">30 days</button>
                         </div>
                     </div>
-                    <button class="primary-button nav-switch-trigger" data-target="view-recommendations">
-                        <span>View Strategy & Recommendations</span>
-                        <span>→</span>
-                    </button>
-                </div>
-            </section>
-
-
-            <!-- MINGLE / NETWORKING CAROUSEL -->
-            <section class="section home-section" data-section="mingle">
-                <div class="section-heading">
-                    <div>
-                        <span class="section-eyebrow">🤝 Networking</span>
-                        <h2>Mingle</h2>
+                    <div class="pulse-reach-row">
+                        <div class="pulse-reach-main">
+                            <span class="pulse-big" id="pulse-reach">0</span>
+                            <em class="pulse-chip" id="pulse-engagement"></em>
+                            <div class="pulse-platforms" id="pulse-platforms"></div>
+                        </div>
+                        <figure class="pulse-graph" id="pulse-graph">
+                            <figcaption class="pulse-graph-change" id="pulse-graph-change"></figcaption>
+                            <div class="pulse-graph-plot">
+                                <svg id="pulse-graph-svg" viewBox="0 0 160 56" preserveAspectRatio="none" role="img" aria-label="Followers over time"></svg>
+                                <span class="pulse-graph-dot" id="pulse-graph-dot"></span>
+                            </div>
+                        </figure>
                     </div>
-                    <button class="see-all nav-switch-trigger" data-target="view-discover">
-                        See all →
-                    </button>
-                </div>
+                </section>
 
-                <p class="section-description">Creators you might click with for your next collaboration.</p>
+                <section class="pulse-block">
+                    <span class="pulse-label">Your progress</span>
+                    <div class="pulse-progress" id="pulse-progress"></div>
+                    <p class="pulse-progress-note" id="pulse-progress-note"></p>
+                </section>
 
-                <div class="creator-scroll" id="home-creator-scroll">
-                    <!-- Populated from the database by renderHomeCreators() in js/app.js -->
-                </div>
-            </section>
+                <section class="pulse-next" id="pulse-next" aria-live="polite"></section>
 
-
-            <!-- CREATOR INSPO FEED -->
-            <!-- JOBS -->
-            <!-- Off by default; shown once preferences load, so they never flash in empty -->
-            <section class="section home-section hidden" data-section="jobs">
-                <div class="section-heading">
-                    <div>
-                        <span class="section-eyebrow">💼 Opportunities</span>
-                        <h2>Jobs</h2>
+                <section class="pulse-block">
+                    <div class="pulse-block-head">
+                        <span class="pulse-label">Network</span>
+                        <button class="see-all" id="btn-pulse-activity">See all →</button>
                     </div>
-                    <button class="see-all" id="btn-see-all-jobs">See all →</button>
-                </div>
-                <p class="section-description">Paid roles from companies hiring creators.</p>
-                <div class="jobs-grid" id="home-jobs-grid"></div>
-            </section>
+                    <div class="pulse-activity" id="pulse-activity"></div>
+                </section>
 
-            <!-- BRAND DEALS -->
-            <section class="section home-section hidden" data-section="deals">
-                <div class="section-heading">
-                    <div>
-                        <span class="section-eyebrow">💎 Partnerships</span>
-                        <h2>Brand Deals</h2>
+                <!-- Optional sections, chosen in Settings -->
+                <section class="section home-section" data-section="mingle">
+                    <div class="section-heading">
+                        <div>
+                            <span class="section-eyebrow"><svg class="icon"><use href="#i-users"/></svg> Networking</span>
+                            <h2>Mingle</h2>
+                        </div>
+                        <button class="see-all nav-switch-trigger" data-target="view-discover">See all →</button>
                     </div>
-                    <button class="see-all btn-see-all-deals">See all →</button>
-                </div>
-                <p class="section-description">Open campaigns matched to your niche.</p>
-                <div class="brand-deals-grid" id="home-deals-grid"></div>
-            </section>
+                    <p class="section-description">Creators you might click with for your next collaboration.</p>
+                    <div class="creator-scroll" id="home-creator-scroll"></div>
+                </section>
 
-            <section class="section inspo-section home-section" data-section="inspo">
-                <div class="section-heading">
-                    <div>
-                        <span class="section-eyebrow">💡 From creators</span>
-                        <h2>Inspo</h2>
+                <!-- Off by default; shown once preferences load, so they never flash in empty -->
+                <section class="section home-section hidden" data-section="jobs">
+                    <div class="section-heading">
+                        <div>
+                            <span class="section-eyebrow"><svg class="icon"><use href="#i-briefcase"/></svg> Opportunities</span>
+                            <h2>Jobs</h2>
+                        </div>
+                        <button class="see-all" id="btn-see-all-jobs">See all →</button>
                     </div>
-                    <button class="see-all btn-open-create">
-                        + New Post
-                    </button>
+                    <p class="section-description">Paid roles from companies hiring creators.</p>
+                    <div class="jobs-grid" id="home-jobs-grid"></div>
+                </section>
+
+                <section class="section home-section hidden" data-section="deals">
+                    <div class="section-heading">
+                        <div>
+                            <span class="section-eyebrow"><svg class="icon"><use href="#i-gem"/></svg> Partnerships</span>
+                            <h2>Brand Deals</h2>
+                        </div>
+                        <button class="see-all btn-see-all-deals">See all →</button>
+                    </div>
+                    <p class="section-description">Open campaigns matched to your niche.</p>
+                    <div class="brand-deals-grid" id="home-deals-grid"></div>
+                </section>
+            </div>
+
+            <!-- ── FEED: posts from the people you know ── -->
+            <div class="home-pane hidden" id="home-pane-feed">
+                <div class="feed-toolbar">
+                    <div class="feed-modes" role="group" aria-label="Whose posts to show">
+                        <button class="chip active" data-feed-mode="friends">Friends</button>
+                        <button class="chip" data-feed-mode="everyone">Everyone</button>
+                    </div>
+                    <button class="see-all btn-open-create">+ New Post</button>
                 </div>
 
-                <p class="section-description">Ideas, conversations and inspiration from your network.</p>
+                <div class="feed-people" id="feed-people"></div>
+
+                <div class="feed-filter hidden" id="feed-filter">
+                    <span>Showing posts by <b id="feed-filter-name"></b></span>
+                    <button id="btn-clear-feed-filter">Show all</button>
+                </div>
 
                 <div id="inspo-feed">
                     <!-- Populated from the database by renderFeed() in js/app.js -->
                 </div>
-            </section>
+            </div>
 
         </section>
 
@@ -405,7 +506,7 @@
             <!-- Search & Filters -->
             <div class="search-container">
                 <div class="search-box">
-                    <span class="search-icon">⌕</span>
+                    <span class="search-icon"><svg class="icon"><use href="#i-search"/></svg></span>
                     <input type="text" id="discover-search-input" placeholder="Search by name, niche, city or topic...">
                     <button class="search-clear hidden" id="discover-search-clear">&times;</button>
                 </div>
@@ -436,7 +537,7 @@
 
 
             <div class="search-bar">
-                <span class="search-icon">⌕</span>
+                <span class="search-icon"><svg class="icon"><use href="#i-search"/></svg></span>
                 <input type="text" id="jobs-search-input" placeholder="Search roles, companies, or skills...">
             </div>
 
@@ -452,7 +553,7 @@
                 </div>
 
             <div class="search-bar">
-                <span class="search-icon">⌕</span>
+                <span class="search-icon"><svg class="icon"><use href="#i-search"/></svg></span>
                 <input type="text" id="deals-search-input" placeholder="Search brands, industries, or campaigns...">
             </div>
 
@@ -480,7 +581,7 @@
             <!-- NEXT STEPS CHECKLIST -->
             <section class="strategy-block">
                 <div class="strategy-block-header">
-                    <h3>⚡ Recommended Next Steps</h3>
+                    <h3><svg class="icon"><use href="#i-bolt"/></svg> Recommended Next Steps</h3>
                     <span class="status-pill">4 Pending</span>
                 </div>
                 <p class="strategy-desc">Prioritized actions tailored to your channel velocity and reach goals.</p>
@@ -550,7 +651,7 @@
             <!-- STRATEGY ROADMAP -->
             <section class="strategy-block">
                 <div class="strategy-block-header">
-                    <h3>🗺️ Future Strategy Roadmap</h3>
+                    <h3><svg class="icon"><use href="#i-map"/></svg> Future Strategy Roadmap</h3>
                     <span class="status-pill blue">Q3 - Q4 Plan</span>
                 </div>
 
@@ -602,7 +703,7 @@
             <!-- MATCHED BRAND CAMPAIGNS -->
             <section class="strategy-block">
                 <div class="strategy-block-header">
-                    <h3>💎 Recommended Brand Matches</h3>
+                    <h3><svg class="icon"><use href="#i-gem"/></svg> Recommended Brand Matches</h3>
                     <button class="see-all btn-see-all-deals">
                         See all →
                     </button>
@@ -645,89 +746,53 @@
         ========================== -->
         <section id="view-profile" class="view">
 
-            <!-- Profile Banner & Header -->
-            <div class="profile-header-card">
-                <div class="profile-banner">
-                    <button class="btn-edit-profile" id="btn-open-edit-profile">✏️ Edit</button>
-                    <button class="btn-profile-settings" id="btn-open-settings" title="Settings">⚙</button>
-                </div>
+            <section class="pf-hero">
+                <div class="pf-cover" id="profile-cover"></div>
 
-                <div class="profile-main-info">
-                    <div class="profile-avatar-wrapper">
-                        <div class="creator-avatar avatar-purple profile-avatar-lg" id="profile-avatar"></div>
-                        <span class="status-indicator online"></span>
-                    </div>
-
-                    <div class="profile-identity">
-                        <div class="profile-name-row">
-                            <h2 id="profile-display-name"></h2>
-                        </div>
-                        <p class="profile-handle" id="profile-handle"></p>
-                        <p class="profile-bio" id="profile-bio"></p>
-                        <div class="profile-meta">
-                            <span>📍 <span id="profile-location"></span></span>
-                            <span>✦ <span id="profile-niche"></span></span>
-                        </div>
+                <div class="pf-top">
+                    <div class="creator-avatar pf-avatar" id="profile-avatar"></div>
+                    <div class="pf-actions">
+                        <button class="pf-btn pf-btn-ghost" id="btn-open-edit-profile" aria-label="Edit profile"><svg class="icon"><use href="#i-edit"/></svg> <span class="pf-btn-text">Edit profile</span></button>
+                        <button class="pf-btn pf-btn-ghost pf-btn-icon" id="btn-open-settings" title="Settings" aria-label="Settings"><svg class="icon"><use href="#i-settings"/></svg></button>
                     </div>
                 </div>
 
-                <!-- Stats summary -->
-                <div class="profile-stats-grid">
-                    <div class="stat-box">
-                        <span class="stat-value" id="stat-total-reach">0</span>
-                        <span class="stat-label">Total Reach</span>
+                <div class="pf-identity">
+                    <h2 class="pf-name" id="profile-display-name"></h2>
+                    <div class="pf-sub">
+                        <span id="profile-handle"></span>
+                        <span class="pf-niche" id="profile-niche"></span>
                     </div>
-                    <div class="stat-box">
-                        <span class="stat-value" id="stat-engagement">0%</span>
-                        <span class="stat-label">Avg. Engagement</span>
-                    </div>
-                    <div class="stat-box">
-                        <span class="stat-value" id="stat-platforms-count">0</span>
-                        <span class="stat-label">Platforms</span>
-                    </div>
-                    <button class="stat-box stat-box-action" id="stat-connections" aria-expanded="false">
-                        <span class="stat-value" id="stat-connections-count">0</span>
-                        <span class="stat-label">Connections →</span>
-                    </button>
-                </div>
-            </div>
-
-
-            <!-- SOCIAL MEDIA ACCOUNTS HUB (KEY FEATURE) -->
-            <section class="section socials-section">
-                <div class="section-heading">
-                    <div>
-                        <span class="section-eyebrow">🌐 Creator Channels</span>
-                        <h2>Social Accounts</h2>
-                    </div>
-                    <button class="primary-button-sm" id="btn-open-add-social">
-                        + Add Social Link
-                    </button>
+                    <p class="pf-bio" id="profile-bio"></p>
+                    <p class="pf-meta"><svg class="icon"><use href="#i-pin"/></svg> <span id="profile-location"></span></p>
                 </div>
 
-                <p class="section-description">Manage and display all your active social platforms and follower counts.</p>
-
-                <!-- Socials Cards Container -->
-                <div class="socials-grid" id="socials-container">
-                    <!-- Dynamic rendering via JS -->
+                <div class="pf-stats">
+                    <div class="pf-stat"><b id="stat-total-reach">0</b><span>Reach</span></div>
+                    <div class="pf-stat"><b id="stat-engagement">0%</b><span>Engagement</span></div>
+                    <button class="pf-stat pf-stat-link" id="stat-connections"><b id="stat-connections-count">0</b><span>Connections</span></button>
+                    <div class="pf-stat"><b id="stat-posts-count">0</b><span>Posts</span></div>
                 </div>
             </section>
 
-
-            <!-- PROFILE CONTENT SHOWCASE TAB -->
-
-
-            <section class="section">
-                <div class="section-heading">
+            <section class="pf-section">
+                <div class="pf-section-head">
                     <div>
-                        <span class="section-eyebrow">📂 Portfolio & Activity</span>
-                        <h2>Recent Posts</h2>
+                        <h3>Channels</h3>
+                        <p id="channels-total"></p>
+                    </div>
+                    <button class="pf-btn pf-btn-ghost pf-btn-sm" id="btn-open-add-social"><svg class="icon"><use href="#i-plus"/></svg> Add</button>
+                </div>
+                <div class="pf-channels" id="socials-container"></div>
+            </section>
+
+            <section class="pf-section">
+                <div class="pf-section-head">
+                    <div>
+                        <h3>Posts</h3>
                     </div>
                 </div>
-
-                <div class="user-posts-list" id="user-posts-container">
-                    <!-- Populated from the database by renderUserPosts() in js/app.js -->
-                </div>
+                <div class="pf-posts" id="user-posts-container"></div>
             </section>
 
         </section>
@@ -745,7 +810,7 @@
                 <button class="btn-back-page" id="btn-back-from-settings">← Back</button>
                 <div>
                     <h2>Settings</h2>
-                    <p class="view-subtitle">Appearance, your home screen, and your account.</p>
+                    <p class="view-subtitle">Appearance, Home, and your account.</p>
                 </div>
             </div>
 
@@ -763,8 +828,44 @@
             </div>
 
             <div class="settings-group">
-                <h3>Home screen</h3>
-                <p class="settings-hint">Choose which sections appear, up to <strong>4</strong>.</p>
+                <h3>Home</h3>
+                <p class="settings-hint">Home has two tabs: Overview, with your reach, progress, next move and activity, and Feed, with posts.</p>
+
+                <div class="setting-row">
+                    <div>
+                        <strong>Opens on</strong>
+                        <p>The tab you land on when you open the app.</p>
+                    </div>
+                    <div class="settings-segment" data-setting="home-tab" role="group" aria-label="Opens on">
+                        <button data-value="overview">Overview</button>
+                        <button data-value="feed">Feed</button>
+                    </div>
+                </div>
+
+                <div class="setting-row">
+                    <div>
+                        <strong>Progress period</strong>
+                        <p>How far back the reach graph and progress numbers look.</p>
+                    </div>
+                    <div class="settings-segment" data-setting="progress-days" role="group" aria-label="Progress period">
+                        <button data-value="7">7 days</button>
+                        <button data-value="30">30 days</button>
+                    </div>
+                </div>
+
+                <div class="setting-row">
+                    <div>
+                        <strong>Feed shows</strong>
+                        <p>Whose posts the Feed tab starts with.</p>
+                    </div>
+                    <div class="settings-segment" data-setting="feed-mode" role="group" aria-label="Feed shows">
+                        <button data-value="friends">Friends</button>
+                        <button data-value="everyone">Everyone</button>
+                    </div>
+                </div>
+
+                <h4 class="settings-subhead">Extra sections on Overview</h4>
+                <p class="settings-note" id="section-picker-hint">Shown under your activity. Pick any, or none.</p>
                 <div class="section-picker" id="section-picker"></div>
             </div>
 
@@ -815,78 +916,86 @@
         =========================================== -->
         <section id="view-user-profile" class="view">
 
-            <div class="profile-header-card">
-                <div class="profile-banner">
-                    <button class="btn-back-profile" id="btn-back-from-profile">← Back</button>
+            <section class="pf-hero">
+                <div class="pf-cover" id="up-cover">
+                    <button class="pf-back" id="btn-back-from-profile">← Back</button>
                 </div>
 
-                <div class="profile-main-info">
-                    <div class="profile-avatar-wrapper">
-                        <div class="creator-avatar avatar-purple profile-avatar-lg" id="up-avatar">?</div>
-                    </div>
-
-                    <div class="profile-identity">
-                        <div class="profile-name-row">
-                            <h2 id="up-display-name">Creator</h2>
-                        </div>
-                        <p class="profile-handle" id="up-handle">@creator</p>
-                        <p class="profile-bio" id="up-bio"></p>
-                        <div class="profile-meta">
-                            <span>📍 <span id="up-location">Worldwide</span></span>
-                            <span id="up-niche-meta">✦ <span id="up-niche">Creator</span></span>
-                        </div>
-
-                        <div class="profile-actions" id="up-actions">
-                            <button class="btn-primary-sm" id="up-btn-connect">Connect</button>
-                            <button class="btn-secondary-sm" id="up-btn-message">Message</button>
-                        </div>
+                <div class="pf-top">
+                    <div class="creator-avatar pf-avatar" id="up-avatar"></div>
+                    <div class="pf-actions" id="up-actions">
+                        <button class="pf-btn pf-btn-primary" id="up-btn-connect">Connect</button>
+                        <button class="pf-btn pf-btn-ghost" id="up-btn-message" aria-label="Message"><svg class="icon"><use href="#i-mail"/></svg> <span class="pf-btn-text">Message</span></button>
                     </div>
                 </div>
 
-                <div class="profile-stats-grid">
-                    <div class="stat-box">
-                        <span class="stat-value" id="up-reach">0</span>
-                        <span class="stat-label">Total Reach</span>
+                <div class="pf-identity">
+                    <h2 class="pf-name" id="up-display-name"></h2>
+                    <div class="pf-sub">
+                        <span id="up-handle"></span>
+                        <span class="pf-niche" id="up-niche"></span>
                     </div>
-                    <div class="stat-box">
-                        <span class="stat-value" id="up-engagement">0%</span>
-                        <span class="stat-label">Avg. Engagement</span>
-                    </div>
-                    <div class="stat-box">
-                        <span class="stat-value" id="up-platforms">0</span>
-                        <span class="stat-label">Platforms</span>
-                    </div>
-                    <div class="stat-box">
-                        <span class="stat-value" id="up-match">—</span>
-                        <span class="stat-label">Match</span>
-                    </div>
+                    <p class="pf-bio" id="up-bio"></p>
+                    <p class="pf-meta"><svg class="icon"><use href="#i-pin"/></svg> <span id="up-location"></span></p>
                 </div>
-            </div>
 
-            <section class="section socials-section">
-                <div class="section-heading">
-                    <div>
-                        <span class="section-eyebrow">🌐 Creator Channels</span>
-                        <h2>Social Accounts</h2>
-                    </div>
+                <div class="pf-stats">
+                    <div class="pf-stat"><b id="up-reach">0</b><span>Reach</span></div>
+                    <div class="pf-stat"><b id="up-engagement">0%</b><span>Engagement</span></div>
+                    <div class="pf-stat pf-stat-accent"><b id="up-match">—</b><span>Match</span></div>
+                    <div class="pf-stat"><b id="up-posts-count">0</b><span>Posts</span></div>
                 </div>
-                <div class="socials-grid" id="up-socials"></div>
             </section>
 
-            <section class="section">
-                <div class="section-heading">
+            <section class="pf-section">
+                <div class="pf-section-head">
                     <div>
-                        <span class="section-eyebrow">📂 Activity</span>
-                        <h2>Recent Posts</h2>
+                        <h3>Channels</h3>
+                        <p id="up-channels-total"></p>
                     </div>
                 </div>
-                <div class="user-posts-list" id="up-posts"></div>
+                <div class="pf-channels" id="up-socials"></div>
+            </section>
+
+            <section class="pf-section">
+                <div class="pf-section-head">
+                    <div>
+                        <h3>Posts</h3>
+                    </div>
+                </div>
+                <div class="pf-posts" id="up-posts"></div>
             </section>
 
         </section>
 
 
     </main>
+
+    <!-- Desktop right column — people, requests and roles alongside any view -->
+    <aside class="right-rail" aria-label="Suggestions">
+        <section class="rail-card hidden" id="rail-requests-card">
+            <div class="rail-head">
+                <h3>Connection requests</h3>
+            </div>
+            <div id="rail-requests"></div>
+        </section>
+
+        <section class="rail-card">
+            <div class="rail-head">
+                <h3>Suggested for you</h3>
+                <button class="rail-link nav-switch-trigger" data-target="view-discover">See all</button>
+            </div>
+            <div id="rail-people"></div>
+        </section>
+
+        <section class="rail-card">
+            <div class="rail-head">
+                <h3>Open roles</h3>
+                <button class="rail-link" id="rail-see-jobs">See all</button>
+            </div>
+            <div id="rail-jobs"></div>
+        </section>
+    </aside>
 
 
 
@@ -1013,31 +1122,50 @@
         </div>
     </div>
 
-    <!-- 1. CREATE POST MODAL -->
+    <!-- 1. CREATE POST — a composer, not a form -->
     <div class="modal-overlay hidden" id="modal-create">
-        <div class="modal-card">
-            <div class="modal-header">
-                <h3>New Inspo Post</h3>
-                <button class="modal-close" id="btn-close-create">&times;</button>
+        <div class="modal-card composer">
+            <div class="composer-head">
+                <button type="button" class="composer-cancel" id="btn-close-create">Cancel</button>
+                <h3>New post</h3>
+                <span class="composer-head-spacer"></span>
             </div>
+
             <form id="form-create-post">
-                <div class="form-group">
-                    <label>Post Content</label>
-                    <textarea id="create-post-text" rows="4" placeholder="Share an idea, question, project update, or collab callout..." required></textarea>
+                <div class="composer-author">
+                    <span class="small-avatar" id="composer-avatar"></span>
+                    <div>
+                        <strong id="composer-name"></strong>
+                        <span>Posting to your network</span>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label>Category / Niche Tag</label>
-                    <select id="create-post-niche">
-                        <option value="Tech Creator">Tech</option>
-                        <option value="Gaming Creator">Gaming</option>
-                        <option value="Travel Creator">Travel</option>
-                        <option value="Music Creator">Music</option>
-                        <option value="Lifestyle Creator">Lifestyle</option>
-                    </select>
+
+                <textarea id="create-post-text" rows="3" maxlength="2000" placeholder="What are you working on?" aria-label="Post text"></textarea>
+
+                <!-- Optional photo, scaled down in the browser before upload -->
+                <div class="create-photo">
+                    <input type="file" id="create-post-image" accept="image/*" hidden>
+                    <div class="create-photo-preview hidden" id="create-photo-preview">
+                        <img id="create-photo-img" alt="Selected photo">
+                        <button type="button" class="create-photo-remove" id="btn-remove-photo" aria-label="Remove photo"><svg class="icon"><use href="#i-x"/></svg></button>
+                    </div>
                 </div>
-                <div class="modal-actions">
-                    <button type="button" class="btn-secondary" id="btn-cancel-create">Cancel</button>
-                    <button type="submit" class="btn-primary">Post to Network</button>
+
+                <div class="composer-topics" role="radiogroup" aria-label="Topic">
+                    <label class="composer-topic"><input type="radio" name="create-post-niche" value="Tech Creator" checked><span>Tech</span></label>
+                    <label class="composer-topic"><input type="radio" name="create-post-niche" value="Gaming Creator"><span>Gaming</span></label>
+                    <label class="composer-topic"><input type="radio" name="create-post-niche" value="Travel Creator"><span>Travel</span></label>
+                    <label class="composer-topic"><input type="radio" name="create-post-niche" value="Music Creator"><span>Music</span></label>
+                    <label class="composer-topic"><input type="radio" name="create-post-niche" value="Lifestyle Creator"><span>Lifestyle</span></label>
+                </div>
+
+                <div class="composer-bar">
+                    <button type="button" class="composer-tool" id="btn-add-photo">
+                        <svg class="icon"><use href="#i-image"/></svg>
+                        <span>Photo</span>
+                    </button>
+                    <span class="composer-count" id="composer-count"></span>
+                    <button type="submit" class="composer-post" id="btn-submit-post" disabled>Post</button>
                 </div>
             </form>
         </div>
@@ -1164,9 +1292,11 @@
                         </div>
                     </div>
                     <p class="post-content" id="post-detail-content"></p>
+                    <div class="post-image hidden" id="post-detail-image"><img alt=""></div>
                     <div class="post-footer">
-                        <button class="btn-like" id="post-detail-like">♡ <span id="post-detail-like-count">0</span></button>
-                        <span class="post-detail-comment-total">💬 <span id="post-detail-comment-count">0</span></span>
+                        <button class="btn-like" id="post-detail-like"><svg class="icon"><use href="#i-heart"/></svg> <span id="post-detail-like-count">0</span></button>
+                        <span class="post-detail-comment-total"><svg class="icon"><use href="#i-comment"/></svg> <span id="post-detail-comment-count">0</span></span>
+                        <button class="btn-delete btn-delete-post hidden" id="post-detail-delete">Delete</button>
                     </div>
                 </div>
 

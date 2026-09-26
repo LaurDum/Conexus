@@ -33,9 +33,16 @@ public class Post {
 
     private String niche;
 
+    /** The caption. May be empty when the post is a photo. */
     @Column(columnDefinition = "TEXT")
-    @NotBlank
     private String content;
+
+    /**
+     * Pixel size of the attached photo, or null when there is none. Sent with
+     * the feed so the page can reserve the right space before the image loads.
+     */
+    private Integer imageWidth;
+    private Integer imageHeight;
 
     @Builder.Default
     private int likesCount = 0;

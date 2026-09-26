@@ -8,6 +8,7 @@ import com.conexus.repository.ProfileInfoRepository;
 import com.conexus.repository.SocialAccountRepository;
 import com.conexus.repository.UserRepository;
 import com.conexus.security.CurrentUser;
+import com.conexus.service.ReachService;
 import com.conexus.service.SocialAccountService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -25,6 +26,7 @@ public class OnboardingController {
     private final UserRepository userRepository;
     private final ProfileInfoRepository profileInfoRepository;
     private final SocialAccountRepository socialAccountRepository;
+    private final ReachService reachService;
 
     @PostMapping("/complete")
     @Transactional
@@ -80,6 +82,8 @@ public class OnboardingController {
                 socialAccountRepository.save(sa);
             }
         }
+
+        reachService.record(user.getId());
 
         // The caller keeps the token they already signed in with; onboarding is
         // not an authentication event.

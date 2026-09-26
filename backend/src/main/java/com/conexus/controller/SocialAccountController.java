@@ -2,6 +2,7 @@ package com.conexus.controller;
 
 import com.conexus.model.SocialAccount;
 import com.conexus.security.CurrentUser;
+import com.conexus.service.ReachService;
 import com.conexus.service.SocialAccountService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -17,10 +18,14 @@ import java.util.UUID;
 public class SocialAccountController {
 
     private final SocialAccountService socialAccountService;
+    private final ReachService reachService;
 
     /** GET /api/socials — the signed-in user's linked accounts. */
     @GetMapping
     public List<SocialAccount> getAll(@CurrentUser Long userId) {
+        // A visit is a good moment to note today's reach, so the history has
+        // a point for every day someone uses the app.
+        reachService.record(userId);
         return socialAccountService.getByUserId(userId);
     }
 
@@ -60,7 +65,9 @@ public class SocialAccountController {
         if (!isUpdate) {
             account.setId("soc_" + UUID.randomUUID().toString().substring(0, 8));
         }
-        return ResponseEntity.ok(socialAccountService.save(account));
+        SocialAccount saved = socialAccountService.save(account);
+        reachService.record(userId);
+        return ResponseEntity.ok(saved);
     }
 
     /** DELETE /api/socials/{id} — only the owner may remove it. */
@@ -71,6 +78,7 @@ public class SocialAccountController {
                     .body(Collections.singletonMap("message", "That account is not yours to remove"));
         }
         socialAccountService.delete(id);
+        reachService.record(userId);
         return ResponseEntity.noContent().build();
     }
 }

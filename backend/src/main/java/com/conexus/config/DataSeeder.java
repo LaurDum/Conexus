@@ -31,6 +31,9 @@ public class DataSeeder implements CommandLineRunner {
     private final CommentRepository commentRepository;
     private final BrandDealRepository brandDealRepository;
     private final JobRepository jobRepository;
+    private final com.conexus.repository.ReachSnapshotRepository reachSnapshotRepository;
+    private final PostImageRepository postImageRepository;
+    private final com.conexus.service.ReachService reachService;
 
     /**
      * Replies that read naturally under any creator post, so the demo feed has
@@ -63,6 +66,104 @@ public class DataSeeder implements CommandLineRunner {
         linkCreatorsToAccounts();
         seedBrandDeals();
         seedJobs();
+        seedDemoReachHistory();
+        seedPhotoPosts();
+    }
+
+    /**
+     * A few photo posts from the demo creators, so the feed shows what image
+     * posts look like. The pictures are drawn in code (DemoImages). Runs once,
+     * on a database with no photos yet, and only for accounts that exist.
+     */
+    private void seedPhotoPosts() {
+        if (postImageRepository.count() > 0) return;
+
+        Object[][] demo = {
+            { "marcus_reviews", "Tech Reviewer",
+              "Finally finished the new review desk. Matte black, one light strip, zero reflections on camera.",
+              (java.util.function.Supplier<byte[]>) DemoImages::studioDesk },
+            { "maria_travels", "Travel Creator",
+              "Golden hour over the rooftops in Tokyo. Full city guide with every spot I filmed goes up next week.",
+              (java.util.function.Supplier<byte[]>) DemoImages::tokyoDusk },
+            { "david_sound", "Music Creator",
+              "Mixing the soundtrack for a friend's indie game this week. This is the master bus doing its thing.",
+              (java.util.function.Supplier<byte[]>) DemoImages::mixingSession },
+            { "elena_ai", "Tech & AI Creator",
+              "Mapped how I use AI tools on one video, from script to thumbnail. Seven tools, one workflow. Breakdown tomorrow.",
+              (java.util.function.Supplier<byte[]>) DemoImages::aiWorkflow }
+        };
+
+        for (Object[] d : demo) {
+            userRepository.findByUsername((String) d[0]).ifPresent(user -> {
+                @SuppressWarnings("unchecked")
+                byte[] image = ((java.util.function.Supplier<byte[]>) d[3]).get();
+
+                String name = profileInfoRepository.findByUserId(user.getId())
+                        .map(ProfileInfo::getDisplayName)
+                        .filter(n -> n != null && !n.isBlank())
+                        .orElse(user.getDisplayName() != null ? user.getDisplayName() : user.getUsername());
+
+                Post post = postRepository.save(Post.builder()
+                        .authorId(user.getId())
+                        .authorName(name)
+                        .niche((String) d[1])
+                        .content((String) d[2])
+                        .avatarClass(user.getBgClass() != null ? user.getBgClass() : "avatar-purple")
+                        .imageWidth(DemoImages.W)
+                        .imageHeight(DemoImages.H)
+                        .build());
+
+                postImageRepository.save(PostImage.builder()
+                        .postId(post.getId())
+                        .contentType("image/jpeg")
+                        .data(image)
+                        .build());
+            });
+        }
+        log.info("Seeded demo photo posts");
+    }
+
+    /** The seeded demo accounts — never anyone who signed up for real. */
+    private static final List<String> DEMO_USERNAMES = Arrays.asList(
+            "alex_creates", "brand_techgear", "elena_ai", "maria_travels",
+            "david_sound", "marcus_reviews", "lucas_silva", "sophia_rossi");
+
+    /**
+     * Gives each demo account 30 days of reach history, so the Home graph has
+     * something to draw in a demo. It climbs gently to the account's current
+     * total with the odd flat day, the same shape every time (seeded by user
+     * id). Real accounts get no invented history: theirs starts the first day
+     * they use the app.
+     */
+    private void seedDemoReachHistory() {
+        for (String username : DEMO_USERNAMES) {
+            userRepository.findByUsername(username).ifPresent(user -> {
+                if (reachSnapshotRepository.existsByUserId(user.getId())) return;
+
+                long current = reachService.currentTotal(user.getId());
+                if (current <= 0) return;
+
+                java.util.Random random = new java.util.Random(user.getId() * 7919L);
+                double startShare = 0.90 + random.nextDouble() * 0.06;
+                java.time.LocalDate today = java.time.LocalDate.now();
+                List<com.conexus.model.ReachSnapshot> rows = new java.util.ArrayList<>();
+
+                for (int back = 30; back >= 1; back--) {
+                    double progress = (30 - back) / 30.0;
+                    double wobble = (random.nextDouble() - 0.35) * 0.006;
+                    double share = Math.min(1.0, startShare + (1 - startShare) * Math.pow(progress, 1.3) + wobble);
+                    long total = Math.round(current * share / 100.0) * 100;
+                    rows.add(com.conexus.model.ReachSnapshot.builder()
+                            .userId(user.getId())
+                            .day(today.minusDays(back))
+                            .total(total)
+                            .build());
+                }
+                reachSnapshotRepository.saveAll(rows);
+                reachService.record(user.getId());
+                log.info("Seeded 30 days of demo reach history for {}", username);
+            });
+        }
     }
 
     /**
