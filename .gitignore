@@ -29,3 +29,6 @@ npm-debug.log*
 
 # ── Local backups (git is the backup now) ──────────────────────────────────
 *.bak
+
+# ── Personal notes, kept locally ───────────────────────────────────────────
+DEPLOYMENT.md
