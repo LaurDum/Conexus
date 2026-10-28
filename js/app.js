@@ -155,7 +155,6 @@ document.addEventListener("DOMContentLoaded", () => {
         setPendingPhoto(null);
         feedMode = readSetting("conexus_feed_mode", ["friends", "everyone"], "friends");
         feedAuthorFilter = null;
-        skippedSteps.clear();
         document.querySelectorAll(".feed-modes .chip").forEach(c =>
             c.classList.toggle("active", c.getAttribute("data-feed-mode") === feedMode));
         showHomePane("overview");
@@ -276,7 +275,9 @@ document.addEventListener("DOMContentLoaded", () => {
         if (hours < 24) return `${hours}h`;
         const days = Math.floor(hours / 24);
         if (days < 7) return `${days}d`;
-        return new Date(isoDate).toLocaleDateString();
+        if (days < 30) return `${Math.floor(days / 7)}w`;
+        if (days < 365) return `${Math.floor(days / 30)}mo`;
+        return `${Math.floor(days / 365)}y`;
     }
 
     /**
@@ -432,6 +433,14 @@ document.addEventListener("DOMContentLoaded", () => {
         initOnboardingStep(1);
     }
 
+    function measureHeader() {
+        const header = document.querySelector(".header");
+        if (!header) return;
+        const h = getComputedStyle(header).position === "sticky" ? header.offsetHeight : 0;
+        document.documentElement.style.setProperty("--header-h", `${h}px`);
+    }
+    window.addEventListener("resize", () => measureHeader());
+
     function launchApp() {
         if (!state.currentUser) {
             showAuthScreen();
@@ -452,6 +461,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 requestAnimationFrame(() => bubble.classList.remove("no-animation"));
             });
         }
+
+        // Home's Overview / Feed tabs pin just under the header, whose height
+        // depends on the screen; measure it rather than guess.
+        measureHeader();
 
         // The page's own history entry stands for the tab it opened on.
         try { history.replaceState({ view: state.activeView }, ""); } catch (e) { /* sandboxed */ }
@@ -1272,16 +1285,21 @@ document.addEventListener("DOMContentLoaded", () => {
         const label = !connected ? "Connect"
             : incoming ? "Accept"
             : status === "PENDING" ? "Requested" : "Connected";
+        const match = Math.max(0, Math.min(100, Number(c.match) || 0));
+        const stateClass = !connected ? "is-new" : incoming ? "is-incoming" : status === "PENDING" ? "is-pending" : "is-connected";
         return `
             <article class="creator-card discover-card" data-creator-id="${escapeHtml(c.id || "")}" data-owner-id="${escapeHtml(c.userId || "")}">
-                <div class="creator-avatar tone" ${toneAttrs(c.userId, c.name)}>${escapeHtml(c.avatar || initials(c.name))}</div>
-                <button class="creator-more" aria-label="Open profile">•••</button>
+                <div class="cc-head">
+                    <span class="cc-ring${match ? "" : " no-match"}" style="--m:${match}">
+                        <span class="creator-avatar tone" ${toneAttrs(c.userId, c.name)}>${escapeHtml(c.avatar || initials(c.name))}</span>
+                    </span>
+                    <button class="creator-more" aria-label="Open ${escapeHtml(c.name)}'s profile">${icon("link-out")}</button>
+                </div>
                 <h3>${escapeHtml(c.name)}</h3>
                 <p class="creator-type">${escapeHtml(c.niche)}</p>
-                <div class="creator-info">${escapeHtml(plainLocation(c.location))}</div>
-                <div class="creator-followers">${escapeHtml(c.followers)} followers</div>
-                ${c.match ? `<div class="match"><span>${escapeHtml(c.match)}%</span> match</div>` : ""}
-                <button class="connect-button ${connected && !incoming ? "connected" : ""}" data-name="${escapeHtml(c.name)}">${label}</button>
+                <p class="cc-meta"><span class="creator-info">${escapeHtml(plainLocation(c.location))}</span><span class="creator-followers">${escapeHtml(c.followers)}</span></p>
+                ${match ? `<div class="match"><span>${match}%</span> match</div>` : ""}
+                <button class="connect-button ${stateClass} ${connected && !incoming ? "connected" : ""}" data-name="${escapeHtml(c.name)}">${label}</button>
             </article>
         `;
     }
@@ -1811,14 +1829,32 @@ document.addEventListener("DOMContentLoaded", () => {
         return card.getAttribute("data-step") || `step-${i}`;
     }
 
+    /** Steps someone closed with the X: they do not want them at all. */
+    function dismissedSteps() {
+        try {
+            return new Set(JSON.parse(localStorage.getItem(`${stepStorageKey()}_dismissed`) || "[]"));
+        } catch (e) {
+            return new Set();
+        }
+    }
+
+    function dismissStep(key) {
+        const set = dismissedSteps();
+        set.add(key);
+        try { localStorage.setItem(`${stepStorageKey()}_dismissed`, JSON.stringify([...set])); } catch (e) { /* private mode */ }
+        restoreStepChecks();
+    }
+
     function restoreStepChecks() {
         let done = [];
         try { done = JSON.parse(localStorage.getItem(stepStorageKey()) || "[]"); } catch (e) { done = []; }
+        const dismissed = dismissedSteps();
 
         document.querySelectorAll("#view-recommendations .step-card").forEach((card, i) => {
             const box = card.querySelector(".step-checkbox");
             if (box) box.checked = done.includes(stepKey(card, i));
             card.classList.toggle("done", !!box?.checked);
+            if (dismissed.has(stepKey(card, i))) card.classList.add("hidden");
         });
         renderPendingSteps();
     }
@@ -2028,7 +2064,7 @@ document.addEventListener("DOMContentLoaded", () => {
             action.setAttribute("data-user-id", pick.userId || "");
         }
         card.setAttribute("data-step", `collab-${pick.userId || pick.id}`);
-        renderPendingSteps();
+        restoreStepChecks();
     }
 
     /** Wording for each kind of notification. */
@@ -2045,7 +2081,13 @@ document.addEventListener("DOMContentLoaded", () => {
     async function loadNotifications() {
         try {
             const data = await api("/api/notifications");
-            state.notifications = data.items || [];
+            const seen = new Set();
+            state.notifications = (data.items || []).filter(n => {
+                const key = [n.type, n.actorId, n.excerpt || "", n.postId || "", n.commentId || "", n.threadId || ""].join("|");
+                if (seen.has(key)) return false;
+                seen.add(key);
+                return true;
+            });
             state.unreadNotifications = data.unread || 0;
         } catch (err) {
             state.notifications = [];
@@ -2281,6 +2323,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const requests = state.connectionRequests || [];
         wrap.classList.toggle("hidden", requests.length === 0);
+        const countEl = document.getElementById("requests-count");
+        if (countEl) countEl.textContent = requests.length || "";
         if (!requests.length) {
             list.innerHTML = "";   // do not leave stale cards in the hidden section
             return;
@@ -2317,6 +2361,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             state.connectionRequests = state.connectionRequests.filter(x => String(x.id) !== String(requestId));
             renderConnectionRequests();
+            renderPulseActivity();
 
             // The bar lives in the open conversation; take it away either way.
             if (state.activeThreadId && state.chats[state.activeThreadId]) {
@@ -2351,6 +2396,8 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
+    document.getElementById("inbox-search")?.addEventListener("input", () => renderInbox());
+
     function renderInbox() {
         if (!inboxList) return;
 
@@ -2368,8 +2415,36 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        inboxList.innerHTML = threadIds.map(id => {
+        // Search narrows by name or anything said in the conversation.
+        const needle = (document.getElementById("inbox-search")?.value || "").trim().toLowerCase();
+        const shownIds = needle
+            ? threadIds.filter(id => {
+                const t = state.chats[id];
+                return (t.name || "").toLowerCase().includes(needle)
+                    || (t.messages || []).some(m => (m.text || "").toLowerCase().includes(needle));
+            })
+            : threadIds;
+
+        if (!shownIds.length) {
+            inboxList.innerHTML = `<div class="inbox-empty">No conversations match “${escapeHtml(needle)}”.</div>`;
+            return;
+        }
+
+        inboxList.innerHTML = shownIds.map(id => {
             const thread = state.chats[id];
+            const messages = thread.messages || [];
+            const last = messages[messages.length - 1];
+            const mine = last && !last.system && last.sender === "me";
+
+            // Unread count: everything they sent since your last word.
+            let unreadCount = 0;
+            if (thread.unread) {
+                for (let i = messages.length - 1; i >= 0 && messages[i].sender !== "me"; i--) unreadCount++;
+                unreadCount = Math.max(unreadCount, 1);
+            }
+
+            const seen = mine && thread.partnerSeen;
+            const preview = last ? (last.system ? asYou(last.text) : last.text) : asYou(thread.snippet);
             return `
                 <div class="chat-thread ${thread.unread ? 'unread' : ''}" data-thread-id="${escapeHtml(id)}">
                     <div class="creator-avatar tone" ${toneAttrs(thread.partnerUserId, thread.name)}>${escapeHtml(thread.avatar)}</div>
@@ -2378,9 +2453,11 @@ document.addEventListener("DOMContentLoaded", () => {
                             <h4>${escapeHtml(thread.name)}</h4>
                             <span class="thread-time">${escapeHtml(thread.updatedAt ? timeAgo(thread.updatedAt) : (thread.time || ""))}</span>
                         </div>
-                        <p class="thread-snippet">${escapeHtml(asYou(thread.snippet))}</p>
+                        <div class="thread-bottom">
+                            <p class="thread-snippet">${mine ? `<span class="thread-you">${seen ? icon("check-double") : ""}You:</span> ` : ""}${escapeHtml(preview || "Say hello")}</p>
+                            ${unreadCount ? `<span class="unread-count" aria-label="${unreadCount} unread">${unreadCount > 9 ? "9+" : unreadCount}</span>` : ""}
+                        </div>
                     </div>
-                    ${thread.unread ? '<span class="unread-dot"></span>' : ''}
                 </div>
             `;
         }).join("");
@@ -2391,8 +2468,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (!threadId) return;
 
                 thread.classList.remove("unread");
-                const unreadDot = thread.querySelector(".unread-dot");
-                if (unreadDot) unreadDot.remove();
+                thread.querySelector(".unread-count")?.remove();
 
                 openChatThread(threadId);
 
@@ -2429,6 +2505,12 @@ document.addEventListener("DOMContentLoaded", () => {
         if (chatHeaderStatus) chatHeaderStatus.textContent = threadData.status;
 
         // Tag the header so the shared [data-user-id] handler can open them.
+        const profileBtn = document.getElementById("chat-view-profile");
+        if (profileBtn) {
+            profileBtn.classList.toggle("hidden", !threadData.partnerUserId);
+            if (threadData.partnerUserId) profileBtn.setAttribute("data-user-id", threadData.partnerUserId);
+        }
+
         const chatUserInfo = document.querySelector("#drawer-chat .chat-user-info");
         if (chatUserInfo) {
             if (threadData.partnerUserId) {
@@ -2505,7 +2587,18 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!chatMessagesContainer) return;
 
         let lastDay = null;
-        chatMessagesContainer.innerHTML = messages.map(msg => {
+        // Messages from the same side in a row are one group: joined corners,
+        // and the time only under the last of them.
+        const side = m => (m && !m.system ? (m.sender === "me" ? "me" : "them") : null);
+        const dayOf = m => (m && m.sentAt ? new Date(m.sentAt).toDateString() : null);
+        const lastMineIndex = (() => {
+            for (let i = messages.length - 1; i >= 0; i--) if (side(messages[i]) === "me") return i;
+            return -1;
+        })();
+        const lastIsMine = lastMineIndex === messages.length - 1 && lastMineIndex >= 0;
+        const thread = state.chats[state.activeThreadId] || {};
+
+        chatMessagesContainer.innerHTML = messages.map((msg, i) => {
             // A divider whenever the day changes. Messages from before send
             // times were recorded have no day to group by.
             let divider = "";
@@ -2520,21 +2613,84 @@ document.addEventListener("DOMContentLoaded", () => {
             if (msg.system) {
                 return `${divider}
                     <div class="msg-system">
-                        <span>${escapeHtml(asYou(msg.text))}</span>
-                        <small>${escapeHtml(messageClock(msg))}</small>
+                        ${icon("user-plus")}<span>${escapeHtml(asYou(msg.text))}</span><small>${escapeHtml(messageClock(msg))}</small>
                     </div>
                 `;
             }
+
+            const me = side(msg);
+            const prev = messages[i - 1];
+            const next = messages[i + 1];
+            const joinsPrev = side(prev) === me && dayOf(prev) === dayOf(msg) && !divider;
+            const joinsNext = side(next) === me && dayOf(next) === dayOf(msg);
+            const pos = joinsPrev && joinsNext ? "mid" : joinsPrev ? "end" : joinsNext ? "start" : "solo";
+
             // Escaped: message text is written by another person.
             return `${divider}
-                <div class="msg-bubble ${msg.sender === "me" ? "sent" : "received"}">
+                <div class="msg-bubble ${me === "me" ? "sent" : "received"} g-${pos}">
                     <p>${escapeHtml(msg.text)}</p>
-                    <span class="msg-time">${escapeHtml(messageClock(msg))}</span>
+                    ${joinsNext ? "" : `<span class="msg-time">${escapeHtml(messageClock(msg))}</span>`}
                 </div>
+                ${i === lastMineIndex && lastIsMine && thread.partnerUserId
+                    ? `<div class="msg-receipt">${thread.partnerSeen ? `${icon("check-double")} Seen` : "Sent"}</div>`
+                    : ""}
             `;
         }).join("");
 
+        renderQuickReplies(messages);
+
         chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight;
+    }
+
+    /**
+     * A few starters above the composer. They only fill the field — nothing
+     * is sent until you press send — and they go once you start typing.
+     */
+    function renderQuickReplies(messages) {
+        const box = document.getElementById("chat-quick-replies");
+        if (!box) return;
+        const spoken = (messages || []).filter(m => !m.system);
+        const last = spoken[spoken.length - 1];
+        const typed = chatInputText && chatInputText.value.trim();
+
+        let options = [];
+        if (!spoken.length) options = ["Hey! Love what you make", "Want to collab on something?", "What are you working on?"];
+        else if (last.sender !== "me") options = ["Sounds good!", "Let's do it", "When works for you?"];
+
+        box.innerHTML = options.map(o => `<button type="button" class="quick-reply">${escapeHtml(o)}</button>`).join("");
+        box.classList.toggle("hidden", !options.length || !!typed);
+    }
+
+    document.getElementById("chat-quick-replies")?.addEventListener("click", (e) => {
+        const chip = e.target.closest(".quick-reply");
+        if (!chip || !chatInputText) return;
+        chatInputText.value = chip.textContent;
+        chatInputText.dispatchEvent(new Event("input"));
+        chatInputText.focus();
+    });
+
+    document.getElementById("chat-view-profile")?.addEventListener("click", (e) => {
+        const id = e.currentTarget.getAttribute("data-user-id");
+        if (id) document.querySelector("#drawer-chat .chat-user-info")?.click();
+    });
+
+    // The composer grows with what you write, up to a few lines; Enter sends
+    // and Shift+Enter starts a new line.
+    if (chatInputText) {
+        const fit = () => {
+            chatInputText.style.height = "auto";
+            chatInputText.style.height = Math.min(chatInputText.scrollHeight, 120) + "px";
+            const has = chatInputText.value.trim().length > 0;
+            formChatSend?.classList.toggle("has-text", has);
+            document.getElementById("chat-quick-replies")?.classList.toggle("hidden", has || !document.querySelector("#chat-quick-replies .quick-reply"));
+        };
+        chatInputText.addEventListener("input", fit);
+        chatInputText.addEventListener("keydown", (e) => {
+            if (e.key === "Enter" && !e.shiftKey && !e.isComposing) {
+                e.preventDefault();
+                formChatSend?.requestSubmit();
+            }
+        });
     }
 
     if (btnCloseChat && drawerChat) {
@@ -2555,6 +2711,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             const threadId = state.activeThreadId;
             chatInputText.value = "";
+            chatInputText.dispatchEvent(new Event("input"));
 
             try {
                 // Render the thread the server saved, so what is on screen is
@@ -2630,12 +2787,14 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (!soc) return;
 
                 document.getElementById("social-edit-id").value = soc.id;
-                document.getElementById("social-modal-title").textContent = "Edit Social Account";
-                document.getElementById("btn-save-social").textContent = "Save Changes";
+                document.getElementById("social-modal-title").textContent = "Edit channel";
+                document.getElementById("btn-save-social").textContent = "Save changes";
                 document.getElementById("social-platform-select").value = soc.platform;
                 document.getElementById("social-handle-input").value = soc.handle || "";
                 document.getElementById("social-url-input").value = soc.url || "";
                 document.getElementById("social-followers-input").value = soc.followers || "";
+                urlWasTyped = true;
+                syncPlatformPicker();
 
                 modalAddSocial.classList.remove("hidden");
             };
@@ -2661,8 +2820,10 @@ document.addEventListener("DOMContentLoaded", () => {
         btnOpenAddSocial.addEventListener("click", () => {
             formAddSocial?.reset();
             document.getElementById("social-edit-id").value = "";
-            document.getElementById("social-modal-title").textContent = "Add Social Account";
-            document.getElementById("btn-save-social").textContent = "Save Social Account";
+            document.getElementById("social-modal-title").textContent = "Add a channel";
+            document.getElementById("btn-save-social").textContent = "Add channel";
+            urlWasTyped = false;
+            syncPlatformPicker();
             modalAddSocial.classList.remove("hidden");
         });
 
@@ -2670,6 +2831,84 @@ document.addEventListener("DOMContentLoaded", () => {
         btnCloseSocialModal?.addEventListener("click", closeSocialModal);
         btnCancelSocial?.addEventListener("click", closeSocialModal);
     }
+
+    // =========================================================================
+    // PLATFORM PICKER — icon tiles instead of a dropdown, and the link worked
+    // out from the handle so most people only type two things.
+    // =========================================================================
+
+    const PROFILE_URLS = {
+        youtube: h => `https://youtube.com/@${h}`,
+        tiktok: h => `https://tiktok.com/@${h}`,
+        instagram: h => `https://instagram.com/${h}`,
+        twitch: h => `https://twitch.tv/${h}`,
+        twitter: h => `https://x.com/${h}`,
+        substack: h => `https://${h}.substack.com`,
+        linkedin: h => `https://linkedin.com/in/${h}`
+    };
+
+    const HANDLE_HINTS = {
+        youtube: "@yourchannel", tiktok: "@yourname", instagram: "@yourname", twitch: "yourname",
+        twitter: "@yourname", discord: "Server name", spotify: "Show or artist name",
+        substack: "yourpublication", linkedin: "your-name", website: "yoursite.com"
+    };
+
+    /** True once the person has typed a link themselves; we stop filling it in. */
+    let urlWasTyped = false;
+    const platformPicker = document.getElementById("platform-picker");
+    const platformSelect = document.getElementById("social-platform-select");
+
+    if (platformPicker && platformSelect) {
+        platformPicker.innerHTML = [...platformSelect.options].map(o => {
+            const meta = platformMeta[o.value] || { name: o.textContent, icon: "globe", class: "platform-website" };
+            return `
+                <button type="button" class="platform-tile" role="radio" aria-checked="false" data-platform="${escapeHtml(o.value)}">
+                    <span class="platform-tile-icon ${meta.class}">${icon(meta.icon)}</span>
+                    <span>${escapeHtml(o.value === "website" ? "Website" : meta.name)}</span>
+                </button>`;
+        }).join("");
+
+        platformPicker.addEventListener("click", (e) => {
+            const tile = e.target.closest(".platform-tile");
+            if (!tile) return;
+            platformSelect.value = tile.getAttribute("data-platform");
+            platformSelect.dispatchEvent(new Event("change"));
+        });
+        platformSelect.addEventListener("change", () => {
+            syncPlatformPicker();
+            fillProfileUrl();
+        });
+    }
+
+    function syncPlatformPicker() {
+        if (!platformPicker || !platformSelect) return;
+        const value = platformSelect.value;
+        platformPicker.querySelectorAll(".platform-tile").forEach(t => {
+            const on = t.getAttribute("data-platform") === value;
+            t.classList.toggle("on", on);
+            t.setAttribute("aria-checked", String(on));
+        });
+        const handleInput = document.getElementById("social-handle-input");
+        if (handleInput) handleInput.placeholder = HANDLE_HINTS[value] || "Your handle";
+        const urlInput = document.getElementById("social-url-input");
+        if (urlInput) {
+            const build = PROFILE_URLS[value];
+            urlInput.placeholder = build ? build("yourname") : "https://";
+        }
+    }
+
+    function fillProfileUrl() {
+        const urlInput = document.getElementById("social-url-input");
+        const handle = (document.getElementById("social-handle-input")?.value || "").trim().replace(/^@/, "");
+        const build = PROFILE_URLS[platformSelect?.value];
+        if (!urlInput || urlWasTyped) return;
+        urlInput.value = build && handle ? build(encodeURIComponent(handle)) : "";
+    }
+
+    document.getElementById("social-handle-input")?.addEventListener("input", fillProfileUrl);
+    document.getElementById("social-url-input")?.addEventListener("input", (e) => {
+        urlWasTyped = e.target.value.trim() !== "";
+    });
 
     if (formAddSocial) {
         formAddSocial.addEventListener("submit", async (e) => {
@@ -3117,12 +3356,10 @@ document.addEventListener("DOMContentLoaded", () => {
         loadReach();
     });
 
-    /** Steps skipped from the overview this session; they stay open in Strategy. */
-    const skippedSteps = new Set();
-
     /**
-     * One Strategy step at a time. The steps are the same cards the Strategy
-     * page shows, so finishing one here ticks it there too.
+     * Every open Strategy step as a row of cards you can swipe through, so
+     * the next ones are always in view. Each card has its own action and an
+     * X for a step you do not want; doing a step ticks it in Strategy too.
      */
     function renderPulseNext() {
         const el = document.getElementById("pulse-next");
@@ -3132,73 +3369,77 @@ document.addEventListener("DOMContentLoaded", () => {
         const visible = all.map((card, i) => ({ card, key: stepKey(card, i) }))
             .filter(s => !s.card.classList.contains("hidden"));
         const open = visible.filter(s => !s.card.querySelector(".step-checkbox")?.checked);
-        const queue = open.filter(s => !skippedSteps.has(s.key));
         const doneCount = visible.length - open.length;
 
-        const dots = visible.map(s => {
-            const checked = s.card.querySelector(".step-checkbox")?.checked;
-            const current = queue[0] && queue[0].key === s.key;
-            return `<i class="${checked ? "done" : current ? "on" : ""}"></i>`;
-        }).join("");
-
-        if (!queue.length) {
-            const allDone = !open.length;
+        if (!open.length) {
             el.innerHTML = `
-                <span class="pulse-next-label">Next move</span>
-                <h3>${allDone ? "You're all caught up" : "You skipped the rest"}</h3>
-                <p>${allDone
-                    ? `All ${visible.length} Strategy steps are done. New ones arrive as your channels grow.`
-                    : `${open.length} step${open.length === 1 ? " is" : "s are"} still open in Strategy.`}</p>
-                <div class="pulse-next-row">
-                    <button class="pulse-go" data-act="${allDone ? "strategy" : "unskip"}">${allDone ? "Open Strategy" : "Show them again"}</button>
-                    <span class="pulse-dots">${dots}</span>
+                <div class="pulse-next-head"><span class="pulse-next-label">Next moves</span></div>
+                <div class="pulse-next-card is-done">
+                    <h3>You're all caught up</h3>
+                    <p>${visible.length ? `All ${visible.length} steps are done.` : "Nothing to do right now."} New ones arrive as your channels grow.</p>
+                    <div class="pulse-next-row"><button class="pulse-go" data-act="strategy">Open Strategy</button></div>
                 </div>`;
             return;
         }
 
-        const step = queue[0].card;
-        const action = step.querySelector(".btn-step-action");
-        const label = action ? action.textContent.replace("→", "").trim() : "Mark done";
-        const position = visible.findIndex(s => s.key === queue[0].key) + 1;
-
-        el.setAttribute("data-step-key", queue[0].key);
         el.innerHTML = `
-            <span class="pulse-next-label">Next move · ${position} of ${visible.length}${doneCount ? ` · ${doneCount} done` : ""}</span>
-            <h3>${escapeHtml(step.querySelector("h4")?.textContent || "")}</h3>
-            <p>${escapeHtml(step.querySelector(".step-content > p")?.textContent || "")}</p>
-            <div class="pulse-next-row">
-                <button class="pulse-go" data-act="do">${escapeHtml(label)}</button>
-                <button class="pulse-skip" data-act="skip">Skip</button>
-                <span class="pulse-dots">${dots}</span>
+            <div class="pulse-next-head">
+                <span class="pulse-next-label">Next moves · ${open.length} open${doneCount ? ` · ${doneCount} done` : ""}</span>
+                <span class="pulse-dots" aria-hidden="true">${open.map((s, i) => `<i class="${i === 0 ? "on" : ""}"></i>`).join("")}</span>
+            </div>
+            <div class="pulse-next-track" tabindex="0" aria-label="Next moves, swipe for more">
+                ${open.map((s, i) => {
+                    const action = s.card.querySelector(".btn-step-action");
+                    const label = action ? action.textContent.replace("→", "").trim() : "Mark done";
+                    const tag = s.card.querySelector(".step-tag")?.textContent || "";
+                    return `
+                        <article class="pulse-next-card" data-step-key="${escapeHtml(s.key)}">
+                            <button class="pulse-dismiss" data-act="dismiss" aria-label="Not interested">${icon("x")}</button>
+                            <span class="pulse-next-step">${i + 1} of ${open.length}${tag ? ` · ${escapeHtml(tag)}` : ""}</span>
+                            <h3>${escapeHtml(s.card.querySelector("h4")?.textContent || "")}</h3>
+                            <p>${escapeHtml(s.card.querySelector(".step-content > p")?.textContent || "")}</p>
+                            <div class="pulse-next-row">
+                                <button class="pulse-go" data-act="do">${escapeHtml(label)}</button>
+                            </div>
+                        </article>`;
+                }).join("")}
             </div>`;
+
+        // The dots follow the card in view.
+        const track = el.querySelector(".pulse-next-track");
+        const dots = el.querySelectorAll(".pulse-dots i");
+        track?.addEventListener("scroll", () => {
+            const card = track.querySelector(".pulse-next-card");
+            if (!card) return;
+            const index = Math.round(track.scrollLeft / (card.offsetWidth + 10));
+            dots.forEach((d, i) => d.classList.toggle("on", i === index));
+        }, { passive: true });
     }
 
     document.getElementById("pulse-next")?.addEventListener("click", (e) => {
         const act = e.target.closest("[data-act]")?.getAttribute("data-act");
         if (!act) return;
-        const el = e.currentTarget;
 
         if (act === "strategy") { switchView("view-recommendations"); return; }
-        if (act === "unskip") { skippedSteps.clear(); renderPulseNext(); return; }
 
-        const key = el.getAttribute("data-step-key");
+        const key = e.target.closest(".pulse-next-card")?.getAttribute("data-step-key");
         const all = [...document.querySelectorAll("#view-recommendations .step-card")];
         const card = all.find((c, i) => stepKey(c, i) === key);
         if (!card) return;
 
-        if (act === "skip") {
-            skippedSteps.add(key);
-            renderPulseNext();
+        if (act === "dismiss") {
+            dismissStep(key);
+            showToast("Removed. You won't see that one again.");
             return;
         }
 
         // Do it: run the step's own action where it has one, then tick it,
-        // which saves it and moves the overview on.
+        // which saves it and moves the row on.
         card.querySelector(".btn-step-action")?.click();
         const box = card.querySelector(".step-checkbox");
         if (box && !box.checked) {
             box.checked = true;
-            box.dispatchEvent(new Event("change"));
+            box.dispatchEvent(new Event("change", { bubbles: true }));
         }
         showToast("Done — ticked off in Strategy");
     });
@@ -3215,19 +3456,30 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         el.innerHTML = items.map(n => {
-            const meta = NOTIFICATION_TEXT[n.type] || { verb: "interacted with you" };
+            const meta = NOTIFICATION_TEXT[n.type] || { icon: "bell", verb: "interacted with you" };
             // A request and its acceptance are both CONNECTION; the excerpt says which.
             const verb = n.type === "CONNECTION" && n.excerpt ? escapeHtml(n.excerpt) : meta.verb;
+            const request = n.type === "CONNECTION"
+                ? (state.connectionRequests || []).find(r => String(r.requesterId) === String(n.actorId))
+                : null;
             return `
-                <button class="pulse-item${n.read ? "" : " unread"}" data-notification-id="${escapeHtml(n.id)}">
-                    <span class="small-avatar tone" ${toneAttrs(n.actorId, n.actorName)}>${escapeHtml(initials(n.actorName || "?"))}</span>
-                    <span class="pulse-item-text"><b>${escapeHtml(n.actorName || "Someone")}</b> ${verb}${n.excerpt && n.type !== "CONNECTION" ? `<small>${escapeHtml(n.excerpt)}</small>` : ""}</span>
-                    <time>${escapeHtml(timeAgo(n.createdAt))}</time>
-                </button>`;
+                <div class="pulse-item${n.read ? "" : " unread"}" data-notification-id="${escapeHtml(n.id)}">
+                    <span class="pulse-item-avatar">
+                        <span class="small-avatar tone" ${toneAttrs(n.actorId, n.actorName)}>${escapeHtml(initials(n.actorName || "?"))}</span>
+                        <span class="pulse-item-kind tone-${meta.tone || "info"}">${icon(meta.icon || "bell")}</span>
+                    </span>
+                    <button class="pulse-item-text" type="button"><b>${escapeHtml(n.actorName || "Someone")}</b> ${verb}${n.excerpt && n.type !== "CONNECTION" ? `<small>${escapeHtml(n.excerpt)}</small>` : ""}<time>${escapeHtml(timeAgo(n.createdAt))}</time></button>
+                    ${request ? `
+                    <span class="pulse-item-actions">
+                        <button class="btn-accept-request" data-request-id="${escapeHtml(request.id)}">Accept</button>
+                        <button class="btn-decline-request" data-request-id="${escapeHtml(request.id)}" aria-label="Decline">${icon("x")}</button>
+                    </span>` : ""}
+                </div>`;
         }).join("");
     }
 
     document.getElementById("pulse-activity")?.addEventListener("click", (e) => {
+        if (e.target.closest(".btn-accept-request, .btn-decline-request")) return;
         const item = e.target.closest(".pulse-item");
         if (item) openNotification(item.getAttribute("data-notification-id"));
     });

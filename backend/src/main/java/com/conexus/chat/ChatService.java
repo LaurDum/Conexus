@@ -33,9 +33,19 @@ public class ChatService {
         return user == null ? "Conexus Creator" : user.publicName();
     }
 
+    /** Fills in whether the other side has read this conversation. */
+    public ChatThread withSeen(ChatThread thread) {
+        if (thread != null && thread.getPartnerUserId() != null) {
+            chatThreadRepository.findById(threadIdFor(thread.getPartnerUserId(), thread.getUserId(), null))
+                    .ifPresent(theirs -> thread.setPartnerSeen(!theirs.isUnread()));
+        }
+        return thread;
+    }
+
     /** The user's inbox, most recent conversation first. */
     public List<ChatThread> getThreadsForUser(Long userId) {
         List<ChatThread> threads = chatThreadRepository.findByUserId(userId);
+        threads.forEach(this::withSeen);
         threads.sort(Comparator.comparing(ChatThread::getUpdatedAt,
                 Comparator.nullsLast(Comparator.reverseOrder())));
         return threads;

@@ -33,7 +33,7 @@ public class ChatController {
         try {
             ChatThread thread = chatService.getThread(id);
             if (!chatService.isOwnedBy(thread, userId)) return notYours();
-            return ResponseEntity.ok(thread);
+            return ResponseEntity.ok(chatService.withSeen(thread));
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();
         }
@@ -54,7 +54,7 @@ public class ChatController {
     public ResponseEntity<?> markRead(@CurrentUser Long userId, @PathVariable String id) {
         try {
             if (!chatService.isOwnedBy(chatService.getThread(id), userId)) return notYours();
-            return ResponseEntity.ok(chatService.markRead(id));
+            return ResponseEntity.ok(chatService.withSeen(chatService.markRead(id)));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(Collections.singletonMap("message", e.getMessage()));
         }
@@ -72,7 +72,7 @@ public class ChatController {
         }
         try {
             if (!chatService.isOwnedBy(chatService.getThread(id), userId)) return notYours();
-            return ResponseEntity.ok(chatService.sendMessage(id, req.getText(), userId, req.getSender()));
+            return ResponseEntity.ok(chatService.withSeen(chatService.sendMessage(id, req.getText(), userId, req.getSender())));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(Collections.singletonMap("message", e.getMessage()));
         }

@@ -6626,3 +6626,1247 @@ body.light-theme .form-error {
 .smart-steps {
     display: contents;
 }
+
+
+/* ==========================================================
+   CALM REACH & PROGRESS
+   One accent colour and no boxes. Each progress tile used to carry its own
+   hue, gradient and border, with red and green pills underneath; together
+   with the platform colours and the green engagement chip it was the
+   busiest corner of the app.
+   ========================================================== */
+
+/* Platforms: plain icons in the text colour, not brand-coloured squares. */
+.pulse-platform .pulse-platform-icon {
+    background: none !important;
+    width: 16px;
+    height: 16px;
+}
+
+.pulse-platform .pulse-platform-icon .icon {
+    width: 15px;
+    height: 15px;
+    color: var(--muted);
+}
+
+/* Engagement: a quiet line of text rather than a green pill. */
+.pulse-chip,
+body.light-theme .pulse-chip {
+    background: none;
+    color: var(--secondary);
+    padding: 0;
+    font-weight: 500;
+    font-size: 0.82rem;
+}
+
+/* The graph always draws in the accent; the change text above it says
+   whether that is up or down. */
+.pulse-graph.up,
+.pulse-graph.down,
+body.light-theme .pulse-graph.down {
+    color: var(--primary);
+}
+
+.pulse-graph-change {
+    color: var(--secondary);
+    font-weight: 600;
+}
+
+/* 7 / 30 days: a small text switch instead of a filled pill. */
+.pulse-range {
+    background: none;
+    border: none;
+    padding: 0;
+}
+
+.pulse-range button.on {
+    background: var(--border-light);
+    color: var(--text);
+}
+
+/* Progress: one plain row between two hairlines, no tiles. */
+.pulse-progress {
+    gap: 0;
+    border-top: 1px solid var(--border-light);
+    border-bottom: 1px solid var(--border-light);
+}
+
+.pulse-stat,
+body.light-theme .pulse-stat {
+    background: none;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    padding: 14px 4px 12px;
+}
+
+.pulse-stat + .pulse-stat {
+    border-left: 1px solid var(--border-light);
+    padding-left: 12px;
+}
+
+.pulse-stat-top,
+.pulse-stat-label {
+    color: var(--muted);
+}
+
+.pulse-stat-top b {
+    color: var(--text);
+}
+
+/* Changes as plain small text; only a real change gets any emphasis. */
+.pulse-trend,
+.pulse-trend.up,
+.pulse-trend.down,
+.pulse-trend.same,
+body.light-theme .pulse-trend.up {
+    background: none;
+    padding: 0;
+    font-weight: 600;
+    color: var(--muted);
+}
+
+.pulse-trend.up,
+.pulse-trend.down,
+body.light-theme .pulse-trend.up {
+    color: var(--secondary);
+}
+
+@container (min-width: 560px) {
+    .pulse-stat {
+        padding: 16px 4px 14px;
+    }
+
+    .pulse-stat + .pulse-stat {
+        padding-left: 16px;
+    }
+}
+
+/* A flat line needs no heavy shading under it; it read as a grey box. */
+.pulse-graph.same .pulse-graph-stop-top {
+    stop-opacity: 0.1;
+}
+
+body.light-theme .pulse-trend.down,
+body.light-theme .pulse-trend.up {
+    background: none;
+    color: var(--secondary);
+}
+
+
+/* ==========================================================
+   DROPS OF COLOUR
+   The calm layout stays: no boxes, no pills. Colour comes back in small
+   places where it carries meaning — which platform, which kind of
+   progress, which way a number moved.
+   ========================================================== */
+
+/* Platform glyphs in their own brand colour, without the square behind. */
+.pulse-platform .platform-youtube .icon   { color: var(--youtube); }
+.pulse-platform .platform-tiktok .icon    { color: #25f4ee; }
+.pulse-platform .platform-instagram .icon { color: var(--instagram); }
+.pulse-platform .platform-twitch .icon    { color: #a970ff; }
+.pulse-platform .platform-twitter .icon   { color: var(--twitter); }
+.pulse-platform .platform-discord .icon   { color: #7983f5; }
+.pulse-platform .platform-spotify .icon   { color: var(--spotify); }
+.pulse-platform .platform-substack .icon  { color: var(--substack); }
+.pulse-platform .platform-linkedin .icon  { color: #3a8ee6; }
+.pulse-platform .platform-website .icon   { color: var(--primary); }
+
+body.light-theme .pulse-platform .platform-tiktok .icon  { color: #0e9f9a; }
+body.light-theme .pulse-platform .platform-twitch .icon  { color: #7a3fe0; }
+body.light-theme .pulse-platform .platform-discord .icon { color: #4752c4; }
+
+/* Engagement: a small live dot ahead of the figure. */
+.pulse-chip::before {
+    content: "";
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    margin-right: 7px;
+    border-radius: 50%;
+    background: #34d399;
+    box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.18);
+    vertical-align: 1px;
+}
+
+body.light-theme .pulse-chip::before {
+    background: #0f9d63;
+    box-shadow: 0 0 0 3px rgba(15, 157, 99, 0.16);
+}
+
+/* The graph is the accent's moment: purple even when the line is flat,
+   with a soft glow on today's point. */
+.pulse-graph.same {
+    color: var(--primary);
+}
+
+.pulse-graph.same .pulse-graph-stop-top {
+    stop-opacity: 0.16;
+}
+
+.pulse-graph-dot {
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 25%, transparent);
+}
+
+/* Each kind of progress keeps its own hue — on the icon only. */
+.pulse-stat-top {
+    color: var(--tone, var(--primary));
+}
+
+.pulse-stat-top .icon {
+    width: 15px;
+    height: 15px;
+}
+
+/* A real change is coloured; no change stays grey. */
+.pulse-trend.up,
+body.light-theme .pulse-trend.up {
+    color: #34d399;
+}
+
+.pulse-trend.down,
+body.light-theme .pulse-trend.down {
+    color: #ff7a6b;
+}
+
+body.light-theme .pulse-trend.up   { color: #0a7a4c; }
+body.light-theme .pulse-trend.down { color: #c0392b; }
+
+/* A whisper of each tile's hue under its number, so the row has rhythm
+   without going back to boxes. */
+.pulse-stat {
+    background: radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--tone, var(--primary)) 9%, transparent), transparent 60%) !important;
+}
+
+
+/* ==========================================================
+   MODERN FORMS & DIALOGS
+   Taller fields, a focus glow, a round close button. On a phone the form
+   dialogs rise from the bottom as a sheet, where a thumb can reach them.
+   ========================================================== */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.modal-card {
+    border-radius: 24px;
+    padding: 22px;
+    border-color: var(--border-light);
+}
+
+.modal-header h3 {
+    font-size: 1.15rem;
+    letter-spacing: -0.01em;
+}
+
+.modal-close {
+    width: 36px;
+    height: 36px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--border-light);
+    color: var(--secondary);
+    font-size: 1.2rem;
+    line-height: 1;
+}
+
+.modal-close:hover {
+    color: var(--text);
+}
+
+.form-group label,
+.form-label {
+    display: block;
+    margin-bottom: 7px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--secondary);
+}
+
+.label-hint {
+    margin-left: 6px;
+    font-weight: 500;
+    color: var(--muted);
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    min-height: 46px;
+    padding: 11px 14px;
+    border-radius: 12px;
+    border-color: var(--border-light);
+    background: var(--card);
+    color: var(--text);
+    font-size: 0.92rem;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.form-group textarea {
+    min-height: 0;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px var(--primary-soft);
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 110px;
+    gap: 10px;
+}
+
+.modal-actions .btn-primary,
+.modal-actions .btn-secondary,
+.modal-actions .btn-danger {
+    min-height: 46px;
+    border-radius: 12px;
+    padding-inline: 18px;
+}
+
+/* Platform tiles */
+.platform-picker {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.platform-tile {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 2px 8px;
+    border-radius: 14px;
+    border: 1px solid var(--border-light);
+    background: var(--card);
+    color: var(--secondary);
+    font-size: 0.66rem;
+    font-weight: 600;
+    white-space: nowrap;
+    transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease;
+}
+
+.platform-tile span:last-child {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.platform-tile-icon {
+    width: 32px;
+    height: 32px;
+    display: grid;
+    place-items: center;
+    border-radius: 10px;
+    color: #fff;
+}
+
+.platform-tile-icon .icon {
+    width: 17px;
+    height: 17px;
+    color: #fff;
+}
+
+.platform-tile:not(.on) .platform-tile-icon {
+    filter: saturate(0.35);
+    opacity: 0.75;
+}
+
+.platform-tile.on {
+    border-color: var(--primary);
+    background: var(--primary-soft);
+    color: var(--text);
+}
+
+.platform-tile:active {
+    transform: scale(0.96);
+}
+
+@media (max-width: 600px) {
+    #modal-add-social,
+    #modal-edit-profile,
+    #modal-password,
+    #modal-delete-account,
+    #modal-post-job,
+    #modal-share,
+    #modal-applicants,
+    #modal-outreach {
+        align-items: flex-end;
+        padding: 0;
+    }
+
+    #modal-add-social .modal-card,
+    #modal-edit-profile .modal-card,
+    #modal-password .modal-card,
+    #modal-delete-account .modal-card,
+    #modal-post-job .modal-card,
+    #modal-share .modal-card,
+    #modal-applicants .modal-card,
+    #modal-outreach .modal-card {
+        width: 100%;
+        max-width: none;
+        max-height: 92vh;
+        overflow-y: auto;
+        border-radius: 26px 26px 0 0;
+        border-bottom: none;
+        padding: 12px 18px calc(18px + env(safe-area-inset-bottom));
+        animation: sheetUp 0.28s cubic-bezier(0.2, 0.9, 0.3, 1);
+    }
+
+    /* The grab handle that says "this slides". */
+    #modal-add-social .modal-card::before,
+    #modal-edit-profile .modal-card::before,
+    #modal-password .modal-card::before,
+    #modal-delete-account .modal-card::before,
+    #modal-post-job .modal-card::before,
+    #modal-share .modal-card::before,
+    #modal-applicants .modal-card::before,
+    #modal-outreach .modal-card::before {
+        content: "";
+        display: block;
+        width: 38px;
+        height: 4px;
+        margin: 0 auto 12px;
+        border-radius: 4px;
+        background: var(--border);
+    }
+
+    .modal-actions {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+    }
+}
+
+@keyframes sheetUp {
+    from { transform: translateY(40px); opacity: 0; }
+    to   { transform: none; opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .modal-card { animation: none !important; }
+}
+
+/* ==========================================================
+   CREATOR CARDS
+   Match shown as a ring round the avatar, details on one line, and a
+   button whose look follows the connection state.
+   ========================================================== */
+.creator-card {
+    display: flex;
+    flex-direction: column;
+    padding: 14px;
+    border-radius: 20px;
+    border-color: var(--border-light);
+    background: linear-gradient(180deg, color-mix(in srgb, var(--card) 100%, #fff 2%), var(--card));
+}
+
+.creator-card:hover {
+    border-color: color-mix(in srgb, var(--primary) 40%, transparent);
+}
+
+.cc-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+.cc-ring {
+    --ring: #34d399;
+    width: 56px;
+    height: 56px;
+    padding: 3px;
+    box-sizing: border-box;
+    border-radius: 50%;
+    background: conic-gradient(var(--ring) calc(var(--m) * 1%), var(--border-light) 0);
+    display: grid;
+}
+
+.cc-ring.no-match {
+    background: var(--border-light);
+}
+
+.cc-ring .creator-avatar {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    border: 3px solid var(--card);
+    box-sizing: border-box;
+}
+
+.creator-card .creator-more {
+    position: static;
+    width: 32px;
+    height: 32px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    color: var(--muted);
+}
+
+.creator-card .creator-more .icon {
+    width: 15px;
+    height: 15px;
+}
+
+.creator-card .creator-more:hover {
+    background: var(--border-light);
+    color: var(--text);
+}
+
+.creator-card h3 {
+    margin-top: 0;
+    font-size: 0.95rem;
+    letter-spacing: -0.01em;
+}
+
+.creator-card .creator-type {
+    margin-top: 2px;
+    font-size: 0.78rem;
+    color: var(--secondary);
+}
+
+.cc-meta {
+    display: flex;
+    gap: 6px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.74rem;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.cc-meta .creator-info,
+.cc-meta .creator-followers {
+    margin: 0;
+    font-size: inherit;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.cc-meta .creator-followers::before {
+    content: "·";
+    margin-right: 6px;
+}
+
+.creator-card .match {
+    align-self: flex-start;
+    margin-top: 10px;
+    padding: 0;
+    background: none;
+    color: var(--muted);
+    font-size: 0.74rem;
+}
+
+.creator-card .match span {
+    color: #34d399;
+}
+
+.creator-card .connect-button {
+    margin-top: auto;
+    min-height: 40px;
+    border-radius: 12px;
+    border: none;
+    font-size: 0.82rem;
+    font-weight: 700;
+}
+
+/* Spacing above the button, now that it sits at the bottom. */
+.creator-card .match + .connect-button,
+.creator-card .cc-meta + .connect-button {
+    margin-top: 14px;
+}
+
+.connect-button.is-new,
+.connect-button.is-incoming {
+    background: var(--primary);
+    color: #fff;
+}
+
+.connect-button.is-pending {
+    background: var(--primary-soft);
+    color: var(--primary);
+}
+
+.connect-button.is-connected {
+    background: var(--border-light);
+    color: var(--secondary);
+}
+
+body.light-theme .creator-card .match span,
+body.light-theme .cc-ring { --ring: #0f9d63; }
+body.light-theme .creator-card .match span { color: #0a7a4c; }
+body.light-theme .connect-button.is-pending { color: var(--primary); }
+
+/* ==========================================================
+   ACTIVITY ROWS
+   A small badge on the avatar says what happened; a request you have not
+   answered carries its buttons; the time sits with the text.
+   ========================================================== */
+.pulse-item {
+    gap: 12px;
+}
+
+.pulse-item-avatar {
+    position: relative;
+    flex: none;
+}
+
+.pulse-item-avatar .small-avatar {
+    width: 40px;
+    height: 40px;
+}
+
+.pulse-item-kind {
+    position: absolute;
+    right: -3px;
+    bottom: -3px;
+    width: 18px;
+    height: 18px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    border: 2px solid var(--card);
+    background: var(--primary);
+    color: #fff;
+}
+
+.pulse-item-kind .icon {
+    width: 10px;
+    height: 10px;
+    color: #fff;
+}
+
+.pulse-item-kind.tone-like { background: #ff5c8a; }
+.pulse-item-kind.tone-good { background: #10b981; }
+.pulse-item-kind.tone-info { background: var(--primary); }
+.pulse-item-kind.tone-work { background: #f59e0b; }
+
+.pulse-item-text {
+    text-align: left;
+    padding: 0;
+    background: none;
+    color: var(--secondary);
+}
+
+.pulse-item-text time {
+    margin-left: 6px;
+    color: var(--muted);
+    font-size: 0.76rem;
+    white-space: nowrap;
+}
+
+.pulse-item-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: none;
+}
+
+.pulse-item-actions .btn-accept-request {
+    min-height: 34px;
+    padding: 0 14px;
+    border-radius: 10px;
+    background: var(--primary);
+    color: #fff;
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+.pulse-item-actions .btn-decline-request {
+    width: 34px;
+    height: 34px;
+    display: grid;
+    place-items: center;
+    border-radius: 10px;
+    background: var(--border-light);
+    color: var(--secondary);
+}
+
+.pulse-item-actions .btn-decline-request .icon {
+    width: 14px;
+    height: 14px;
+}
+
+/* As many tiles per row as fit, so names are not cut on small phones. */
+.platform-picker {
+    grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+}
+
+
+/* ==========================================================
+   MESSAGES — a plain list like a phone's own messaging app, and a
+   conversation with grouped bubbles, receipts and a growing composer.
+   ========================================================== */
+.inbox-search {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    height: 44px;
+    margin-bottom: 12px;
+    padding: 0 14px;
+    border-radius: 14px;
+    background: var(--card);
+    border: 1px solid var(--border-light);
+    color: var(--muted);
+}
+
+.inbox-search:focus-within {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px var(--primary-soft);
+}
+
+.inbox-search .icon {
+    width: 17px;
+    height: 17px;
+    flex: none;
+}
+
+.inbox-search input {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    border: none;
+    background: none;
+    color: var(--text);
+    font-size: 0.9rem;
+    outline: none;
+}
+
+.inbox-list {
+    gap: 0;
+}
+
+.chat-thread {
+    gap: 14px;
+    padding: 12px 6px;
+    margin: 0 -6px;
+    background: none;
+    border: none;
+    border-radius: 14px;
+}
+
+.chat-thread:hover {
+    background: var(--border-light);
+}
+
+.chat-thread + .chat-thread::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 70px;
+    right: 6px;
+    height: 1px;
+    background: var(--border-light);
+}
+
+.chat-thread .creator-avatar {
+    width: 52px;
+    height: 52px;
+    margin: 0;
+    flex: none;
+    font-size: 0.95rem;
+}
+
+.thread-top h4 {
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+.thread-time {
+    font-size: 0.74rem;
+}
+
+.thread-bottom {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 3px;
+}
+
+.thread-snippet {
+    flex: 1;
+    min-width: 0;
+    margin: 0;
+    font-size: 0.86rem;
+    color: var(--muted);
+}
+
+.thread-you {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    color: var(--secondary);
+}
+
+.thread-you .icon {
+    width: 15px;
+    height: 15px;
+    color: var(--primary);
+}
+
+.chat-thread.unread h4 {
+    font-weight: 800;
+}
+
+.chat-thread.unread .thread-snippet {
+    color: var(--text);
+    font-weight: 600;
+}
+
+.chat-thread.unread .thread-time {
+    color: var(--primary);
+    font-weight: 700;
+}
+
+.unread-count {
+    flex: none;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+    box-sizing: border-box;
+    display: grid;
+    place-items: center;
+    border-radius: 10px;
+    background: var(--primary);
+    color: #fff;
+    font-size: 0.7rem;
+    font-weight: 800;
+}
+
+.inbox-empty {
+    padding: 32px 8px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.86rem;
+}
+
+.requests-count {
+    display: inline-grid;
+    place-items: center;
+    min-width: 20px;
+    height: 20px;
+    margin-left: 6px;
+    padding: 0 6px;
+    border-radius: 10px;
+    background: var(--primary);
+    color: #fff;
+    font-size: 0.7rem;
+    vertical-align: 2px;
+}
+
+.requests-count:empty {
+    display: none;
+}
+
+/* Conversation */
+.chat-header {
+    gap: 8px;
+    padding: 10px 12px;
+    background: color-mix(in srgb, var(--background) 88%, transparent);
+    backdrop-filter: blur(16px);
+    border-bottom-color: var(--border-light);
+}
+
+.icon-btn-back,
+.chat-header-btn {
+    width: 40px;
+    height: 40px;
+    flex: none;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    color: var(--secondary);
+}
+
+.icon-btn-back:hover,
+.chat-header-btn:hover {
+    background: var(--border-light);
+    color: var(--text);
+}
+
+.chat-header-btn .icon {
+    width: 19px;
+    height: 19px;
+}
+
+.chat-user-info .small-avatar {
+    width: 40px;
+    height: 40px;
+}
+
+.chat-user-info h3 {
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+.chat-status {
+    font-size: 0.76rem;
+    color: var(--muted);
+}
+
+.chat-messages {
+    gap: 2px;
+    padding: 16px 14px 10px;
+}
+
+.msg-bubble {
+    max-width: 76%;
+    padding: 9px 13px;
+    border-radius: 20px;
+    font-size: 0.92rem;
+    line-height: 1.4;
+    margin-top: 8px;
+}
+
+.msg-bubble p {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.msg-bubble.received {
+    background: var(--card);
+    border: none;
+}
+
+.msg-bubble.sent {
+    background: linear-gradient(135deg, var(--primary), color-mix(in srgb, var(--primary) 78%, #b46cff));
+}
+
+/* Grouped: the corners facing the rest of the group tighten. */
+.msg-bubble.g-mid,
+.msg-bubble.g-end {
+    margin-top: 2px;
+}
+
+.msg-bubble.received.g-start { border-bottom-left-radius: 6px; }
+.msg-bubble.received.g-mid   { border-top-left-radius: 6px; border-bottom-left-radius: 6px; }
+.msg-bubble.received.g-end   { border-top-left-radius: 6px; }
+.msg-bubble.received.g-solo,
+.msg-bubble.received.g-end   { border-bottom-left-radius: 6px; }
+
+.msg-bubble.sent.g-start { border-bottom-right-radius: 6px; }
+.msg-bubble.sent.g-mid   { border-top-right-radius: 6px; border-bottom-right-radius: 6px; }
+.msg-bubble.sent.g-end   { border-top-right-radius: 6px; }
+.msg-bubble.sent.g-solo,
+.msg-bubble.sent.g-end   { border-bottom-right-radius: 6px; }
+
+.msg-time {
+    margin-top: 3px;
+    font-size: 0.68rem;
+    opacity: 0.65;
+}
+
+.msg-receipt {
+    align-self: flex-end;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin: 4px 4px 0 0;
+    color: var(--muted);
+    font-size: 0.72rem;
+    font-weight: 600;
+}
+
+.msg-receipt .icon {
+    width: 14px;
+    height: 14px;
+    color: var(--primary);
+}
+
+/* App notes: one slim line, not a pill. */
+.msg-system {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    max-width: 100%;
+    margin: 14px auto 6px;
+    padding: 0;
+    background: none;
+    border: none;
+    border-radius: 0;
+    color: var(--muted);
+}
+
+.msg-system .icon {
+    width: 14px;
+    height: 14px;
+    flex: none;
+    color: var(--primary);
+}
+
+.msg-system span {
+    display: inline;
+    color: var(--secondary);
+    font-size: 0.78rem;
+}
+
+.msg-system small {
+    display: inline;
+    margin: 0;
+    font-size: 0.72rem;
+}
+
+.msg-system small::before {
+    content: "· ";
+}
+
+/* Quick replies */
+.chat-quick-replies {
+    display: flex;
+    gap: 8px;
+    padding: 4px 14px 8px;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.chat-quick-replies::-webkit-scrollbar {
+    display: none;
+}
+
+.chat-quick-replies.hidden {
+    display: none;
+}
+
+.quick-reply {
+    flex: none;
+    padding: 8px 14px;
+    border-radius: 999px;
+    border: 1px solid color-mix(in srgb, var(--primary) 45%, transparent);
+    background: var(--primary-soft);
+    color: var(--text);
+    font-size: 0.82rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.quick-reply:active {
+    transform: scale(0.97);
+}
+
+/* Composer */
+.chat-input-bar {
+    align-items: flex-end;
+    gap: 8px;
+    padding: 8px 12px calc(10px + env(safe-area-inset-bottom));
+    background: var(--background);
+    border-top-color: var(--border-light);
+}
+
+.chat-input-bar textarea {
+    flex: 1;
+    min-height: 42px;
+    max-height: 120px;
+    padding: 10px 16px;
+    box-sizing: border-box;
+    border-radius: 21px;
+    border: 1px solid var(--border-light);
+    background: var(--card);
+    color: var(--text);
+    font: inherit;
+    font-size: 0.92rem;
+    line-height: 1.4;
+    resize: none;
+    outline: none;
+}
+
+.chat-input-bar textarea:focus {
+    border-color: color-mix(in srgb, var(--primary) 60%, transparent);
+}
+
+.btn-chat-send {
+    width: 42px;
+    height: 42px;
+    flex: none;
+    padding: 0;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--border-light);
+    color: var(--muted);
+    transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
+}
+
+.chat-input-bar.has-text .btn-chat-send {
+    background: var(--primary);
+    color: #fff;
+}
+
+.chat-input-bar.has-text .btn-chat-send:active {
+    transform: scale(0.92);
+}
+
+body.light-theme .msg-bubble.received {
+    background: #ffffff;
+    box-shadow: 0 1px 2px rgba(20, 30, 60, 0.08);
+}
+
+
+/* ==========================================================
+   NEXT MOVES — a row of cards to swipe through
+   ========================================================== */
+.pulse-next {
+    overflow: visible;
+    padding: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+    color: inherit;
+}
+
+.pulse-next::before {
+    content: none;
+}
+
+.pulse-next-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.pulse-next-head .pulse-next-label {
+    color: var(--muted);
+}
+
+.pulse-next-head .pulse-dots i {
+    background: var(--border);
+}
+
+.pulse-next-head .pulse-dots i.on {
+    width: 16px;
+    border-radius: 4px;
+    background: var(--primary);
+}
+
+.pulse-next-head .pulse-dots i {
+    transition: width 0.2s ease, background 0.2s ease;
+}
+
+.pulse-next-track {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: 0;
+    scrollbar-width: none;
+    /* The next card peeks in from the right edge. */
+    margin-right: -18px;
+    padding-right: 18px;
+    outline: none;
+}
+
+.pulse-next-track::-webkit-scrollbar {
+    display: none;
+}
+
+.pulse-next-card {
+    position: relative;
+    overflow: hidden;
+    flex: 0 0 calc(100% - 34px);
+    scroll-snap-align: start;
+    box-sizing: border-box;
+    padding: 18px 18px 16px;
+    border-radius: 22px;
+    background: #16183d;
+    color: #eef0ff;
+    display: flex;
+    flex-direction: column;
+}
+
+.pulse-next-card:only-child {
+    flex-basis: 100%;
+}
+
+.pulse-next-card::before {
+    content: "";
+    position: absolute;
+    right: -60px;
+    top: -60px;
+    width: 170px;
+    height: 170px;
+    border-radius: 50%;
+    border: 24px solid rgba(140, 152, 255, 0.13);
+    pointer-events: none;
+}
+
+.pulse-next-step {
+    position: relative;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #aab2ff;
+}
+
+.pulse-next-card h3 {
+    position: relative;
+    margin: 8px 36px 6px 0;
+    font-size: 1.25rem;
+    font-weight: 800;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+}
+
+.pulse-next-card p {
+    position: relative;
+    flex: 1;
+    font-size: 0.86rem;
+    line-height: 1.45;
+    color: #c4c8e8;
+}
+
+.pulse-next-card .pulse-next-row {
+    margin-top: 14px;
+}
+
+.pulse-dismiss {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 1;
+    width: 32px;
+    height: 32px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    color: #c4c8e8;
+}
+
+.pulse-dismiss:hover {
+    background: rgba(255, 255, 255, 0.18);
+    color: #ffffff;
+}
+
+.pulse-dismiss .icon {
+    width: 15px;
+    height: 15px;
+}
+
+/* ==========================================================
+   HOME TABS STAY PINNED UNDER THE HEADER
+   ========================================================== */
+#home-tabs {
+    position: sticky;
+    top: var(--header-h, 72px);
+    z-index: 80;
+    background: var(--header-bg);
+    backdrop-filter: blur(16px);
+}
