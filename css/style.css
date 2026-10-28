@@ -6483,3 +6483,146 @@ body.light-theme .pulse-trend.up {
         padding-inline: 4px;
     }
 }
+
+
+/* ==========================================================
+   CONVERSATION DAY DIVIDERS
+   ========================================================== */
+.msg-day {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 14px 0 6px;
+    color: var(--muted);
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+}
+
+.msg-day::before,
+.msg-day::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--border-light);
+}
+
+/* The post button belongs on the main tabs, not on settings pages or on
+   someone else's profile. */
+body[data-view="view-settings"] .create-button,
+body[data-view="view-connections"] .create-button,
+body[data-view="view-user-profile"] .create-button {
+    display: none;
+}
+
+/* ==========================================================
+   CHANNEL ROWS — handle on its own line so it is never cut to "@a…"
+   ========================================================== */
+.pf-channel-top {
+    align-items: flex-start;
+}
+
+.pf-channel-name small {
+    display: block;
+    margin: 2px 0 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ==========================================================
+   LANDING FEATURES
+   ========================================================== */
+.landing-features {
+    list-style: none;
+    display: grid;
+    gap: 10px;
+    margin: 0 0 28px;
+    padding: 0;
+    text-align: left;
+}
+
+.landing-features li {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px;
+    background: var(--card);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-sm);
+}
+
+.lf-icon {
+    flex: none;
+    width: 34px;
+    height: 34px;
+    display: grid;
+    place-items: center;
+    border-radius: 10px;
+    background: var(--primary-soft);
+    color: var(--primary);
+}
+
+.lf-icon .icon {
+    width: 18px;
+    height: 18px;
+}
+
+.landing-features strong {
+    display: block;
+    font-size: 0.9rem;
+    margin-bottom: 2px;
+}
+
+.landing-features p {
+    color: var(--secondary);
+    font-size: 0.8rem;
+    line-height: 1.45;
+}
+
+/* ==========================================================
+   SECURITY DIALOGS
+   ========================================================== */
+.modal-lead {
+    color: var(--secondary);
+    font-size: 0.86rem;
+    line-height: 1.5;
+    margin-bottom: 16px;
+}
+
+.form-error {
+    margin: -4px 0 12px;
+    padding: 9px 12px;
+    border-radius: 10px;
+    background: rgba(239, 68, 68, 0.12);
+    color: #f87171;
+    font-size: 0.82rem;
+}
+
+.btn-danger {
+    padding: 11px 18px;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: #dc2626;
+    color: #fff;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.btn-danger:hover {
+    background: #b91c1c;
+}
+
+.btn-danger:disabled,
+.btn-secondary-sm:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+
+body.light-theme .form-error {
+    color: #b91c1c;
+}
+
+/* Built steps sit in the list exactly like the fixed collab card. */
+.smart-steps {
+    display: contents;
+}

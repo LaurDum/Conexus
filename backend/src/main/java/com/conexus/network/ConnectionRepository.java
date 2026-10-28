@@ -1,0 +1,21 @@
+package com.conexus.network;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.List;
+import java.util.Optional;
+
+public interface ConnectionRepository extends JpaRepository<Connection, Long> {
+    Optional<Connection> findByRequesterIdAndTargetCreatorId(Long requesterId, String targetCreatorId);
+    List<Connection> findByRequesterId(Long requesterId);
+
+    /** For accounts that have no creator card to key off. */
+    Optional<Connection> findByRequesterIdAndTargetUserId(Long requesterId, Long targetUserId);
+
+    /** Every connection pointed at this user, whatever its state. */
+    List<Connection> findByTargetUserId(Long targetUserId);
+
+    /** Requests waiting on this user. */
+    List<Connection> findByTargetUserIdAndStatusOrderByCreatedAtDesc(Long targetUserId, String status);
+
+}

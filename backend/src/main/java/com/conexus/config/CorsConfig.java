@@ -1,7 +1,7 @@
 package com.conexus.config;
 
-import com.conexus.security.AuthInterceptor;
-import com.conexus.security.CurrentUserArgumentResolver;
+import com.conexus.auth.AuthInterceptor;
+import com.conexus.auth.CurrentUserArgumentResolver;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;

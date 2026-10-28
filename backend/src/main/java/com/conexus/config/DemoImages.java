@@ -24,10 +24,16 @@ final class DemoImages {
 
     private DemoImages() {}
 
-    static byte[] studioDesk()  { return render(DemoImages::paintStudioDesk); }
-    static byte[] tokyoDusk()   { return render(DemoImages::paintTokyoDusk); }
-    static byte[] mixingSession() { return render(DemoImages::paintMixingSession); }
-    static byte[] aiWorkflow()  { return render(DemoImages::paintAiWorkflow); }
+    /** The picture named in demo-data.json. */
+    static byte[] byName(String name) {
+        switch (name) {
+            case "studioDesk":    return render(DemoImages::paintStudioDesk);
+            case "tokyoDusk":     return render(DemoImages::paintTokyoDusk);
+            case "mixingSession": return render(DemoImages::paintMixingSession);
+            case "aiWorkflow":    return render(DemoImages::paintAiWorkflow);
+            default: throw new IllegalArgumentException("No demo picture called " + name);
+        }
+    }
 
     private static byte[] render(Consumer<Graphics2D> painter) {
         BufferedImage img = new BufferedImage(W, H, BufferedImage.TYPE_INT_RGB);

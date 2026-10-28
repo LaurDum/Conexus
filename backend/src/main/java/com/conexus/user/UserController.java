@@ -1,0 +1,187 @@
+package com.conexus.user;
+
+import com.conexus.auth.CurrentUser;
+import com.conexus.network.Connection;
+import com.conexus.network.ConnectionRepository;
+import com.conexus.network.Creator;
+import com.conexus.network.CreatorRepository;
+import com.conexus.social.SocialAccountRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+@RestController
+@RequestMapping("/api/users")
+@RequiredArgsConstructor
+public class UserController {
+
+    private final UserRepository userRepository;
+    private final SocialAccountRepository socialAccountRepository;
+    private final CreatorRepository creatorRepository;
+    private final ConnectionRepository connectionRepository;
+
+    /**
+     * GET /api/users?search=&category=&page=0&size=10
+     *
+     * Everyone on Conexus except the caller, a page at a time. Discover used to
+     * list the creators catalog, which was mostly rows with no account behind
+     * them — you could not really connect with or message any of them.
+     */
+    @GetMapping
+    public Map<String, Object> browse(@CurrentUser Long callerId,
+                                      @RequestParam(required = false) String search,
+                                      @RequestParam(required = false) String category,
+                                      @RequestParam(defaultValue = "0") int page,
+                                      @RequestParam(defaultValue = "10") int size) {
+
+        String needle = search == null ? "" : search.trim().toLowerCase();
+        String wantedCategory = category == null || category.isBlank() || "all".equalsIgnoreCase(category)
+                ? null : category.trim();
+
+        List<Creator> creators = creatorRepository.findAll();
+
+        // A connection is keyed by creator card when there is one and by account
+        // otherwise, so both have to be consulted — checking only the card left
+        // cardless accounts always showing as not connected.
+        List<Connection> myConnections = connectionRepository.findByRequesterId(callerId);
+        Set<String> connectedCards = myConnections.stream()
+                .map(Connection::getTargetCreatorId)
+                .filter(java.util.Objects::nonNull)
+                .collect(Collectors.toSet());
+        Map<Long, String> connectedAccounts = myConnections.stream()
+                .filter(c -> c.getTargetUserId() != null)
+                .collect(Collectors.toMap(Connection::getTargetUserId,
+                        c -> c.getStatus() == null ? "ACCEPTED" : c.getStatus(),
+                        (a, b) -> a));
+
+        // Rows other people started count too: whoever accepted you is connected
+        // to you, and someone waiting on your answer is not a stranger.
+        for (Connection c : connectionRepository.findByTargetUserId(callerId)) {
+            connectedAccounts.putIfAbsent(c.getRequesterId(), incomingStatus(c));
+        }
+
+        size = Math.max(1, Math.min(size, 100));
+        page = Math.max(0, page);
+
+        List<Map<String, Object>> all = userRepository.findAll().stream()
+                .filter(u -> !u.getId().equals(callerId))
+                .map(u -> summarise(u, creators, connectedCards, connectedAccounts))
+                .filter(card -> wantedCategory == null
+                        || wantedCategory.equalsIgnoreCase(String.valueOf(card.get("category"))))
+                .filter(card -> needle.isEmpty()
+                        || String.valueOf(card.get("name")).toLowerCase().contains(needle)
+                        || String.valueOf(card.get("niche")).toLowerCase().contains(needle)
+                        || String.valueOf(card.get("location")).toLowerCase().contains(needle))
+                .sorted(Comparator.comparingInt((Map<String, Object> c) -> (int) c.get("match")).reversed())
+                .collect(Collectors.toList());
+
+        int from = Math.max(0, page * size);
+        int to = Math.min(all.size(), from + size);
+        List<Map<String, Object>> pageItems = from >= all.size() ? List.of() : all.subList(from, to);
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("items", pageItems);
+        result.put("page", page);
+        result.put("total", all.size());
+        result.put("hasMore", to < all.size());
+        return result;
+    }
+
+    /** A request someone sent the caller reads as INCOMING until it is answered. */
+    private static String incomingStatus(Connection c) {
+        return c.getStatus() == null || "ACCEPTED".equals(c.getStatus()) ? "ACCEPTED" : "INCOMING";
+    }
+
+    /** The card-sized view of an account used by Discover. */
+    private Map<String, Object> summarise(User u, List<Creator> creators,
+                                          Set<String> connectedCards, Map<Long, String> connectedAccounts) {
+        Creator card = creators.stream().filter(c -> u.getId().equals(c.getUserId())).findFirst().orElse(null);
+
+        String name = u.publicName();
+
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("userId", u.getId());
+        m.put("id", card != null ? card.getId() : null);
+        m.put("name", name);
+        m.put("niche", u.getNiche() != null ? u.getNiche() : "Creator");
+        m.put("category", u.getCategory() != null ? u.getCategory() : "General");
+        m.put("location", u.getLocation() != null ? u.getLocation() : "Worldwide");
+        m.put("followers", u.getTotalReach() != null ? u.getTotalReach() : "0");
+        m.put("avatar", u.getAvatar() != null ? u.getAvatar() : name.substring(0, Math.min(2, name.length())).toUpperCase());
+        m.put("bgClass", u.getBgClass() != null ? u.getBgClass() : "avatar-purple");
+        // The catalog card carries the curated match score; otherwise show none.
+        m.put("match", card != null ? card.getMatchScore() : 0);
+        boolean isConnected = (card != null && connectedCards.contains(card.getId()))
+                || connectedAccounts.containsKey(u.getId());
+        m.put("connected", isConnected);
+        m.put("status", connectedAccounts.getOrDefault(u.getId(), isConnected ? "ACCEPTED" : null));
+        return m;
+    }
+
+    /**
+     * GET /api/users/{id} — another user's public profile.
+     *
+     * /api/profile only ever returns the caller's own, so without this there is
+     * no way to open the person behind a post, comment or conversation.
+     */
+    @GetMapping("/{id}")
+    public ResponseEntity<?> getPublicProfile(@CurrentUser Long callerId, @PathVariable Long id) {
+        User user = userRepository.findById(id).orElse(null);
+        if (user == null) {
+            return ResponseEntity.status(404).body(Collections.singletonMap("message", "User not found"));
+        }
+
+        // The profile row holds what the user edited; fall back to the account.
+
+        String creatorId = creatorRepository.findAll().stream()
+                .filter(c -> id.equals(c.getUserId()))
+                .map(Creator::getId)
+                .findFirst()
+                .orElse(null);
+
+        // A connection is keyed by creator card when there is one and by account
+        // otherwise, so both have to be checked — looking only at the card left
+        // people without one always reading as not connected.
+        Connection existing = (creatorId != null
+                ? connectionRepository.findByRequesterIdAndTargetCreatorId(callerId, creatorId)
+                : java.util.Optional.<Connection>empty())
+                .or(() -> connectionRepository.findByRequesterIdAndTargetUserId(callerId, id))
+                .orElse(null);
+
+        String connectionStatus = existing != null
+                ? (existing.getStatus() == null ? "ACCEPTED" : existing.getStatus())
+                : connectionRepository.findByRequesterIdAndTargetUserId(id, callerId)
+                        .map(UserController::incomingStatus)
+                        .orElse(null);
+        boolean connected = connectionStatus != null;
+
+        return ResponseEntity.ok(PublicProfile.builder()
+                .id(user.getId())
+                .username(user.getUsername())
+                .displayName(user.publicName())
+                .handle(user.publicHandle())
+                .niche(user.getNiche())
+                .category(user.getCategory())
+                .location(user.getLocation())
+                .followers(user.getFollowers())
+                .avatar(user.getAvatar())
+                .bgClass(user.getBgClass())
+                .bio(user.getBio())
+                .totalReach(user.getTotalReach())
+                .engagement(user.getEngagement())
+                .accountType(user.getAccountType())
+                .socials(socialAccountRepository.findByUserId(id))
+                .creatorId(creatorId)
+                .connected(connected)
+                .connectionStatus(connectionStatus)
+                .build());
+    }
+}

@@ -1,0 +1,776 @@
+{
+  "accounts": [
+    {
+      "username": "alex_creates",
+      "email": "alex@test.com",
+      "displayName": "Alex Popescu",
+      "handle": "@alex_creates",
+      "niche": "Gaming Creator",
+      "category": "Gaming",
+      "location": "Bucharest, Romania",
+      "followers": "24.5K",
+      "avatar": "AP",
+      "bgClass": "avatar-purple",
+      "bio": "Gaming creator & reviewer from Bucharest! Loving strategy & action titles 🎮",
+      "totalReach": "24.5K",
+      "engagement": "5.2%",
+      "accountType": "creator",
+      "goals": "Grow my audience, Find collaborations",
+      "socials": [
+        {
+          "id": "soc_alex_1",
+          "platform": "youtube",
+          "handle": "@alexgaming",
+          "url": "https://youtube.com/@alexgaming",
+          "followers": "18.2K"
+        },
+        {
+          "id": "soc_alex_2",
+          "platform": "twitch",
+          "handle": "alex_live",
+          "url": "https://twitch.tv/alex_live",
+          "followers": "6.3K"
+        }
+      ],
+      "chats": [
+        {
+          "id": "chat_alex_elena",
+          "name": "Elena M.",
+          "avatar": "EM",
+          "bgClass": "avatar-green",
+          "status": "Tech & AI Creator · Germany",
+          "snippet": "That stream setup breakdown was super clean! Let's collab soon.",
+          "time": "2h ago",
+          "unread": true,
+          "messages": [
+            {
+              "sender": "them",
+              "text": "Hey Alex! Loved your stream last night.",
+              "time": "02:14 PM"
+            },
+            {
+              "sender": "them",
+              "text": "That stream setup breakdown was super clean! Let's collab soon.",
+              "time": "02:15 PM"
+            }
+          ]
+        },
+        {
+          "id": "chat_alex_ioana",
+          "name": "Ioana R.",
+          "avatar": "IR",
+          "bgClass": "avatar-blue",
+          "status": "Travel Creator · Romania",
+          "snippet": "Thanks for the gaming chair recommendations!",
+          "time": "Yesterday",
+          "unread": false,
+          "messages": [
+            {
+              "sender": "me",
+              "text": "Hey Ioana! Did you get a chance to check out that ergonomic setup?",
+              "time": "Yesterday"
+            },
+            {
+              "sender": "them",
+              "text": "Thanks for the gaming chair recommendations! Super helpful.",
+              "time": "Yesterday"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "username": "brand_techgear",
+      "email": "brand@test.com",
+      "displayName": "TechGear Pro",
+      "handle": "@techgear_pro",
+      "niche": "Brand Partner",
+      "category": "Tech",
+      "location": "Worldwide",
+      "followers": "150K",
+      "avatar": "TG",
+      "bgClass": "avatar-orange",
+      "bio": "Leading consumer audio & tech hardware brand looking for creator partnerships!",
+      "totalReach": "500K",
+      "engagement": "3.8%",
+      "accountType": "business",
+      "goals": "Promote my brand, Discover talent",
+      "socials": [
+        {
+          "id": "soc_brand_1",
+          "platform": "website",
+          "handle": "techgearpro.com",
+          "url": "https://techgearpro.com",
+          "followers": "100K/mo"
+        },
+        {
+          "id": "soc_brand_2",
+          "platform": "twitter",
+          "handle": "@techgearpro",
+          "url": "https://x.com/techgearpro",
+          "followers": "50K"
+        }
+      ],
+      "chats": [
+        {
+          "id": "chat_brand_alex",
+          "name": "Alex Popescu",
+          "avatar": "AP",
+          "bgClass": "avatar-purple",
+          "status": "Gaming Creator · Romania",
+          "snippet": "Hi Alex, we loved your channel metrics and would like to propose a sponsorship!",
+          "time": "3 days ago",
+          "unread": false,
+          "messages": [
+            {
+              "sender": "me",
+              "text": "Hi Alex, we loved your channel metrics and would like to propose a sponsorship for Q4!",
+              "time": "3 days ago"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "username": "elena_ai",
+      "email": "elena@test.com",
+      "displayName": "Elena M.",
+      "handle": "@elena_ai",
+      "niche": "Tech & AI Creator",
+      "category": "Tech",
+      "location": "Germany",
+      "followers": "92K",
+      "avatar": "EM",
+      "bgClass": "avatar-green",
+      "bio": "AI and consumer tech, explained without the hype. Weekly deep dives.",
+      "totalReach": "92K",
+      "engagement": "6.1%",
+      "accountType": "creator",
+      "socials": [
+        {
+          "id": "soc_elena_ai_youtube",
+          "platform": "youtube",
+          "handle": "@elenaexplains",
+          "url": "https://youtube.com/elenaexplains",
+          "followers": "61K"
+        },
+        {
+          "id": "soc_elena_ai_substack",
+          "platform": "substack",
+          "handle": "elenaonai",
+          "url": "https://substack.com/elenaonai",
+          "followers": "18K"
+        }
+      ]
+    },
+    {
+      "username": "maria_travels",
+      "email": "maria@test.com",
+      "displayName": "Maria Stoica",
+      "handle": "@maria_travels",
+      "niche": "Travel Creator",
+      "category": "Travel",
+      "location": "Romania",
+      "followers": "58K",
+      "avatar": "MS",
+      "bgClass": "avatar-blue",
+      "bio": "Slow travel across Europe by train. Currently somewhere between Cluj and Lisbon.",
+      "totalReach": "58K",
+      "engagement": "4.4%",
+      "accountType": "creator",
+      "socials": [
+        {
+          "id": "soc_maria_travels_instagram",
+          "platform": "instagram",
+          "handle": "@mariastoica",
+          "url": "https://instagram.com/mariastoica",
+          "followers": "38K"
+        },
+        {
+          "id": "soc_maria_travels_tiktok",
+          "platform": "tiktok",
+          "handle": "@mariatravels",
+          "url": "https://tiktok.com/mariatravels",
+          "followers": "20K"
+        }
+      ]
+    },
+    {
+      "username": "david_sound",
+      "email": "david@test.com",
+      "displayName": "David V.",
+      "handle": "@david_sound",
+      "niche": "Music Creator",
+      "category": "Music",
+      "location": "United Kingdom",
+      "followers": "41K",
+      "avatar": "DV",
+      "bgClass": "avatar-orange",
+      "bio": "Producer and sound designer. Breaking down how records actually get made.",
+      "totalReach": "41K",
+      "engagement": "5.7%",
+      "accountType": "creator",
+      "socials": [
+        {
+          "id": "soc_david_sound_spotify",
+          "platform": "spotify",
+          "handle": "davidv",
+          "url": "https://spotify.com/davidv",
+          "followers": "24K"
+        },
+        {
+          "id": "soc_david_sound_youtube",
+          "platform": "youtube",
+          "handle": "@davidvsound",
+          "url": "https://youtube.com/davidvsound",
+          "followers": "17K"
+        }
+      ]
+    },
+    {
+      "username": "marcus_reviews",
+      "email": "marcus@test.com",
+      "displayName": "Marcus Chen",
+      "handle": "@marcus_reviews",
+      "niche": "Tech Reviewer",
+      "category": "Tech",
+      "location": "United States",
+      "followers": "115K",
+      "avatar": "MC",
+      "bgClass": "avatar-blue",
+      "bio": "Hardware reviews with actual measurements. No sponsorships on review units.",
+      "totalReach": "115K",
+      "engagement": "3.9%",
+      "accountType": "creator",
+      "socials": [
+        {
+          "id": "soc_marcus_reviews_youtube",
+          "platform": "youtube",
+          "handle": "@marcuschen",
+          "url": "https://youtube.com/marcuschen",
+          "followers": "98K"
+        },
+        {
+          "id": "soc_marcus_reviews_twitter",
+          "platform": "twitter",
+          "handle": "@marcusreviews",
+          "url": "https://twitter.com/marcusreviews",
+          "followers": "17K"
+        }
+      ]
+    },
+    {
+      "username": "lucas_silva",
+      "email": "lucas@test.com",
+      "displayName": "Lucas Silva",
+      "handle": "@lucas_silva",
+      "niche": "Food & Culinary",
+      "category": "Food",
+      "location": "Brazil",
+      "followers": "83K",
+      "avatar": "LS",
+      "bgClass": "avatar-green",
+      "bio": "Home cooking from São Paulo. Recipes you can actually finish on a weeknight.",
+      "totalReach": "83K",
+      "engagement": "6.8%",
+      "accountType": "creator",
+      "socials": [
+        {
+          "id": "soc_lucas_silva_youtube",
+          "platform": "youtube",
+          "handle": "@lucascooks",
+          "url": "https://youtube.com/lucascooks",
+          "followers": "55K"
+        },
+        {
+          "id": "soc_lucas_silva_instagram",
+          "platform": "instagram",
+          "handle": "@lucassilva",
+          "url": "https://instagram.com/lucassilva",
+          "followers": "28K"
+        }
+      ]
+    },
+    {
+      "username": "sophia_rossi",
+      "email": "sophia@test.com",
+      "displayName": "Sophia Rossi",
+      "handle": "@sophia_rossi",
+      "niche": "Fashion Creator",
+      "category": "Fashion",
+      "location": "Italy",
+      "followers": "67K",
+      "avatar": "SR",
+      "bgClass": "avatar-orange",
+      "bio": "Independent labels and second-hand finds from Milan. Style over trends.",
+      "totalReach": "67K",
+      "engagement": "5.3%",
+      "accountType": "creator",
+      "socials": [
+        {
+          "id": "soc_sophia_rossi_instagram",
+          "platform": "instagram",
+          "handle": "@sophiarossi",
+          "url": "https://instagram.com/sophiarossi",
+          "followers": "52K"
+        },
+        {
+          "id": "soc_sophia_rossi_tiktok",
+          "platform": "tiktok",
+          "handle": "@sophiastyle",
+          "url": "https://tiktok.com/sophiastyle",
+          "followers": "15K"
+        }
+      ]
+    }
+  ],
+  "creators": [
+    {
+      "id": "alex",
+      "name": "Alex Popescu",
+      "niche": "Gaming Creator",
+      "category": "Gaming",
+      "location": "🇷🇴 Romania",
+      "followers": "24K",
+      "match": 87,
+      "avatar": "AP",
+      "bgClass": "avatar-purple"
+    },
+    {
+      "id": "maria",
+      "name": "Maria Stoica",
+      "niche": "Travel Creator",
+      "category": "Travel",
+      "location": "🇷🇴 Romania",
+      "followers": "58K",
+      "match": 81,
+      "avatar": "MS",
+      "bgClass": "avatar-blue"
+    },
+    {
+      "id": "david",
+      "name": "David V.",
+      "niche": "Music Creator",
+      "category": "Music",
+      "location": "🇬🇧 United Kingdom",
+      "followers": "41K",
+      "match": 76,
+      "avatar": "DV",
+      "bgClass": "avatar-orange"
+    },
+    {
+      "id": "elena",
+      "name": "Elena M.",
+      "niche": "Tech & AI Creator",
+      "category": "Tech",
+      "location": "🇩🇪 Germany",
+      "followers": "92K",
+      "match": 94,
+      "avatar": "EM",
+      "bgClass": "avatar-green"
+    },
+    {
+      "id": "marcus",
+      "name": "Marcus Chen",
+      "niche": "Tech Reviewer",
+      "category": "Tech",
+      "location": "🇺🇸 United States",
+      "followers": "115K",
+      "match": 89,
+      "avatar": "MC",
+      "bgClass": "avatar-blue"
+    },
+    {
+      "id": "sophia",
+      "name": "Sophia Rossi",
+      "niche": "Fashion Creator",
+      "category": "Fashion",
+      "location": "🇮🇹 Italy",
+      "followers": "67K",
+      "match": 72,
+      "avatar": "SR",
+      "bgClass": "avatar-orange"
+    },
+    {
+      "id": "lucas",
+      "name": "Lucas Silva",
+      "niche": "Food & Culinary",
+      "category": "Food",
+      "location": "🇧🇷 Brazil",
+      "followers": "83K",
+      "match": 68,
+      "avatar": "LS",
+      "bgClass": "avatar-green"
+    }
+  ],
+  "posts": [
+    {
+      "authorName": "Ioana R.",
+      "niche": "Travel Creator",
+      "content": "Anyone going to Tokyo in November? Would love to connect with other travel creators while I'm there! 🇯🇵",
+      "avatarClass": "avatar-green"
+    },
+    {
+      "authorName": "Andrei D.",
+      "niche": "Tech Creator",
+      "content": "Just tested a completely different format for my short-form videos and the retention is insane (+40%). Thinking of publishing a breakdown soon! 📈",
+      "avatarClass": "avatar-purple"
+    },
+    {
+      "authorName": "Alex Popescu",
+      "niche": "Gaming Creator",
+      "content": "Setting up the new dual stream gear today! What games do you want to see reviewed this week? 🎮🎧",
+      "avatarClass": "avatar-purple"
+    }
+  ],
+  "photoPosts": [
+    {
+      "author": "marcus_reviews",
+      "niche": "Tech Reviewer",
+      "picture": "studioDesk",
+      "content": "Finally finished the new review desk. Matte black, one light strip, zero reflections on camera."
+    },
+    {
+      "author": "maria_travels",
+      "niche": "Travel Creator",
+      "picture": "tokyoDusk",
+      "content": "Golden hour over the rooftops in Tokyo. Full city guide with every spot I filmed goes up next week."
+    },
+    {
+      "author": "david_sound",
+      "niche": "Music Creator",
+      "picture": "mixingSession",
+      "content": "Mixing the soundtrack for a friend's indie game this week. This is the master bus doing its thing."
+    },
+    {
+      "author": "elena_ai",
+      "niche": "Tech & AI Creator",
+      "picture": "aiWorkflow",
+      "content": "Mapped how I use AI tools on one video, from script to thumbnail. Seven tools, one workflow. Breakdown tomorrow."
+    }
+  ],
+  "comments": [
+    "This is genuinely useful, thanks for sharing!",
+    "Saving this one for later 👀",
+    "Would love a deeper breakdown of this.",
+    "Great timing — I was just looking into this myself.",
+    "Following for more of these 🙌",
+    "Solid work. How long did this take you?",
+    "Commenting so I can find this again later.",
+    "This deserves way more attention.",
+    "Exactly the kind of post I joined Conexus for.",
+    "Tried something similar last month — happy to compare notes!"
+  ],
+  "brandDeals": [
+    {
+      "id": "bd_techgear",
+      "brandName": "TechGear Pro",
+      "logo": "TG",
+      "logoClass": "logo-tech",
+      "industry": "Consumer Tech & Audio",
+      "category": "Tech",
+      "dealType": "Product Review",
+      "description": "Looking for tech creators for hands-on reviews of wireless studio headsets.",
+      "pay": "$800 - $1,500",
+      "matchScore": 94
+    },
+    {
+      "id": "bd_wanderlust",
+      "brandName": "Wanderlust Escapes",
+      "logo": "WL",
+      "logoClass": "logo-travel",
+      "industry": "Travel & Digital Nomad",
+      "category": "Travel",
+      "dealType": "Sponsored Video",
+      "description": "Sponsoring travel creators testing portable power setups on remote trips.",
+      "pay": "$1,200 + Stay",
+      "matchScore": 88
+    },
+    {
+      "id": "bd_pixelforge",
+      "brandName": "PixelForge",
+      "logo": "PF",
+      "logoClass": "logo-gaming",
+      "industry": "PC Components & Peripherals",
+      "category": "Gaming",
+      "dealType": "Sponsored Video",
+      "description": "Seeking gaming creators to feature a new low-latency mechanical keyboard.",
+      "pay": "$600 - $1,100",
+      "matchScore": 91
+    },
+    {
+      "id": "bd_northaudio",
+      "brandName": "North Audio",
+      "logo": "NA",
+      "logoClass": "logo-tech",
+      "industry": "Studio & Podcast Gear",
+      "category": "Tech",
+      "dealType": "Brand Ambassador",
+      "description": "Six month ambassador programme for creators who record their own audio.",
+      "pay": "$2,000 / quarter",
+      "matchScore": 86
+    },
+    {
+      "id": "bd_verdant",
+      "brandName": "Verdant Kitchen",
+      "logo": "VK",
+      "logoClass": "logo-food",
+      "industry": "Meal Kits & Groceries",
+      "category": "Food",
+      "dealType": "Affiliate",
+      "description": "Recurring commission on meal kit referrals, no exclusivity required.",
+      "pay": "15% per referral",
+      "matchScore": 78
+    },
+    {
+      "id": "bd_atlaswear",
+      "brandName": "Atlas Wear",
+      "logo": "AW",
+      "logoClass": "logo-fashion",
+      "industry": "Sustainable Apparel",
+      "category": "Fashion",
+      "dealType": "Social Post",
+      "description": "Three post campaign featuring the autumn range, shot in your own style.",
+      "pay": "$450 per post",
+      "matchScore": 82
+    },
+    {
+      "id": "bd_lumen",
+      "brandName": "Lumen Studios",
+      "logo": "LS",
+      "logoClass": "logo-tech",
+      "industry": "Lighting & Streaming",
+      "category": "Tech",
+      "dealType": "Product Review",
+      "description": "Send-and-keep review of a key light aimed at small home studios.",
+      "pay": "Product + $300",
+      "matchScore": 84
+    },
+    {
+      "id": "bd_trailhead",
+      "brandName": "Trailhead Co.",
+      "logo": "TH",
+      "logoClass": "logo-travel",
+      "industry": "Outdoor Equipment",
+      "category": "Travel",
+      "dealType": "Affiliate",
+      "description": "Affiliate partnership for hiking and camping gear, tiered commission.",
+      "pay": "10 - 18% tiered",
+      "matchScore": 74
+    },
+    {
+      "id": "bd_soundwave",
+      "brandName": "Soundwave Collective",
+      "logo": "SC",
+      "logoClass": "logo-music",
+      "industry": "Music Production Tools",
+      "category": "Music",
+      "dealType": "Sponsored Video",
+      "description": "Walkthrough of a sample library aimed at producers and beatmakers.",
+      "pay": "$700 - $1,300",
+      "matchScore": 89
+    },
+    {
+      "id": "bd_novacon",
+      "brandName": "NovaCon",
+      "logo": "NC",
+      "logoClass": "logo-gaming",
+      "industry": "Gaming Convention",
+      "category": "Gaming",
+      "dealType": "Event",
+      "description": "Covering the creator stage at this year's convention, travel included.",
+      "pay": "$1,500 + Travel",
+      "matchScore": 80
+    },
+    {
+      "id": "bd_brightbrew",
+      "brandName": "Bright Brew",
+      "logo": "BB",
+      "logoClass": "logo-food",
+      "industry": "Specialty Coffee",
+      "category": "Food",
+      "dealType": "Social Post",
+      "description": "Morning routine feature for a single origin subscription launch.",
+      "pay": "$350 per post",
+      "matchScore": 71
+    },
+    {
+      "id": "bd_orbitvpn",
+      "brandName": "Orbit",
+      "logo": "OR",
+      "logoClass": "logo-tech",
+      "industry": "Privacy & Security",
+      "category": "Tech",
+      "dealType": "Affiliate",
+      "description": "Long running affiliate deal with a recurring share of each subscription.",
+      "pay": "30% recurring",
+      "matchScore": 76
+    },
+    {
+      "id": "bd_studioloft",
+      "brandName": "Studio Loft",
+      "logo": "SL",
+      "logoClass": "logo-fashion",
+      "industry": "Creator Workspaces",
+      "category": "Fashion",
+      "dealType": "Brand Ambassador",
+      "description": "Year long ambassador role for creators filming in shared studios.",
+      "pay": "$1,800 / quarter",
+      "matchScore": 69
+    },
+    {
+      "id": "bd_cadence",
+      "brandName": "Cadence Records",
+      "logo": "CR",
+      "logoClass": "logo-music",
+      "industry": "Independent Label",
+      "category": "Music",
+      "dealType": "Event",
+      "description": "Live session slot at a showcase night, with footage rights retained by you.",
+      "pay": "$900 + Travel",
+      "matchScore": 73
+    }
+  ],
+  "jobs": [
+    {
+      "id": "job_editor_pixel",
+      "title": "Short-Form Video Editor",
+      "company": "PixelForge",
+      "logo": "PF",
+      "logoClass": "logo-gaming",
+      "location": "Remote",
+      "jobType": "Contract",
+      "category": "Gaming",
+      "remote": true,
+      "description": "Cut weekly gaming shorts from long-form streams. Roughly 6 clips a week.",
+      "pay": "$35 / hr",
+      "postedAgo": "2 days ago"
+    },
+    {
+      "id": "job_thumb_nova",
+      "title": "Thumbnail Designer",
+      "company": "NovaCon",
+      "logo": "NC",
+      "logoClass": "logo-gaming",
+      "location": "Remote",
+      "jobType": "Freelance",
+      "category": "Gaming",
+      "remote": true,
+      "description": "Design click-worthy thumbnails for event recap videos. Portfolio required.",
+      "pay": "$120 per set",
+      "postedAgo": "4 days ago"
+    },
+    {
+      "id": "job_social_atlas",
+      "title": "Social Media Manager",
+      "company": "Atlas Wear",
+      "logo": "AW",
+      "logoClass": "logo-fashion",
+      "location": "Milan, Italy",
+      "jobType": "Full-time",
+      "category": "Fashion",
+      "remote": false,
+      "description": "Own the brand's short-form presence across Instagram and TikTok.",
+      "pay": "€38,000 / yr",
+      "postedAgo": "1 week ago"
+    },
+    {
+      "id": "job_podcast_north",
+      "title": "Podcast Producer",
+      "company": "North Audio",
+      "logo": "NA",
+      "logoClass": "logo-tech",
+      "location": "Remote",
+      "jobType": "Part-time",
+      "category": "Tech",
+      "remote": true,
+      "description": "Produce and edit a weekly interview show. Audio-first, video optional.",
+      "pay": "$1,800 / month",
+      "postedAgo": "3 days ago"
+    },
+    {
+      "id": "job_writer_orbit",
+      "title": "Technical Writer",
+      "company": "Orbit",
+      "logo": "OR",
+      "logoClass": "logo-tech",
+      "location": "Remote",
+      "jobType": "Contract",
+      "category": "Tech",
+      "remote": true,
+      "description": "Write plain-English explainers about privacy tooling for a general audience.",
+      "pay": "$45 / hr",
+      "postedAgo": "5 days ago"
+    },
+    {
+      "id": "job_camera_trail",
+      "title": "Camera Operator",
+      "company": "Trailhead Co.",
+      "logo": "TH",
+      "logoClass": "logo-travel",
+      "location": "Lisbon, Portugal",
+      "jobType": "Freelance",
+      "category": "Travel",
+      "remote": false,
+      "description": "Two week shoot covering a hiking route. Own kit preferred, travel covered.",
+      "pay": "$500 / day",
+      "postedAgo": "1 day ago"
+    },
+    {
+      "id": "job_producer_cadence",
+      "title": "Session Producer",
+      "company": "Cadence Records",
+      "logo": "CR",
+      "logoClass": "logo-music",
+      "location": "London, UK",
+      "jobType": "Contract",
+      "category": "Music",
+      "remote": false,
+      "description": "Run live session recordings for emerging artists, two nights a month.",
+      "pay": "£320 / session",
+      "postedAgo": "6 days ago"
+    },
+    {
+      "id": "job_community_verdant",
+      "title": "Community Manager",
+      "company": "Verdant Kitchen",
+      "logo": "VK",
+      "logoClass": "logo-food",
+      "location": "Remote",
+      "jobType": "Full-time",
+      "category": "Food",
+      "remote": true,
+      "description": "Grow and moderate a recipe-sharing community across Discord and Reddit.",
+      "pay": "$52,000 / yr",
+      "postedAgo": "2 weeks ago"
+    },
+    {
+      "id": "job_intern_lumen",
+      "title": "Content Intern",
+      "company": "Lumen Studios",
+      "logo": "LS",
+      "logoClass": "logo-tech",
+      "location": "Berlin, Germany",
+      "jobType": "Internship",
+      "category": "Tech",
+      "remote": false,
+      "description": "Six month placement supporting the studio's own channel. Mentorship included.",
+      "pay": "€1,400 / month",
+      "postedAgo": "1 week ago"
+    },
+    {
+      "id": "job_strategist_bright",
+      "title": "Content Strategist",
+      "company": "Bright Brew",
+      "logo": "BB",
+      "logoClass": "logo-food",
+      "location": "Remote",
+      "jobType": "Part-time",
+      "category": "Food",
+      "remote": true,
+      "description": "Plan a quarterly content calendar around seasonal coffee launches.",
+      "pay": "$1,100 / month",
+      "postedAgo": "3 days ago"
+    }
+  ]
+}

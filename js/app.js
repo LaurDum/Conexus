@@ -453,6 +453,9 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         }
 
+        // The page's own history entry stands for the tab it opened on.
+        try { history.replaceState({ view: state.activeView }, ""); } catch (e) { /* sandboxed */ }
+
         showSkeletons();
         showHomePane(readSetting("conexus_home_tab", ["overview", "feed"], "overview"));
         loadUserData();
@@ -593,6 +596,7 @@ document.addEventListener("DOMContentLoaded", () => {
             failed.push("feed");
         }
         renderAllPosts();
+        renderSmartSteps();
 
         renderPulse();
 
@@ -606,6 +610,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function renderProfileData() {
         if (!state.currentUser) return;
+        renderSmartSteps();
         const u = state.currentUser;
         const p = state.profile || {};
 
@@ -791,6 +796,95 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     // =========================================================================
+    // SECURITY SETTINGS — password, other sessions, deleting the account
+    // =========================================================================
+
+    function openModal(id) {
+        const modal = document.getElementById(id);
+        if (!modal) return;
+        modal.querySelector("form")?.reset();
+        modal.querySelectorAll(".form-error").forEach(el => el.classList.add("hidden"));
+        modal.classList.remove("hidden");
+        setTimeout(() => modal.querySelector("input")?.focus(), 50);
+    }
+
+    function showFormError(id, message) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.textContent = message;
+        el.classList.remove("hidden");
+    }
+
+    // Close buttons and Cancel on the two security dialogs.
+    ["modal-password", "modal-delete-account"].forEach(id => {
+        const modal = document.getElementById(id);
+        if (!modal) return;
+        const close = () => modal.classList.add("hidden");
+        modal.querySelectorAll(".modal-close, [data-close-modal]").forEach(b => b.addEventListener("click", close));
+        modal.addEventListener("click", (e) => { if (e.target === modal) close(); });
+    });
+
+    document.getElementById("btn-open-password")?.addEventListener("click", () => openModal("modal-password"));
+    document.getElementById("btn-open-delete-account")?.addEventListener("click", () => openModal("modal-delete-account"));
+
+    document.getElementById("form-password")?.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const button = e.target.querySelector("[type=submit]");
+        button.disabled = true;
+        try {
+            await api("/api/auth/password", {
+                method: "POST",
+                body: {
+                    currentPassword: document.getElementById("password-current").value,
+                    newPassword: document.getElementById("password-new").value
+                }
+            });
+            document.getElementById("modal-password").classList.add("hidden");
+            showToast("Password changed. Your other devices were signed out.");
+        } catch (err) {
+            showFormError("password-error", describeApiError(err, "Could not change your password."));
+        } finally {
+            button.disabled = false;
+        }
+    });
+
+    document.getElementById("btn-logout-others")?.addEventListener("click", async (e) => {
+        const button = e.currentTarget;
+        button.disabled = true;
+        try {
+            const result = await api("/api/auth/logout-others", { method: "POST" });
+            const n = (result && result.ended) || 0;
+            showToast(n ? `Signed out ${n} other session${n === 1 ? "" : "s"}.` : "No other sessions were signed in.");
+        } catch (err) {
+            showToast(describeApiError(err, "Could not sign out your other devices."), "error");
+        } finally {
+            button.disabled = false;
+        }
+    });
+
+    document.getElementById("form-delete-account")?.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const button = e.target.querySelector("[type=submit]");
+        button.disabled = true;
+        try {
+            await api("/api/account", {
+                method: "DELETE",
+                body: { password: document.getElementById("delete-password").value }
+            });
+            document.getElementById("modal-delete-account").classList.add("hidden");
+            localStorage.removeItem("conexus_user");
+            resetSessionState();
+            showAuthScreen();
+            showToast("Your account was deleted.");
+        } catch (err) {
+            showFormError("delete-error", describeApiError(err, "Could not delete your account."));
+        } finally {
+            button.disabled = false;
+        }
+    });
+
+
+    // =========================================================================
     // MULTI-STEP ONBOARDING ENGINE
     // =========================================================================
 
@@ -945,10 +1039,15 @@ document.addEventListener("DOMContentLoaded", () => {
     const navItems = document.querySelectorAll(".bottom-nav .nav-item, .side-nav .side-link");
     const views = document.querySelectorAll(".main-content .view");
 
-    function switchView(targetViewId) {
+    function switchView(targetViewId, fromHistory) {
         if (!state.currentUser) {
             showAuthScreen();
             return;
+        }
+
+        // Each tab change is a step the phone's Back button can undo.
+        if (!fromHistory && targetViewId !== state.activeView) {
+            try { history.pushState({ view: targetViewId }, ""); } catch (e) { /* sandboxed */ }
         }
 
         // Remember where we came from so Back on a profile returns there,
@@ -958,6 +1057,8 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         state.activeView = targetViewId;
+        // Lets the stylesheet hide things that only belong on some views.
+        document.body.setAttribute("data-view", targetViewId);
 
         navItems.forEach(item => {
             if (item.getAttribute("data-target") === targetViewId) {
@@ -980,6 +1081,73 @@ document.addEventListener("DOMContentLoaded", () => {
         if (targetViewId === "view-home") requestAnimationFrame(moveHomeUnderline);
         window.scrollTo({ top: 0, behavior: "smooth" });
     }
+
+    // =========================================================================
+    // BACK BUTTON
+    // On a phone, Back used to leave the site from anywhere — an open chat, a
+    // post, a profile. Now it closes whatever is on top, then steps back
+    // through the tabs you visited.
+    // =========================================================================
+
+    const overlays = [...document.querySelectorAll("#drawer-chat, #drawer-notifications, .modal-overlay")];
+    /** Overlays in the order they opened; Back closes the last one. */
+    const openOverlays = [];
+    /** history.back() calls of our own whose popstate should be ignored. */
+    let ownBacks = 0;
+    /** Set while Back itself is closing an overlay. */
+    let closingFromBack = false;
+
+    function closeOverlay(el) {
+        const btn = el.querySelector("[id^='btn-close'], .modal-close");
+        if (btn) btn.click();
+        else el.classList.add("hidden");
+    }
+
+    overlays.forEach(el => {
+        new MutationObserver(() => {
+            const open = !el.classList.contains("hidden");
+            const known = openOverlays.includes(el);
+            if (open && !known) {
+                openOverlays.push(el);
+                try { history.pushState({ overlay: el.id, view: state.activeView }, ""); } catch (e) { /* sandboxed */ }
+            } else if (!open && known) {
+                openOverlays.splice(openOverlays.indexOf(el), 1);
+                // Closed with its own button: drop the entry it added, so
+                // Back does not have to be pressed twice.
+                if (!closingFromBack && history.state && history.state.overlay === el.id) {
+                    ownBacks++;
+                    history.back();
+                }
+            }
+        }).observe(el, { attributes: true, attributeFilter: ["class"] });
+    });
+
+    window.addEventListener("popstate", (e) => {
+        if (ownBacks > 0) { ownBacks--; return; }
+        if (!state.currentUser) return;
+
+        const top = openOverlays[openOverlays.length - 1];
+        if (top) {
+            closingFromBack = true;
+            closeOverlay(top);
+            closingFromBack = false;
+            return;
+        }
+
+        const view = (e.state && e.state.view) || "view-home";
+        if (document.getElementById(view)) switchView(view, true);
+    });
+
+    // In-app Back buttons on settings, connections and profiles walk the
+    // same history, so the phone's Back does not then return to them.
+    ["btn-back-from-settings", "btn-back-from-connections", "btn-back-from-profile"].forEach(id => {
+        document.getElementById(id)?.addEventListener("click", (e) => {
+            if (history.state && history.state.view === state.activeView && history.length > 1) {
+                e.stopImmediatePropagation();
+                history.back();
+            }
+        }, true);
+    });
 
     /**
      * Slides the pill behind whichever tab is active.
@@ -1655,8 +1823,9 @@ document.addEventListener("DOMContentLoaded", () => {
         renderPendingSteps();
     }
 
-    document.querySelectorAll("#view-recommendations .step-checkbox").forEach(box => {
-        box.addEventListener("change", () => {
+    document.querySelector("#view-recommendations .next-steps-list")?.addEventListener("change", (e) => {
+        if (!e.target.classList.contains("step-checkbox")) return;
+        {
             const done = [];
             document.querySelectorAll("#view-recommendations .step-card").forEach((card, i) => {
                 const checked = card.querySelector(".step-checkbox")?.checked;
@@ -1665,8 +1834,172 @@ document.addEventListener("DOMContentLoaded", () => {
             });
             try { localStorage.setItem(stepStorageKey(), JSON.stringify(done)); } catch (e) { /* private mode */ }
             renderPendingSteps();
-        });
+        }
     });
+
+    /**
+     * Strategy steps worked out from the account itself. These used to be
+     * fixed text — "Shift TikTok uploads", "Link your Twitch & Substack" —
+     * shown to everyone, including people with no TikTok and Twitch linked.
+     * Each step only appears while it is actually true.
+     */
+    function renderSmartSteps() {
+        const box = document.getElementById("smart-steps");
+        if (!box || !state.currentUser) return;
+
+        const steps = [];
+        const linked = new Set((state.socials || []).map(s => s.platform));
+        const profile = state.profile || {};
+
+        const requests = (state.connectionRequests || []).length;
+        if (requests) {
+            steps.push({
+                key: `requests-${requests}`, tag: "tag-high", tagText: "Waiting on you",
+                title: `Answer ${requests} connection request${requests === 1 ? "" : "s"}`,
+                text: "People who reach out first are the easiest collaborations to start.",
+                action: "go:view-connections", actionText: "Review requests"
+            });
+        }
+
+        const bio = (profile.bio || "").trim();
+        if (!bio || bio === "Welcome to my Conexus profile!" || !profile.location || profile.location === "Worldwide") {
+            steps.push({
+                key: "profile", tag: "tag-high", tagText: "Profile Boost",
+                title: "Finish your profile",
+                text: "Say what you make and where you are. Brands and creators skim the bio before anything else.",
+                action: "edit-profile", actionText: "Edit profile"
+            });
+        }
+
+        const missing = ["youtube", "tiktok", "instagram"].find(p => !linked.has(p));
+        if (missing) {
+            const name = (platformMeta[missing] || {}).name || missing;
+            steps.push({
+                key: `platform-${missing}`, tag: "tag-med", tagText: "Reach",
+                title: `Add your ${name}`,
+                text: linked.size
+                    ? `You have ${linked.size} channel${linked.size === 1 ? "" : "s"} linked. Brands compare total reach, so every platform you post on counts.`
+                    : "Link the platforms you post on so your profile shows your real reach.",
+                action: `add-social:${missing}`, actionText: `Link ${name}`
+            });
+        }
+
+        const mine = (state.posts || []).filter(p => String(p.authorId) === String(state.currentUser.id));
+        const lastPost = mine.reduce((latest, p) => Math.max(latest, new Date(p.createdAt || 0).getTime()), 0);
+        if (Date.now() - lastPost > 7 * 86400000) {
+            const week = Math.floor(Date.now() / (7 * 86400000));
+            steps.push({
+                key: `post-week-${week}`, tag: "tag-med", tagText: "Consistency",
+                title: "Share an update this week",
+                text: lastPost
+                    ? `Your last post was on ${dayLabel(new Date(lastPost))}. A quick behind-the-scenes post keeps you in your connections' feeds.`
+                    : "You haven't posted yet. Introduce yourself and what you're working on.",
+                action: "compose", actionText: "Write a post"
+            });
+        }
+
+        const deal = (state.recommendedDeals || [])[0];
+        if (deal) {
+            steps.push({
+                key: `deal-${deal.id}`, tag: "tag-monetize", tagText: "Monetization",
+                title: `Pitch ${deal.brandName}`,
+                text: `${deal.dealType || "Campaign"}${deal.pay ? ` · ${deal.pay}` : ""}. ${deal.description || ""}`.trim(),
+                action: "deals", actionText: "See the campaign"
+            });
+        }
+
+        box.innerHTML = steps.map(st => `
+            <div class="step-card" data-step="${escapeHtml(st.key)}">
+                <label class="step-checkbox-container">
+                    <input type="checkbox" class="step-checkbox">
+                    <span class="checkmark"></span>
+                </label>
+                <div class="step-content">
+                    <div class="step-top">
+                        <h4>${escapeHtml(st.title)}</h4>
+                        <span class="step-tag ${st.tag}">${escapeHtml(st.tagText)}</span>
+                    </div>
+                    <p>${escapeHtml(st.text)}</p>
+                    <button class="btn-step-action" data-step-action="${escapeHtml(st.action)}">${escapeHtml(st.actionText)} →</button>
+                </div>
+            </div>`).join("");
+
+        restoreStepChecks();
+        renderRoadmap();
+    }
+
+    document.getElementById("smart-steps")?.addEventListener("click", (e) => {
+        const btn = e.target.closest("[data-step-action]");
+        if (!btn) return;
+        const [act, arg] = btn.getAttribute("data-step-action").split(":");
+
+        if (act === "go") switchView(arg);
+        else if (act === "edit-profile") document.getElementById("btn-open-edit-profile")?.click();
+        else if (act === "compose") document.getElementById("btn-create-floating")?.click();
+        else if (act === "deals") openDiscover("deals");
+        else if (act === "add-social") {
+            switchView("view-profile");
+            document.getElementById("btn-open-add-social")?.click();
+            const select = document.getElementById("social-platform-select");
+            if (select) {
+                select.value = arg;
+                select.dispatchEvent(new Event("change"));
+            }
+        }
+    });
+
+    /**
+     * The roadmap's targets come from your own numbers. It used to promise
+     * "+15K subs", "250K+ reach" and "$4K/mo" to every account alike.
+     */
+    function renderRoadmap() {
+        const el = document.getElementById("roadmap-timeline");
+        if (!el) return;
+
+        const reach = (state.socials || []).reduce((sum, s) => sum + parseCount(s.followers), 0)
+            || parseCount((state.profile || {}).totalReach);
+        const engagement = parseFloat((state.profile || {}).engagement) || 0;
+        const linked = new Set((state.socials || []).map(s => s.platform));
+        const nextPlatform = ["tiktok", "instagram", "youtube", "twitch", "substack"].find(p => !linked.has(p));
+        const nextName = nextPlatform ? (platformMeta[nextPlatform] || {}).name : null;
+        const connections = (state.connections || []).length;
+
+        // Modest, compounding goals: a fifth more reach, then a half more.
+        const target1 = Math.max(Math.round(reach * 0.2), 500);
+        const target2 = Math.max(Math.round(reach * 0.5), 2000);
+        const engagementGoal = engagement ? `${(engagement + 0.5).toFixed(1)}%` : "2%";
+
+        const phases = [
+            {
+                when: "Months 1 – 2", title: "Find your rhythm",
+                text: `Post on a set schedule and team up with ${connections >= 2 ? "two of your connections" : "two creators from Discover"} for a joint piece each.`,
+                metrics: [`Target: +${formatCount(target1)} followers`, `Engagement: ${engagementGoal}`]
+            },
+            {
+                when: "Months 3 – 4", title: nextName ? `Bring your audience to ${nextName}` : "Deepen your community",
+                text: nextName
+                    ? `Cut your best pieces down for ${nextName} and point your existing followers there.`
+                    : "Your main platforms are covered. Spend this stretch on lives, Q&As and replies.",
+                metrics: [`Reach: ${formatCount(reach + target1)} → ${formatCount(reach + target2)}`, nextName ? `New: ${nextName}` : "Focus: retention"]
+            },
+            {
+                when: "Months 5 – 6", title: "Turn reach into income",
+                text: "With a steadier audience, pitch the brands in your niche and keep the ones that fit for repeat work.",
+                metrics: ["Target: 2 brand deals", `Pitch from ${formatCount(reach + target2)} reach`]
+            }
+        ];
+
+        el.innerHTML = phases.map((ph, i) => `
+            <div class="roadmap-phase">
+                <div class="phase-number">0${i + 1}</div>
+                <div class="phase-body">
+                    <span class="phase-timeline">${escapeHtml(ph.when)}</span>
+                    <h4>${escapeHtml(ph.title)}</h4>
+                    <p>${escapeHtml(ph.text)}</p>
+                    <div class="phase-metrics">${ph.metrics.map(m => `<span>${escapeHtml(m)}</span>`).join("")}</div>
+                </div>
+            </div>`).join("");
+    }
 
     /**
      * The first step names a real person: your strongest match you are not yet
@@ -2045,7 +2378,7 @@ document.addEventListener("DOMContentLoaded", () => {
                             <h4>${escapeHtml(thread.name)}</h4>
                             <span class="thread-time">${escapeHtml(thread.updatedAt ? timeAgo(thread.updatedAt) : (thread.time || ""))}</span>
                         </div>
-                        <p class="thread-snippet">${escapeHtml(thread.snippet || '')}</p>
+                        <p class="thread-snippet">${escapeHtml(asYou(thread.snippet))}</p>
                     </div>
                     ${thread.unread ? '<span class="unread-dot"></span>' : ''}
                 </div>
@@ -2138,25 +2471,65 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("chat-decline-request").setAttribute("data-request-id", request.id);
     }
 
+    /**
+     * Notes the app writes name both people, so your own read "Alex Popescu
+     * sent a connection request" in your inbox. Say "You" instead.
+     */
+    function asYou(text) {
+        const me = (state.profile && state.profile.displayName) || state.currentUser?.displayName;
+        if (!text || !me || !text.startsWith(me + " ")) return text || "";
+        return "You" + text.slice(me.length);
+    }
+
+    /** "Today", "Yesterday", "Monday", "12 Oct", "12 Oct 2025". */
+    function dayLabel(date) {
+        const start = d => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+        const days = Math.round((start(new Date()) - start(date)) / 86400000);
+        if (days === 0) return "Today";
+        if (days === 1) return "Yesterday";
+        if (days > 1 && days < 7) return date.toLocaleDateString(undefined, { weekday: "long" });
+        const sameYear = date.getFullYear() === new Date().getFullYear();
+        return date.toLocaleDateString(undefined, sameYear
+            ? { day: "numeric", month: "short" }
+            : { day: "numeric", month: "short", year: "numeric" });
+    }
+
+    /** The clock time in the viewer's own zone; older messages only stored text. */
+    function messageClock(msg) {
+        return msg.sentAt
+            ? new Date(msg.sentAt).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })
+            : (msg.time || "");
+    }
+
     function renderChatMessages(messages) {
         if (!chatMessagesContainer) return;
 
+        let lastDay = null;
         chatMessagesContainer.innerHTML = messages.map(msg => {
+            // A divider whenever the day changes. Messages from before send
+            // times were recorded have no day to group by.
+            let divider = "";
+            if (msg.sentAt) {
+                const label = dayLabel(new Date(msg.sentAt));
+                if (label !== lastDay) divider = `<div class="msg-day"><span>${escapeHtml(label)}</span></div>`;
+                lastDay = label;
+            }
+
             // Connection requests and acceptances are notes about the
             // conversation, not messages within it.
             if (msg.system) {
-                return `
+                return `${divider}
                     <div class="msg-system">
-                        <span>${escapeHtml(msg.text)}</span>
-                        <small>${escapeHtml(msg.time)}</small>
+                        <span>${escapeHtml(asYou(msg.text))}</span>
+                        <small>${escapeHtml(messageClock(msg))}</small>
                     </div>
                 `;
             }
             // Escaped: message text is written by another person.
-            return `
+            return `${divider}
                 <div class="msg-bubble ${msg.sender === "me" ? "sent" : "received"}">
                     <p>${escapeHtml(msg.text)}</p>
-                    <span class="msg-time">${escapeHtml(msg.time)}</span>
+                    <span class="msg-time">${escapeHtml(messageClock(msg))}</span>
                 </div>
             `;
         }).join("");
@@ -2239,6 +2612,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function renderSocials() {
         renderPulseHero();
+        renderSmartSteps();
         scheduleProgressRefresh();
         if (!socialsContainer) return;
 
@@ -3917,12 +4291,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
         try {
             const data = await api("/api/brand-deals?size=2");
+            state.recommendedDeals = data.items || [];
             grid.innerHTML = (data.items || []).length
                 ? data.items.map(brandDealHtml).join("")
                 : `<div class="empty-card">No open campaigns right now.</div>`;
         } catch (err) {
             grid.innerHTML = `<div class="empty-card">Could not load brand matches.</div>`;
         }
+        renderSmartSteps();
     }
 
     let dealsType = "all";

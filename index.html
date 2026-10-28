@@ -155,7 +155,7 @@
                 </div>
                 <div class="form-group">
                     <label>Password</label>
-                    <input type="password" id="reg-password" placeholder="Minimum 6 characters" required>
+                    <input type="password" id="reg-password" placeholder="At least 8 characters" minlength="8" maxlength="128" autocomplete="new-password" required>
                 </div>
                 <button type="submit" class="btn-primary auth-submit-btn">Create Account & Continue →</button>
             </form>
@@ -167,7 +167,12 @@
                 <div class="auth-logo-icon">✦</div>
                 <h1 class="auth-logo">conexus</h1>
                 <p class="auth-subtitle">Creator Intelligence & Collaboration Platform</p>
-                <p class="auth-landing-desc">Connect with top creators, analyze growth strategies, manage social channels, and discover brand sponsorships.</p>
+                <p class="auth-landing-desc">One place for the business side of making things online.</p>
+                <ul class="landing-features">
+                    <li><span class="lf-icon"><svg class="icon"><use href="#i-trending"/></svg></span><div><strong>See your reach</strong><p>Every channel's followers in one number, with how it moved this month.</p></div></li>
+                    <li><span class="lf-icon"><svg class="icon"><use href="#i-users"/></svg></span><div><strong>Find collaborators</strong><p>Creators matched to your niche and audience, ready to message.</p></div></li>
+                    <li><span class="lf-icon"><svg class="icon"><use href="#i-gem"/></svg></span><div><strong>Land brand deals</strong><p>Open campaigns and jobs, sorted by how well they fit you.</p></div></li>
+                </ul>
                 <button type="button" class="btn-primary auth-launch-btn" id="btn-reopen-auth">Sign In / Get Started →</button>
             </div>
         </div>
@@ -584,7 +589,7 @@
                     <h3><svg class="icon"><use href="#i-bolt"/></svg> Recommended Next Steps</h3>
                     <span class="status-pill">4 Pending</span>
                 </div>
-                <p class="strategy-desc">Prioritized actions tailored to your channel velocity and reach goals.</p>
+                <p class="strategy-desc">Worked out from your channels, profile and recent activity.</p>
 
                 <div class="next-steps-list">
                     <!-- Filled in with your strongest match by renderCollabStep() -->
@@ -603,48 +608,8 @@
                         </div>
                     </div>
 
-                    <div class="step-card">
-                        <label class="step-checkbox-container">
-                            <input type="checkbox" class="step-checkbox">
-                            <span class="checkmark"></span>
-                        </label>
-                        <div class="step-content">
-                            <div class="step-top">
-                                <h4>Shift TikTok Uploads to 18:00 - 20:00 EEST</h4>
-                                <span class="step-tag tag-med">Medium Impact</span>
-                            </div>
-                            <p>Your followers are most active on weeknights. Changing timing can boost first-hour engagement by 28%.</p>
-                        </div>
-                    </div>
-
-                    <div class="step-card">
-                        <label class="step-checkbox-container">
-                            <input type="checkbox" class="step-checkbox">
-                            <span class="checkmark"></span>
-                        </label>
-                        <div class="step-content">
-                            <div class="step-top">
-                                <h4>Link Your Twitch & Substack Accounts</h4>
-                                <span class="step-tag tag-high">Profile Boost</span>
-                            </div>
-                            <p>Unify your creator footprint in your Profile so brands can view total cross-platform metrics.</p>
-                            <button class="btn-step-action nav-switch-trigger" data-target="view-profile">Go to Profile →</button>
-                        </div>
-                    </div>
-
-                    <div class="step-card">
-                        <label class="step-checkbox-container">
-                            <input type="checkbox" class="step-checkbox">
-                            <span class="checkmark"></span>
-                        </label>
-                        <div class="step-content">
-                            <div class="step-top">
-                                <h4>Apply for TechGear Pro Q4 Hardware Campaign</h4>
-                                <span class="step-tag tag-monetize">Monetization</span>
-                            </div>
-                            <p>Est. deal value $800 - $1,500. Matches your tech setup & video creation niche.</p>
-                        </div>
-                    </div>
+                    <!-- Built from your own channels, profile, posts and deals by renderSmartSteps() -->
+                    <div class="smart-steps" id="smart-steps"></div>
                 </div>
             </section>
 
@@ -652,52 +617,11 @@
             <section class="strategy-block">
                 <div class="strategy-block-header">
                     <h3><svg class="icon"><use href="#i-map"/></svg> Future Strategy Roadmap</h3>
-                    <span class="status-pill blue">Q3 - Q4 Plan</span>
+                    <span class="status-pill blue" id="roadmap-span">Next 6 months</span>
                 </div>
 
-                <div class="roadmap-timeline">
-                    <!-- Phase 1 -->
-                    <div class="roadmap-phase">
-                        <div class="phase-number">01</div>
-                        <div class="phase-body">
-                            <span class="phase-timeline">Months 1 - 2</span>
-                            <h4>Audience Spike & Short-Form Synergy</h4>
-                            <p>Repurpose tech reviews into 45s Shorts & TikToks. Partner with 2 regional creators for dual-stream events.</p>
-                            <div class="phase-metrics">
-                                <span>Target: +15K Subs</span>
-                                <span>KPI: 5.2% Engagement</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Phase 2 -->
-                    <div class="roadmap-phase">
-                        <div class="phase-number">02</div>
-                        <div class="phase-body">
-                            <span class="phase-timeline">Months 3 - 5</span>
-                            <h4>Community & Multi-Channel Expansion</h4>
-                            <p>Launch exclusive Discord channel for core supporters and kick off weekly live podcast Q&As.</p>
-                            <div class="phase-metrics">
-                                <span>Target: 2.5K Discord Members</span>
-                                <span>KPI: Substack Launch</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Phase 3 -->
-                    <div class="roadmap-phase">
-                        <div class="phase-number">03</div>
-                        <div class="phase-body">
-                            <span class="phase-timeline">Months 6+</span>
-                            <h4>Direct Brand Partnerships & Merch</h4>
-                            <p>Leverage total 250K+ reach across platforms to secure quarterly retainer brand sponsorships.</p>
-                            <div class="phase-metrics">
-                                <span>Target: 3 Retainer Brands</span>
-                                <span>Est. Revenue: $4K/mo</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <!-- Targets worked out from your current reach by renderRoadmap() -->
+                <div class="roadmap-timeline" id="roadmap-timeline"></div>
             </section>
 
             <!-- MATCHED BRAND CAMPAIGNS -->
@@ -810,7 +734,7 @@
                 <button class="btn-back-page" id="btn-back-from-settings">← Back</button>
                 <div>
                     <h2>Settings</h2>
-                    <p class="view-subtitle">Appearance, Home, and your account.</p>
+                    <p class="view-subtitle">Appearance, Home, your account and security.</p>
                 </div>
             </div>
 
@@ -884,6 +808,31 @@
                         <p>End this session on this device.</p>
                     </div>
                     <button class="btn-signout" id="btn-signout">Sign out</button>
+                </div>
+            </div>
+
+            <div class="settings-group">
+                <h3>Security</h3>
+                <div class="setting-row">
+                    <div>
+                        <strong>Password</strong>
+                        <p>Changing it signs you out on your other devices.</p>
+                    </div>
+                    <button class="btn-secondary-sm" id="btn-open-password">Change</button>
+                </div>
+                <div class="setting-row">
+                    <div>
+                        <strong>Other devices</strong>
+                        <p>Sign out everywhere except here.</p>
+                    </div>
+                    <button class="btn-secondary-sm" id="btn-logout-others">Sign out others</button>
+                </div>
+                <div class="setting-row">
+                    <div>
+                        <strong>Delete account</strong>
+                        <p>Removes your profile, posts, comments and listings for good.</p>
+                    </div>
+                    <button class="btn-signout" id="btn-open-delete-account">Delete</button>
                 </div>
             </div>
 
@@ -1028,7 +977,7 @@
         </div>
 
         <form class="chat-input-bar" id="form-chat-send">
-            <input type="text" id="chat-input-text" placeholder="Write a message..." autocomplete="off" required>
+            <input type="text" id="chat-input-text" placeholder="Write a message..." autocomplete="off" maxlength="2000" required>
             <button type="submit" class="btn-chat-send">Send</button>
         </form>
     </div>
@@ -1232,15 +1181,15 @@
             <form id="form-edit-profile">
                 <div class="form-group">
                     <label>Display Name</label>
-                    <input type="text" id="edit-display-name" maxlength="60" required>
+                    <input type="text" id="edit-display-name" maxlength="50" required>
                 </div>
                 <div class="form-group">
                     <label>Handle</label>
-                    <input type="text" id="edit-handle" maxlength="40" placeholder="@yourname" required>
+                    <input type="text" id="edit-handle" maxlength="31" placeholder="@yourname" pattern="@?[A-Za-z0-9_.]{2,30}" title="2–30 letters, numbers, dots or underscores" required>
                 </div>
                 <div class="form-group">
                     <label>Location</label>
-                    <input type="text" id="edit-location" maxlength="80" placeholder="City, Country">
+                    <input type="text" id="edit-location" maxlength="60" placeholder="City, Country">
                 </div>
                 <div class="form-group">
                     <label>Bio</label>
@@ -1249,6 +1198,54 @@
                 <div class="modal-actions">
                     <button type="button" class="btn-secondary" id="btn-cancel-edit-profile">Cancel</button>
                     <button type="submit" class="btn-primary">Save Profile</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <!-- CHANGE PASSWORD -->
+    <div class="modal-overlay hidden" id="modal-password">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>Change password</h3>
+                <button class="modal-close" id="btn-close-password" aria-label="Close">&times;</button>
+            </div>
+            <form id="form-password">
+                <div class="form-group">
+                    <label for="password-current">Current password</label>
+                    <input type="password" id="password-current" autocomplete="current-password" required>
+                </div>
+                <div class="form-group">
+                    <label for="password-new">New password</label>
+                    <input type="password" id="password-new" autocomplete="new-password" minlength="8" maxlength="128" placeholder="At least 8 characters" required>
+                </div>
+                <p class="form-error hidden" id="password-error"></p>
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" data-close-modal>Cancel</button>
+                    <button type="submit" class="btn-primary">Change password</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- DELETE ACCOUNT -->
+    <div class="modal-overlay hidden" id="modal-delete-account">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>Delete your account?</h3>
+                <button class="modal-close" id="btn-close-delete-account" aria-label="Close">&times;</button>
+            </div>
+            <form id="form-delete-account">
+                <p class="modal-lead">Your profile, posts, comments, likes, listings and linked channels are removed. People you messaged keep their copy of the conversation. This can't be undone.</p>
+                <div class="form-group">
+                    <label for="delete-password">Type your password to confirm</label>
+                    <input type="password" id="delete-password" autocomplete="current-password" required>
+                </div>
+                <p class="form-error hidden" id="delete-error"></p>
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" data-close-modal>Keep my account</button>
+                    <button type="submit" class="btn-danger">Delete account</button>
                 </div>
             </form>
         </div>
